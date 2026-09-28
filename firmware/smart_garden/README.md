@@ -16,17 +16,19 @@ C++ / Arduino-Framework. Verkabelung: [`docs/hardware/verkabelung.md`](../../doc
 
 ## 2. Zugangsdaten eintragen
 
-Im Ordner `firmware/smart_garden/` die Datei **`secrets.h.example`** kopieren und die Kopie **`secrets.h`** nennen. Darin eintragen:
+Ganz oben in **`smart_garden.ino`** im Block **„EINSTELLUNGEN – HIER ANPASSEN“**:
 
-| Eintrag | Wert |
+| Variable | Wert |
 |---|---|
-| `WIFI_SSID` | `SmartGarden` (Hotspot des Pi) |
-| `WIFI_PASSWORD` | von Nico |
-| `SERVER_URL` | `http://10.42.0.1:8000` |
-| `API_KEY` | wird auf dem Server beim Anlegen des Geräts erzeugt |
-| `DEVICE_ID` | `esp32-kuebel-01` |
+| `CFG_WIFI_SSID` | `SmartGarden` (Hotspot des Pi) |
+| `CFG_WIFI_PASSWORD` | von Nico |
+| `CFG_SERVER_URL` | `http://10.42.0.1:8000` |
+| `CFG_API_KEY` | wird auf dem Server beim Anlegen des Geräts erzeugt |
+| `CFG_DEVICE_ID` | `esp32-kuebel-01` |
 
-`secrets.h` wird nicht ins Git hochgeladen. Ohne `secrets.h` kompiliert der Sketch trotzdem (mit Warnung) – Sensoren, LED-Bar, Pumpe und Demo-Befehle funktionieren dann schon, nur das Senden an den Server nicht.
+**Das Repo ist öffentlich:** echtes Passwort und API-Key nicht committen. Vor einem `git pull` die lokale Änderung mit `git stash` beiseitelegen und danach mit `git stash pop` zurückholen.
+
+Ohne gültiges WLAN funktionieren Sensoren, LED-Bar, Pumpe und Demo-Befehle trotzdem – nur das Senden an den Server nicht.
 
 ## 3. Hochladen
 
