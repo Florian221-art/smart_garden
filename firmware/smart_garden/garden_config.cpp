@@ -50,6 +50,6 @@ void configPrint() {
                 settings.pump_flow_ml_per_s, settings.tank_low_pct, settings.buzzer_enabled);
   Serial.printf("[CAL] boden trocken=%d nass=%d | licht dunkel=%d hell=%d\n", calib.soil_raw_dry, calib.soil_raw_wet,
                 calib.light_raw_dark, calib.light_raw_bright);
-  Serial.printf("[LED] modus=%d (0=Zeiger, 1=Balken) reverse=%d | Summer %s\n", CFG_LEDBAR_MODE, CFG_LEDBAR_REVERSE,
+  Serial.printf("[LED] modus=%d (0=Zeiger, 1=Balken ab Rot, 2=Trockenheit ab Gruen) reverse=%d swap=%d | Summer %s\n", CFG_LEDBAR_MODE, CFG_LEDBAR_REVERSE, CFG_LEDBAR_SWAP_PINS,
                 (CFG_BUZZER_ENABLED && settings.buzzer_enabled) ? "an" : "stumm");
 }

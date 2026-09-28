@@ -2,7 +2,7 @@
 #pragma once
 #include <Arduino.h>
 
-#define FW_VERSION "0.2.3"
+#define FW_VERSION "0.2.4"
 
 // ---------------------------------------------------------------------------
 // Zugangsdaten (WLAN, Server, API-Key) – werden OBEN in smart_garden.ino eingetragen

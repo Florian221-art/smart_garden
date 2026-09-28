@@ -72,10 +72,10 @@ void displayTestSegments(int n) {
 }
 
 void displayLedTest() {
-  Serial.println("[LED] Test: Segment 1 muss ROT sein, Segment 2 orange, 3-10 gruen.");
-  Serial.println("[LED] Leuchtet zuerst ein GRUENES Segment -> oben CFG_LEDBAR_REVERSE = true setzen.");
+  Serial.println("[LED] Test: fuellt von GRUEN (Segment 10) ueber orange bis ROT (Segment 1).");
+  Serial.println("[LED] Leuchtet zuerst ein ROTES Segment -> oben CFG_LEDBAR_REVERSE = true setzen.");
   for (int i = 1; i <= 10; i++) {
-    ledbarShow((1u << i) - 1, CFG_LEDBAR_REVERSE);
+    ledbarShow((0x3FFu << (10 - i)) & 0x3FFu, CFG_LEDBAR_REVERSE);
     delay(250);
   }
   delay(500);
@@ -105,13 +105,20 @@ static void updateBar() {
   int pos = (int)ceilf(soilPct / 10.0f);
   pos = constrain(pos, 1, 10);
   uint32_t bits;
-  if (CFG_LEDBAR_MODE == 1) {
+  if (CFG_LEDBAR_MODE == 2) {
+    // Trockenheitsbalken: Anzahl LEDs = Trockenheit, gefüllt vom grünen Ende (Segment 10) her.
+    // 100 % feucht -> 1 grüne LED, 20 % -> alle 8 grünen, 10-20 % -> + orange, < 10 % -> + rot
+    int n = (int)ceilf((100.0f - soilPct) / 10.0f);
+    n = constrain(n, 1, 10);
+    bits = (0x3FFUL << (10 - n)) & 0x3FFUL;       // Segmente (11-n)..10
+    if (soilPct < 10 && !blinkSlow) bits &= ~0x001UL;  // ganz trocken: rot blinkt
+  } else if (CFG_LEDBAR_MODE == 1) {
     bits = (1UL << pos) - 1;                      // Füllbalken: Segmente 1..pos
   } else {
     bits = (1UL << (pos - 1));                    // Zeiger: Segment pos ...
     if (pos > 1) bits |= (1UL << (pos - 2));      // ... und das davor
   }
-  if (soilPct < 10 && !blinkSlow) bits = 0;       // sehr trocken: rot blinkt
+  if (CFG_LEDBAR_MODE != 2 && soilPct < 10 && !blinkSlow) bits = 0;  // sehr trocken: rot blinkt
   if (tankEmpty) bits = blinkFast ? (bits | 0x001) : (bits & ~0x001UL);  // Tank leer: Segment 1 blinkt schnell
   showBits(bits);
 }
