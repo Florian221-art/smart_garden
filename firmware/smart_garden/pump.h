@@ -9,6 +9,7 @@ void pumpStop();
 void pumpUpdate();              // in loop() aufrufen
 bool pumpRunning();
 bool pumpCooldownActive();
+uint32_t pumpCooldownLeftS();
 float pumpTakeOnSecondsSinceLast(); // liefert Laufzeit seit letztem erfolgreichen POST
 void pumpRestoreOnSeconds(float s); // falls POST fehlschlägt: zurückbuchen
 float pumpTodaySeconds();

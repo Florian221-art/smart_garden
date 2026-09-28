@@ -13,3 +13,4 @@ void demoApply(Readings &r);                 // überschreibt Werte in r, setzt 
 void demoForcedErrors(JsonArray errors);     // erzwungene Fehlercodes anhängen
 void demoOverriddenFields(JsonArray fields); // für "demo_overrides"
 void demoPrint();
+bool demoTakeSoilKick();                    // true (einmalig), wenn eine neue Bodenfeuchte-Vorgabe gesetzt wurde

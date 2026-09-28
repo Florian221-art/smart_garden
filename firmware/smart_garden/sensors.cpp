@@ -49,15 +49,23 @@ Readings sensorsRead() {
   r.light_ok = true;
   r.light_pct = mapPct(r.light_raw, calib.light_raw_dark, calib.light_raw_bright);
 
-  float t = dht.readTemperature();
-  float h = dht.readHumidity();
-  if (isnan(t) || isnan(h)) {  // DHT11 liefert gelegentlich nichts -> einmal wiederholen
-    delay(50);
-    t = dht.readTemperature(false, true);
-    h = dht.readHumidity();
+  // DHT11: höchstens alle 5 s lesen (sonst liefert er Fehler), letzten guten Wert
+  // bis zu 30 s weiterverwenden, erst danach als Ausfall melden.
+  static uint32_t lastDhtRead = 0, lastDhtOk = 0;
+  static float lastT = NAN, lastH = NAN;
+  uint32_t now = millis();
+  if (lastDhtRead == 0 || now - lastDhtRead >= 5000) {
+    lastDhtRead = now;
+    float t = dht.readTemperature();
+    float h = dht.readHumidity();
+    if (!isnan(t) && !isnan(h)) {
+      lastT = t;
+      lastH = h;
+      lastDhtOk = now;
+    }
   }
-  r.dht_ok = !(isnan(t) || isnan(h));
-  r.temp_c = r.dht_ok ? t : 0;
-  r.hum_pct = r.dht_ok ? h : 0;
+  r.dht_ok = !isnan(lastT) && (now - lastDhtOk) < 30000;
+  r.temp_c = r.dht_ok ? lastT : 0;
+  r.hum_pct = r.dht_ok ? lastH : 0;
   return r;
 }
