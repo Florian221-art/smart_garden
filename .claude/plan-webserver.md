@@ -206,11 +206,25 @@ _(von Claude-Web gepflegt)_
   - Farbskala Bodenfeuchte ist vorbereitet (gruen/gelb/rot je nach `%`), aber **nicht** die einzige
     Information (Zahl+Text immer sichtbar, WCAG-Vorgabe)
 
+### Phase 2 – Teil 1: Diagramme (Branch `feature/web-diagramme`)
+
+- [x] `GET /api/v1/devices/{id}/readings?from=&to=&bucket=`: Mittelwerte je Zeit-Bucket (automatisch ~120 Punkte,
+      "runde" Bucket-Groessen 15 s ... 6 h), Summe Pumpenlaufzeit/Wasser-ml, Anzahl Auto-Bewaesserungen, Demo-Flag,
+      Fehlercodes; max. 31 Tage. `GET /api/v1/devices/{id}/config` (nur lesen) fuer Grenzwert-Linien.
+- [x] Zeitstempel jetzt mit `Z` (UTC) ausgeliefert - vorher zeigte der Browser UTC als Ortszeit an (2 h daneben)
+- [x] Dashboard "Verlauf": Zeitraum 1 h / 24 h / 7 Tage, Kennzahlen (Wasserverbrauch, Anzahl Giessen,
+      Ø Bodenfeuchte), 6 Diagramme: Bodenfeuchte (mit Giessschwelle/Ziel + Markern fuer Auto-Bewaesserung),
+      Tank (mit Warnschwelle), Wasserverbrauch pro 5 min/Stunde/Tag, Temperatur, Luftfeuchte, Licht.
+      Demo-Zeitraeume grau-violett hinterlegt, Sensorausfall = Luecke in der Linie, Tooltip mit Fehlertexten,
+      jede Grafik auch als Tabelle (WCAG), hell/dunkel mit geprueften Farben
+- [x] `python -m app.dev_seed <id> --hours 48`: simulierter Verlauf fuer die Entwicklung (nicht auf dem Pi!)
+- [x] Gerendert und geprueft (Desktop hell/dunkel, Mobil 390 px, Hover, 7-Tage-Ansicht)
+
 ### Als Naechstes
 
 - PR fuer diesen Branch oeffnen (`[server/web/deploy]` Praefix, kein `[CONTRACT]`, da `api-contract.md`
   nicht angefasst wurde)
-- Phase 2: Diagramme (Recharts), Warnungen/Alerts, Login+Rollen (argon2 ist schon eingebunden), i18n
+- Phase 2 (Rest): Warnungen/Alerts, Login+Rollen (argon2 ist schon eingebunden), i18n
   (NL/DE/EN), Demo-Modus (Endpunkte + Dashboard-Bereich), KI-Stub
 - Hotspot-Skript auf echter Pi-Hardware verifizieren, sobald verfuegbar
 

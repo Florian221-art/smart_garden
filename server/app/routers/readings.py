@@ -13,6 +13,7 @@ from ..auth import verify_api_key
 from ..config import DEFAULT_DEVICE_CONFIG
 from ..db import get_db
 from ..ratelimit import check_rate_limit
+from ..timeutil import iso_utc
 from ..schemas import (
     CommandsOut,
     ConfigOut,
@@ -117,7 +118,7 @@ def get_latest_reading(device_id: str, db: Session = Depends(get_db)):
 
     return LatestReadingOut(
         device_id=reading.device_id,
-        received_at=reading.received_at.isoformat(),
+        received_at=iso_utc(reading.received_at),
         fw_version=reading.fw_version,
         seq=reading.seq,
         uptime_s=reading.uptime_s,

@@ -1,1 +1,30 @@
 @import "tailwindcss";
+
+/* Diagramm-Farben als Rollen-Tokens (Referenzpalette aus dem dataviz-Leitfaden).
+   Hell/Dunkel sind eigene, jeweils gepruefte Stufen - kein automatisches Invertieren. */
+.viz-root {
+  --viz-surface: #ffffff;
+  --viz-grid: #e7e6e2;
+  --viz-axis: #52514e;
+  --viz-text: #0b0b0b;
+  --viz-muted: #6b6a66;
+  --series-1: #2a78d6; /* blau: Messwert */
+  --series-2: #eb6834; /* orange: Giess-Ereignis */
+  --viz-demo: #ece9f7; /* Demo-Zeitraum (Flaeche, neutral-violett) */
+  --viz-demo-text: #4a3aa7;
+  --status-warning: #b87700;
+}
+@media (prefers-color-scheme: dark) {
+  .viz-root {
+    --viz-surface: #0f172a;
+    --viz-grid: #2a3346;
+    --viz-axis: #c3c2b7;
+    --viz-text: #ffffff;
+    --viz-muted: #a3a29b;
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --viz-demo: #2b2550;
+    --viz-demo-text: #b9b2f2;
+    --status-warning: #fab219;
+  }
+}

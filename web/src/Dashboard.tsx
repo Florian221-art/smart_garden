@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react'
 import type { LatestReading } from './types'
 import StatTile from './components/StatTile'
 import { describeError } from './errorMessages'
+import HistoryCharts from './HistoryCharts'
 
-const DEVICE_ID = 'esp32-kuebel-01' // Phase 1: fest; Geraeteauswahl folgt in Phase 2
+const DEVICE_ID = 'esp32-kuebel-01' // Phase 1: fest; Geräteauswahl folgt in Phase 2
 const POLL_INTERVAL_MS = 5000 // laut plan-webserver.md Abschnitt 6
 
 function fmt(value: number | null | undefined, unit: string, digits = 1): string {
@@ -30,7 +31,7 @@ export default function Dashboard() {
         const res = await fetch(`/api/v1/devices/${DEVICE_ID}/latest`)
         if (!res.ok) {
           if (res.status === 404) {
-            if (!cancelled) setError('Noch keine Messwerte fuer dieses Geraet.')
+            if (!cancelled) setError('Noch keine Messwerte für dieses Gerät.')
           } else {
             if (!cancelled) setError(`Server-Fehler (${res.status})`)
           }
@@ -95,7 +96,7 @@ export default function Dashboard() {
         <StatTile
           label="Wassertank"
           value={fmt(reading?.water_level_pct ?? null, '%')}
-          hint={reading ? `~${Math.round(reading.tank_remaining_ml)} ml (Schaetzung)` : undefined}
+          hint={reading ? `~${Math.round(reading.tank_remaining_ml)} ml (Schätzung)` : undefined}
           tone={reading && reading.water_level_pct < 20 ? 'warn' : 'ok'}
         />
         <StatTile
@@ -104,7 +105,7 @@ export default function Dashboard() {
           hint={reading ? `Laufzeit seit letztem POST: ${reading.pump_on_s_since_last.toFixed(1)} s` : undefined}
         />
         <StatTile
-          label="Geraet"
+          label="Gerät"
           value={reading ? `${reading.rssi_dbm} dBm` : 'n/a'}
           hint={reading ? `Uptime ${reading.uptime_s}s · FW ${reading.fw_version}` : undefined}
         />
@@ -127,6 +128,8 @@ export default function Dashboard() {
           DEMO-MODUS aktiv – überschrieben: {reading.demo_overrides.join(', ')}
         </div>
       )}
+
+      <HistoryCharts deviceId={DEVICE_ID} />
     </div>
   )
 }
