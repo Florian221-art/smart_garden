@@ -1,82 +1,87 @@
 # Plan Claude-ESP (Florian)
 
-Zuständig für: **ESP32-Firmware**, **KI-Modul** (`ai/`), **Test-Tools** (`tools/`), Hardware-Doku (`docs/hardware/`).
+Zuständig für: **ESP32-Firmware**, **Test-Tools** (`tools/`), **Hardware-Doku** (`docs/hardware/`), Beiträge zu Sicherheitsanalyse und Präsentation (ESP-Teil).
+Nicht zuständig: KI-Modul (→ Claude-Web).
 Schnittstelle zum Server: `.claude/api-contract.md` · Regeln: `.claude/CLAUDE.md`
-Vollständiges Pinout + Verkabelung: **`docs/hardware/verkabelung.md`**
+Pinout + Verkabelung: **`docs/hardware/verkabelung.md`**
 
-## Hardware (Stand 28.09.)
+## Rahmenbedingungen (mit Florian geklärt)
+
+- **Arduino IDE** zum Flashen. Florian lädt nur hoch → Firmware muss ohne Anpassungen kompilieren; nur `secrets.h` ausfüllen.
+- **Netzwerk:** Pi-Hotspot `SmartGarden`, Server `10.42.0.1`
+- **Kein Füllstandssensor:** Tank wird über Pumpenlaufzeit geschätzt (Vertrag Abschnitt 3)
+- Vorhanden: Grove-Kabel, 12-V-Netzteil, Schlauch, Wasserbehälter, Grove Relay
+
+## Hardware
 
 | Teil | Typ | ESP32-Pin |
 |---|---|---|
 | Mikrocontroller | ESP32 DevKit (ESP-WROOM-32, CP2102, 30 Pin) | – |
 | Bodenfeuchte | IDUINO resistiv (S/+/−) | S → GPIO34, + → GPIO25 (geschaltet) |
-| Licht | MH-Sensor LDR-Modul (VCC/GND/DO/AO) | AO → GPIO35 |
-| Temp./Luftfeuchte | Grove Temperature&Humidity v1.2 (**DHT11**) | SIG → GPIO4 |
+| Licht | MH-Sensor LDR-Modul | AO → GPIO35 |
+| Temp./Luftfeuchte | Grove v1.2 (**DHT11**) | SIG → GPIO4 |
 | Anzeige | Grove LED Bar v2.0 (MY9221) | DI → GPIO18, DCKI → GPIO19 |
-| Summer | Piezo LF-PB30W35B (aktiv, 9 V/9 mA) | GPIO26 (direkt oder über NPN) |
-| Pumpen-Relais | Grove Relay, HLS8L-DC3V-S-C (3-V-Spule, 10 A/30 V DC) | SIG → GPIO27 |
-| Pumpe | 12 V DC Membranpumpe 385 | über Relais, eigenes 12-V-Netzteil |
-| Tank-Füllstand | **fehlt** | reserviert GPIO32 |
+| Summer | Piezo LF-PB30W35B (aktiv) | GPIO26 |
+| Pumpen-Relais | Grove Relay HLS8L-DC3V-S-C | SIG → GPIO27 |
+| Pumpe | 12 V DC 385 | über Relais |
+| Taster „Tank voll“ | BOOT-Taste onboard | GPIO0 (nur nach dem Booten lesen) |
 | Status-LED | Onboard | GPIO2 |
 
-Noch offen für die Pumpe: 12-V-Netzteil (≥ 1,5 A), Freilaufdiode 1N4007, Schlauch, Wasserbehälter; Grove-auf-Jumper-Kabel für DHT, LED-Bar, Relais.
+## Firmware (`firmware/smart_garden/`)
 
-## Firmware (`firmware/`)
+Dateien:
 
-- PlatformIO, Arduino-Framework, Board `esp32dev`
-- Bibliotheken: `adafruit/DHT sensor library`, `Seeed Grove LED Bar`, `bblanchon/ArduinoJson`, eingebautes `HTTPClient`/`WiFiClientSecure`
-- `firmware/include/secrets.h.example` → lokal nach `secrets.h` kopieren (WLAN, Server-URL, API-Key; gitignored)
+- `smart_garden.ino` – Hauptprogramm
+- `config.h` – Pins, Kalibrierwerte, Standard-Config
+- `secrets.h.example` → Florian kopiert nach `secrets.h` (WLAN, Server-URL, API-Key; gitignored)
+- `README.md` – Board-Paket, Bibliotheken, Upload-Schritte für die Arduino IDE
+
+Arduino-Setup:
+
+- Boardverwalter: **esp32 by Espressif Systems**, Board **ESP32 Dev Module**
+- Bibliotheksverwalter: **DHT sensor library** (Adafruit) + **Adafruit Unified Sensor**, **Grove LED Bar** (Seeed), **ArduinoJson** (Benoit Blanchon, v7)
 
 Funktionen:
 
 1. WLAN mit Auto-Reconnect, Status auf Onboard-LED
-2. Sensoren lesen: Median aus 5 Messungen, Kalibrierung roh → %, Fehlercodes; Bodensensor nur während der Messung versorgen
-3. POST alle `interval_s` Sekunden nach Vertrag, Antwort auswerten (`commands`, `config`)
-4. **Lokale Bewässerungslogik** mit harten Grenzen (max. Laufzeit pro Lauf, Pause, Tageslimit), funktioniert auch ohne Server; Relais beim Boot sicher AUS
-5. LED-Bar zeigt Bodenfeuchte (0–10 Segmente) → ohne Handy lesbar (Barrierefreiheit)
-6. Summer bei kritischen Zuständen, per Config abschaltbar
-7. Serielles Log (115200 Baud) und Test-Modus pro Sensor
-8. Phase 3: HTTPS mit hinterlegtem Zertifikat des Pi (Certificate Pinning)
-
-## KI-Modul (`ai/`)
-
-Reines Python (numpy, optional scikit-learn), läuft im Server-Prozess auf dem Pi.
-
-1. **Wasserbedarf-Prognose:** Trend der Bodenfeuchte (Regression, Pumpenereignisse herausgerechnet) → Stunden bis `moisture_min_pct`, korrigiert nach Temperatur/Licht
-2. **Anomalie-Erkennung:** robuster Z-Score (Median/MAD) + Sprungerkennung + „Sensor hängt“
-3. **Pflanzenstress-Score** 0–100 mit Begründungen
-4. **Wasserersparnis-Schätzung** gegenüber festem Gießplan (Nachhaltigkeit/CO₂)
-5. Unit-Tests mit synthetischen Daten
+2. Sensoren: Median aus 5 Messungen, roh → %, Fehlercodes; Bodensensor nur beim Messen versorgen
+3. POST alle `interval_s` nach Vertrag, Antwort auswerten (`commands`, `config`), Config im Flash speichern
+4. **Lokale Bewässerung** mit harten Grenzen (Laufzeit/Lauf, Pause, Tageslimit), läuft auch ohne Server; Relais beim Boot sicher AUS
+5. **Tank-Schätzung** in NVS (Preferences), `tank_refilled` per Command oder BOOT-Taste 3 s; Trockenlaufschutz ≤ 5 %
+6. LED-Bar: Bodenfeuchte 0–10 Segmente; blinkt bei Tank leer / identify
+7. Summer bei kritischen Zuständen (Tank leer, Sensorfehler), per Config abschaltbar
+8. Serielles Log 115200 Baud; Test-Sketch pro Sensor für den Aufbau (`firmware/tests/`)
+9. Phase 3: HTTPS mit hinterlegtem Zertifikat des Pi (Certificate Pinning)
 
 ## Tools (`tools/`)
 
-- `fake_esp.py`: simuliert den ESP (Tagesverlauf, Austrocknen, Gießen, Anomalien), damit Claude-Web ohne Hardware testen kann
+- `fake_esp.py`: simuliert den ESP inkl. Tank und Befehlen – damit Claude-Web ohne Hardware testen kann
 
 ## Reihenfolge
 
 | Phase | Inhalt |
 |---|---|
-| 0 | Plan, Vertrag, Verkabelung, `tools/fake_esp.py`, KI-Stub |
-| 1 | Firmware: alle Sensoren lesen + seriell ausgeben, dann POST an Server |
-| 2 | LED-Bar, Summer, Kalibrierung; KI v1 (Prognose + Anomalien) |
-| 3 | Relais/Pumpe + lokale Bewässerungslogik; HTTPS/Pinning; Stress-Score |
-| 4 | Tests, Hardware-Doku (Fotos), Beitrag zu Sicherheitsanalyse & Präsentation |
+| 0 | Plan, Vertrag, Verkabelung (✓), `tools/fake_esp.py` |
+| 1 | Test-Sketches je Sensor; Firmware liest alle Sensoren + serielle Ausgabe |
+| 2 | POST an Server, LED-Bar, Summer, Kalibrierung |
+| 3 | Relais/Pumpe, lokale Bewässerung, Tank-Schätzung, HTTPS/Pinning |
+| 4 | Tests, Fotos/Schaltplan, Beitrag Sicherheitsanalyse & Präsentation |
 
 ## Status
 
 Erledigt:
 
 - [x] Aufgabe gelesen, Hardware gesichtet
-- [x] Plan, API-Vertrag v1.0, Regeln (`.claude/`)
+- [x] Plan, API-Vertrag v1.1, Regeln (`.claude/`)
 - [x] Pinout + Verkabelungsplan (`docs/hardware/verkabelung.md`)
+- [x] Offene Fragen geklärt (KI → Web, Hotspot, Arduino IDE, Tank-Schätzung)
 
 Als Nächstes:
 
 - [ ] `tools/fake_esp.py`
-- [ ] KI-Stub `ai/garden_ai.py`
-- [ ] Firmware Phase 1 (Sensoren seriell)
+- [ ] Test-Sketches je Sensor
+- [ ] Firmware Phase 1–2
 
-Offene Fragen / Blocker:
+Blocker:
 
-- Netzwerk: gemeinsames WLAN für ESP32 und Pi? (Client-Isolation im Hackathon-WLAN?)
-- Teile für die Pumpe (Netzteil, Schlauch, Behälter), Grove-Kabel
+- WLAN-Passwort des Pi-Hotspots (kommt von Nico)

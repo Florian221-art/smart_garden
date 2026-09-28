@@ -1,18 +1,21 @@
-# API-Vertrag ESP32 ⇄ Server ⇄ KI-Modul
+# API-Vertrag ESP32 ⇄ Server
 
-Version: **1.0** (28.09.2026) · Besitzer: Claude-ESP · Änderungen nur per `[CONTRACT]`-PR (siehe `.claude/CLAUDE.md`).
+Version: **1.1** (28.09.2026) · Besitzer: Claude-ESP · Änderungen nur per `[CONTRACT]`-PR (siehe `.claude/CLAUDE.md`).
 
-## 1. Architektur
+## 1. Architektur und Netzwerk
 
 ```
-[ESP32 + Sensoren/Aktoren] --HTTP(S) POST alle N s--> [Raspberry Pi 5]
+            WLAN-Hotspot "SmartGarden" (vom Pi aufgespannt, WPA2)
+[ESP32 + Sensoren/Aktoren] --HTTP(S) POST alle N s--> [Raspberry Pi 5, 10.42.0.1]
                                                      ├─ Caddy (HTTPS, Reverse Proxy)
-                                                     ├─ FastAPI-Server (server/)  ──import──> KI-Modul (ai/)
+                                                     ├─ FastAPI-Server (server/) + KI-Modul (ai/)
                                                      ├─ SQLite-DB
-                                                     └─ Dashboard (web/, statisch, von FastAPI ausgeliefert)
-[Browser Schüler/Lehrer] --HTTPS--> Pi
+                                                     └─ Dashboard (web/)
+[Browser Schüler/Lehrer im Hotspot] --HTTPS--> Pi
 ```
 
+- Der Pi spannt ein **eigenes WLAN** auf (NetworkManager-Hotspot, Standard-IP des Pi: `10.42.0.1`). ESP32 und Laptops verbinden sich damit. Unabhängig vom Hackathon-WLAN.
+- Server-URL für den ESP: Phase 1 `http://10.42.0.1:8000`, ab Phase 3 `https://10.42.0.1`.
 - Der ESP baut **nur ausgehende** Verbindungen auf (kein Webserver auf dem ESP). Befehle an den ESP kommen in der **Antwort** auf den Messwert-POST.
 - Der ESP bewässert bei Bedarf **selbstständig** (funktioniert auch, wenn der Server ausfällt). Der Server kann Grenzwerte ändern und manuelles Gießen anstoßen.
 
@@ -42,7 +45,8 @@ Body (alle Messfelder dürfen `null` sein, wenn Sensor fehlt/defekt):
   "light_raw": 1200,
   "air_temp_c": 22.0,
   "air_humidity_pct": 55.0,
-  "water_level_pct": null,
+  "tank_remaining_ml": 1240,
+  "water_level_pct": 82.7,
   "pump_on_s_since_last": 0.0,
   "auto_water_triggered": false,
   "errors": []
@@ -62,10 +66,11 @@ Body (alle Messfelder dürfen `null` sein, wenn Sensor fehlt/defekt):
 | `light_raw` | int 0–4095 / null | ADC-Rohwert |
 | `air_temp_c` | float / null | Lufttemperatur (DHT11, ±2 °C) |
 | `air_humidity_pct` | float / null | Luftfeuchte (DHT11, ±5 %) |
-| `water_level_pct` | float / null | Tankfüllstand, **aktuell kein Sensor → immer null** |
+| `tank_remaining_ml` | float ≥ 0 | **Geschätzte** Restmenge im Tank (siehe Abschnitt 3) |
+| `water_level_pct` | float 0–100 | **Geschätzter** Füllstand = `tank_remaining_ml / tank_capacity_ml × 100` |
 | `pump_on_s_since_last` | float ≥ 0 | Pumpenlaufzeit seit letztem erfolgreichen POST |
 | `auto_water_triggered` | bool | ESP hat seit letztem POST selbst gegossen |
-| `errors` | string[] | Fehlercodes, z. B. `"dht_read_failed"`, `"soil_out_of_range"` |
+| `errors` | string[] | Fehlercodes, z. B. `"dht_read_failed"`, `"soil_out_of_range"`, `"tank_empty"` |
 
 Den **Zeitstempel setzt der Server** (`received_at`, UTC). Der ESP sendet keine Uhrzeit.
 
@@ -77,7 +82,8 @@ Den **Zeitstempel setzt der Server** (`received_at`, UTC). Der ESP sendet keine 
   "commands": {
     "pump_run_s": 0,
     "buzzer": false,
-    "identify": false
+    "identify": false,
+    "tank_refilled": false
   },
   "config": {
     "interval_s": 15,
@@ -87,7 +93,10 @@ Den **Zeitstempel setzt der Server** (`received_at`, UTC). Der ESP sendet keine 
     "max_pump_s_per_run": 5,
     "pump_cooldown_s": 300,
     "max_pump_s_per_day": 60,
-    "buzzer_enabled": true
+    "buzzer_enabled": true,
+    "tank_capacity_ml": 1500,
+    "pump_flow_ml_per_s": 20,
+    "tank_low_pct": 20
   }
 }
 ```
@@ -95,6 +104,7 @@ Den **Zeitstempel setzt der Server** (`received_at`, UTC). Der ESP sendet keine 
 - `commands` werden **genau einmal** ausgeliefert (danach auf Server als erledigt markieren).
 - `pump_run_s`: manuelles Gießen (vom Admin im Dashboard), ESP begrenzt hart auf `max_pump_s_per_run`.
 - `identify`: LED-Bar blinkt 5 s (Gerät im Raum finden).
+- `tank_refilled`: Tank wurde aufgefüllt → ESP setzt `tank_remaining_ml = tank_capacity_ml`.
 - `config` wird jedes Mal komplett mitgeschickt; ESP übernimmt die Werte (mit eigenen Sicherheitsgrenzen).
 
 ### Fehler
@@ -107,55 +117,27 @@ Den **Zeitstempel setzt der Server** (`received_at`, UTC). Der ESP sendet keine 
 
 Der ESP wertet nur `200` aus; bei allem anderen: loggen und beim nächsten Intervall erneut senden.
 
-## 3. Werte, die der Server selbst ableitet
+## 3. Tank-Füllstand ohne Sensor (Schätzung)
 
-- Wasserverbrauch: `ml = pump_on_s × PUMP_FLOW_ML_PER_S` (Konstante im Server-Config, zunächst **20 ml/s**, wird gemessen).
-- Warnungen (Alerts) erzeugt der Server aus Grenzwerten + KI-Ergebnis. Texte **nur als Schlüssel** (`message_key`), Übersetzung im Frontend.
+Es gibt keinen Füllstandssensor. Der Füllstand wird aus der Pumpenlaufzeit geschätzt:
 
-## 4. KI-Modul (ai/) – Python-Schnittstelle
-
-Der Server importiert das Modul direkt (kein eigener Dienst):
-
-```python
-from ai.garden_ai import analyze
-
-result = analyze(readings, config)
+```
+tank_remaining_ml -= pump_laufzeit_s × pump_flow_ml_per_s
 ```
 
-- `readings`: `list[dict]`, aufsteigend nach Zeit, max. 7 Tage. Jedes dict hat die Felder aus Abschnitt 2 **plus** `"received_at"` (ISO-8601-String, UTC).
-- `config`: das `config`-Objekt aus Abschnitt 2.
-- Laufzeit < 1 s auf dem Pi 5; keine Netzwerkzugriffe; wirft keine Exceptions (bei zu wenig Daten → Felder `null`).
+- **Der ESP ist maßgeblich:** Er rechnet mit, speichert den Wert dauerhaft im Flash (überlebt Neustart) und meldet ihn bei jedem POST.
+- Nachfüllen: Button „Tank aufgefüllt“ im Dashboard → Command `tank_refilled` (alternativ: BOOT-Taste am ESP 3 s halten).
+- `tank_capacity_ml` und `pump_flow_ml_per_s` stellt der Admin im Dashboard ein. Durchfluss einmal auspessen: Pumpe 10 s laufen lassen, Menge im Messbecher ablesen, durch 10 teilen.
+- Unter `tank_low_pct` → Warnung (Server-Alert, LED-Bar, Summer). Bei ≤ 5 % stoppt der ESP die automatische Bewässerung (Trockenlaufschutz) und meldet `tank_empty`.
+- Der Server berechnet den Wasserverbrauch über `pump_on_s_since_last × pump_flow_ml_per_s`.
 
-Rückgabe:
+## 4. Warnungen
 
-```json
-{
-  "model_version": "0.1.0",
-  "generated_at": "2026-09-28T14:00:00Z",
-  "water_forecast": {
-    "hours_until_dry": 18.5,
-    "recommend_water_now": false,
-    "confidence": 0.7
-  },
-  "anomalies": [
-    {"field": "air_temp_c", "received_at": "2026-09-28T13:55:00Z", "value": 35.2, "score": 4.1, "message_key": "anomaly.temp_spike"}
-  ],
-  "stress": {
-    "score": 35,
-    "level": "ok",
-    "reasons": ["soil_dry"]
-  },
-  "water_saved_ml_estimate": 1200
-}
-```
-
-- `stress.level`: `"ok" | "warn" | "critical"`
-- `stress.reasons` und `message_key` sind Übersetzungsschlüssel. Liste aller Schlüssel: `ai/MESSAGE_KEYS.md` (pflegt Claude-ESP).
-- Bis das echte Modell fertig ist, liefert ein **Stub** gültige Dummy-Werte mit identischer Struktur.
+Warnungen (Alerts) erzeugt der Server aus Grenzwerten, Fehlercodes und KI-Ergebnis. Texte **nur als Schlüssel** (`message_key`), Übersetzung im Frontend.
 
 ## 5. Test ohne Hardware
 
-`tools/fake_esp.py` (Claude-ESP) sendet realistische Fake-Messwerte im Vertragsformat an eine beliebige URL:
+`tools/fake_esp.py` (Claude-ESP) sendet realistische Fake-Messwerte im Vertragsformat, wertet die Antwort aus (inkl. `pump_run_s`, `tank_refilled`) und simuliert den Tank:
 
 ```
 python tools/fake_esp.py --url http://localhost:8000 --key <api-key> --interval 2
