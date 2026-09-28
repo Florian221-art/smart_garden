@@ -62,3 +62,29 @@ export interface HistoryResponse {
   config: DeviceConfig
   points: HistoryPoint[]
 }
+
+// GET/PUT/DELETE /api/v1/devices/{id}/demo
+export interface DemoState {
+  active: boolean
+  overrides: Partial<Record<OverrideField, number>>
+  force_errors: string[]
+  scenario: string | null
+  started_at: string | null
+  expires_at: string | null
+  remaining_s: number
+}
+
+export type OverrideField =
+  | 'soil_moisture_pct'
+  | 'light_pct'
+  | 'air_temp_c'
+  | 'air_humidity_pct'
+  | 'water_level_pct'
+
+// GET/POST /api/v1/devices/{id}/commands (noch nicht zugestellte Befehle)
+export interface PendingCommands {
+  pump_run_s: number
+  buzzer: boolean
+  identify: boolean
+  tank_refilled: boolean
+}
