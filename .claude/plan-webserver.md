@@ -219,6 +219,8 @@ _(von Claude-Web gepflegt)_
       jede Grafik auch als Tabelle (WCAG), hell/dunkel mit geprueften Farben
 - [x] `python -m app.dev_seed <id> --hours 48`: simulierter Verlauf fuer die Entwicklung (nicht auf dem Pi!)
 - [x] Gerendert und geprueft (Desktop hell/dunkel, Mobil 390 px, Hover, 7-Tage-Ansicht)
+- [x] `pydantic` 2.9.2 -> 2.13.5: alte Version hatte keine fertigen Pakete fuer Python 3.14 (Nicos Mac) und
+      liess sich dort nicht bauen. Geprueft: fertige Pakete fuer macOS arm64/Py3.14 und Pi (aarch64, Py3.11/3.13)
 
 ### Als Naechstes
 
