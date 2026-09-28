@@ -12,13 +12,13 @@ Stand: 28.09.2026 · Board: ESP32 DevKit V1 (ESP-WROOM-32, 30 Pins, CP2102)
 | GPIO25 | D25 | Versorgung Bodensensor (nur beim Messen an) | IDUINO + | Ausgang |
 | GPIO35 | D35 | Licht analog | LDR-Modul AO | Eingang (ADC1) |
 | GPIO32 | D32 | *reserviert:* Tank-Füllstand | – | Eingang (ADC1) |
-| GPIO4 | D4 | Temperatur/Luftfeuchte (1-Wire-Protokoll DHT) | Grove DHT11 SIG | bidirektional |
+| GPIO4 | D4 | Temperatur/Luftfeuchte (DHT-Protokoll) | Grove DHT11 SIG | bidirektional |
 | GPIO18 | D18 | LED-Bar Daten | Grove LED Bar DI | Ausgang |
 | GPIO19 | D19 | LED-Bar Takt | Grove LED Bar DCKI | Ausgang |
 | GPIO26 | D26 | Summer | Piezo (+) bzw. NPN-Basis | Ausgang |
 | GPIO27 | D27 | Pumpen-Relais | Grove Relay SIG | Ausgang |
 | GPIO2 | D2 | Status-LED (onboard) | – | Ausgang |
-| 3V3 | 3V3 | 3,3 V Versorgung | alle Module außer Summer | – |
+| 3V3 | 3V3 | 3,3 V Versorgung | alle Module außer Summer Var. B | – |
 | VIN | VIN | 5 V vom USB | nur Summer (Variante B) | – |
 | GND | GND | Masse | alle | – |
 
@@ -27,7 +27,7 @@ Warum diese Pins:
 - Analoge Sensoren nur an **ADC1** (GPIO32–39). ADC2 funktioniert nicht, solange WLAN aktiv ist.
 - GPIO34/35 sind reine Eingänge – perfekt für Sensoren.
 - Strapping-Pins (GPIO0, 2, 12, 15) nicht für externe Bauteile, sonst bootet der ESP evtl. nicht.
-- GPIO27 für das Relais ist beim Booten LOW → Pumpe läuft beim Einschalten nicht an.
+- GPIO27 ist beim Booten LOW → Pumpe läuft beim Einschalten nicht an.
 
 ## 2. Grove-Kabelfarben
 
@@ -110,7 +110,7 @@ Freilaufdiode 1N4007 direkt an der Pumpe:
 ```
 
 - Das Relais trennt den 12-V-Kreis galvanisch vom ESP32 – **keine** gemeinsame Masse nötig.
-- Die Pumpe hat keine markierte Polarität? Dann einmal kurz testen: Pumpt sie in die falsche Richtung, Anschlüsse tauschen (Diode mit umdrehen).
+- Pumpe ohne markierte Polarität? Kurz testen; pumpt sie falsch herum, Anschlüsse tauschen (Diode mit umdrehen).
 - Pumpe nie trocken laufen lassen.
 
 ### Summer LF-PB30W35B (rot = +, schwarz = −)
@@ -133,32 +133,32 @@ GPIO26 ── 1 kΩ ── Basis (NPN)
 VIN (5 V) ── Summer rot (+)
 ```
 
-## 4. Gesamtübersicht
+## 4. Gesamtübersicht (Draufsicht, USB unten)
 
 ```
-                        +-----------------------+
-   LDR AO  -----------> | D35               D23 |
-   Boden S -----------> | D34               D22 |
-   (Tank, später) ----> | D32               TX0 |
-                        | D33               RX0 |
-   Boden + <----------- | D25               D21 |
-   Summer  <----------- | D26               D19 | -----> LED-Bar DCKI (weiß)
-   Relais SIG <-------- | D27               D18 | -----> LED-Bar DI  (gelb)
-                        | D14                D5 |
-                        | D12               TX2 |
-                        | D13               RX2 |
-                        | GND                D4 | <----> DHT11 SIG (gelb)
-                        | VIN                D2 |  (Onboard-LED)
-                        |                   D15 |
-                        |                   GND | -----> GND-Schiene
-                        |                   3V3 | -----> 3V3-Schiene
-                        +--------[USB]----------+
+                           +-------------------------+
+                           | EN                  D23 |
+                           | VP                  D22 |
+                           | VN                  TX0 |
+   Boden S (IDUINO) -----> | D34                 RX0 |
+   LDR AO -------------->  | D35                 D21 |
+   (Tank, spaeter) ----->  | D32                 D19 | -----> LED-Bar DCKI (weiss)
+                           | D33                 D18 | -----> LED-Bar DI (gelb)
+   Boden + (Versorg.) <--- | D25                  D5 |
+   Summer <--------------- | D26                 TX2 |
+   Relais SIG (gelb) <---- | D27                 RX2 |
+                           | D14                  D4 | <----> DHT11 SIG (gelb)
+                           | D12                  D2 |  (Onboard-LED)
+                           | D13                 D15 |
+                           | GND                 GND | -----> GND-Schiene
+   (Summer Var. B) 5 V --- | VIN                 3V3 | -----> 3V3-Schiene
+                           +---------[USB]-----------+
 
    3V3-Schiene: LDR VCC, DHT11 VCC, LED-Bar VCC, Relais VCC
    GND-Schiene: LDR GND, DHT11 GND, LED-Bar GND, Relais GND, Bodensensor −, Summer −
 ```
 
-## 5. Einkaufs-/Besorgliste
+## 5. Besorgliste
 
 - [ ] Grove-auf-Jumper-Kabel (Buchse) ×3 für DHT11, LED-Bar, Relais
 - [ ] Jumper-Kabel männlich-männlich / männlich-weiblich
@@ -166,7 +166,7 @@ VIN (5 V) ── Summer rot (+)
 - [ ] Freilaufdiode 1N4007
 - [ ] Silikonschlauch passend zur Pumpe, Wasserbehälter
 - [ ] optional: NPN-Transistor + 1 kΩ (Summer), Füllstandssensor/Schwimmerschalter
-- [ ] Micro-USB-**Datenkabel** für den ESP32
+- [ ] Micro-USB-**Datenkabel** für den ESP32 (kein reines Ladekabel)
 
 ## 6. Inbetriebnahme in dieser Reihenfolge
 
