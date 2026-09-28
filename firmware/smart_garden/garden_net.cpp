@@ -14,9 +14,9 @@ void netMarkError() { errorUntil = millis() + 5000; }
 void netBegin() {
   WiFi.mode(WIFI_STA);
   WiFi.setAutoReconnect(true);
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  WiFi.begin(CFG_WIFI_SSID, CFG_WIFI_PASSWORD);
   lastAttempt = millis();
-  Serial.printf("[WLAN] verbinde mit \"%s\" ...\n", WIFI_SSID);
+  Serial.printf("[WLAN] verbinde mit \"%s\" ...\n", CFG_WIFI_SSID);
 }
 
 bool netConnected() { return WiFi.status() == WL_CONNECTED; }
@@ -33,14 +33,14 @@ void netUpdate() {
   if (!c && millis() - lastAttempt > WIFI_RETRY_MS) {
     lastAttempt = millis();
     WiFi.disconnect();
-    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+    WiFi.begin(CFG_WIFI_SSID, CFG_WIFI_PASSWORD);
   }
 }
 
 int netPostReading(const JsonDocument &body, JsonDocument &response) {
   if (!netConnected()) return -1;
 
-  String url = String(SERVER_URL) + "/api/v1/readings";
+  String url = String(CFG_SERVER_URL) + "/api/v1/readings";
   String payload;
   serializeJson(body, payload);
 
@@ -63,7 +63,7 @@ int netPostReading(const JsonDocument &body, JsonDocument &response) {
   http.setTimeout(HTTP_TIMEOUT_MS);
   http.setConnectTimeout(HTTP_TIMEOUT_MS);
   http.addHeader("Content-Type", "application/json");
-  http.addHeader("X-API-Key", API_KEY);
+  http.addHeader("X-API-Key", CFG_API_KEY);
 
   int code = http.POST(payload);
   if (code == 200) {
