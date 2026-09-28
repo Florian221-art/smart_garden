@@ -2,7 +2,7 @@
 #pragma once
 #include <Arduino.h>
 
-#define FW_VERSION "0.2.2"
+#define FW_VERSION "0.2.3"
 
 // ---------------------------------------------------------------------------
 // Zugangsdaten (WLAN, Server, API-Key) – werden OBEN in smart_garden.ino eingetragen
@@ -23,8 +23,8 @@ extern bool CFG_BUZZER_ENABLED;
 constexpr uint8_t PIN_SOIL = 34;      // Kapazitiver Bodenfeuchtesensor AOUT (ADC1)
 constexpr uint8_t PIN_LIGHT = 35;     // LDR-Modul AO (ADC1)
 constexpr uint8_t PIN_DHT = 4;        // DHT11 SIG
-constexpr uint8_t PIN_LEDBAR_DI = 18; // Grove LED Bar DI (Daten)
-constexpr uint8_t PIN_LEDBAR_DCKI = 19; // Grove LED Bar DCKI (Takt)
+constexpr uint8_t PIN_LEDBAR_DCKI = 18; // Grove LED Bar DCKI (Takt)  – gelbes Grove-Kabel (im Test ermittelt)
+constexpr uint8_t PIN_LEDBAR_DI = 19;   // Grove LED Bar DI (Daten)   – weißes Grove-Kabel
 constexpr uint8_t PIN_BUZZER = 26;    // aktiver Summer (+)
 constexpr uint8_t PIN_RELAY = 27;     // Grove Relay SIG (HIGH = Pumpe an)
 constexpr uint8_t PIN_BOOT_BTN = 0;   // BOOT-Taste (3 s halten = Tank aufgefüllt)

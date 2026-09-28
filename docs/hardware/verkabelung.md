@@ -11,8 +11,8 @@ Stand: 28.09.2026 (v2: kapazitiver Bodenfeuchtesensor) · Board: ESP32 DevKit V1
 | GPIO34 | D34 | Bodenfeuchtesensor (kapazitiv v2.0, HW-390) | AOUT (gelb) |
 | GPIO35 | D35 | Lichtsensor LDR-Modul | AO |
 | GPIO4 | D4 | Temp./Luftfeuchte Grove v1.2 (DHT11) | SIG (gelb) |
-| GPIO18 | D18 | Grove LED Bar v2.0 | DI (gelb) |
-| GPIO19 | D19 | Grove LED Bar v2.0 | DCKI (weiß) |
+| GPIO18 | D18 | Grove LED Bar v2.0 | DCKI / Takt (gelb) |
+| GPIO19 | D19 | Grove LED Bar v2.0 | DI / Daten (weiß) |
 | GPIO26 | D26 | Summer | rot (+) |
 | GPIO27 | D27 | Grove Relay (Pumpe) | SIG (gelb) |
 | GPIO0 | – | BOOT-Taste (onboard) | 3 s halten = Tank aufgefüllt |
@@ -36,7 +36,7 @@ Grove-Stecker (DHT11, LED-Bar, Relais – 4-polig) und Bodensensor (3-polig):
 | Farbe | Bedeutung |
 |---|---|
 | Gelb | Signal (SIG / DI / AOUT) |
-| Weiß | 2. Signal (nur LED-Bar: DCKI) |
+| Weiß | 2. Signal (nur LED-Bar) |
 | Rot | VCC → **3V3** |
 | Schwarz | GND |
 
@@ -84,12 +84,12 @@ Pull-up-Widerstand ist auf dem Grove-Board schon drauf.
 
 | Grove-Kabel | → | ESP32 |
 |---|---|---|
-| Gelb (DI) | → | GPIO18 |
-| Weiß (DCKI) | → | GPIO19 |
+| Gelb | → | GPIO18 (bei der LED-Bar = Takt DCKI) |
+| Weiß | → | GPIO19 (bei der LED-Bar = Daten DI) |
 | Rot (VCC) | → | 3V3-Schiene |
 | Schwarz (GND) | → | GND-Schiene |
 
-Anzeige: Segment 1 = rot (trocken) … Segment 10 = grün (nass). Füllt sich die Bar falsch herum → seriell `ledflip`.
+Anzeige: Segment 1 = rot (trocken) … Segment 10 = grün (nass). Im Test (28.09.) ergab sich: gelbes Kabel = Takt, weißes = Daten – in der Firmware so eingestellt. Reagiert die Bar gar nicht, seriell `ledswap` probieren.
 
 ### Grove Relay (Pumpe)
 
@@ -147,8 +147,8 @@ VIN (5 V) ── Summer rot (+)
                            | VN                  TX0 |
    Boden AOUT (gelb) ----> | D34                 RX0 |
    LDR AO -------------->  | D35                 D21 |
-   (frei)                  | D32                 D19 | -----> LED-Bar DCKI (weiss)
-                           | D33                 D18 | -----> LED-Bar DI (gelb)
+   (frei)                  | D32                 D19 | -----> LED-Bar Daten (weiss)
+                           | D33                 D18 | -----> LED-Bar Takt (gelb)
    (frei)                  | D25                  D5 |
    Summer + <------------- | D26                 TX2 |
    Relais SIG (gelb) <---- | D27                 RX2 |
