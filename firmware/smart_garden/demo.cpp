@@ -11,6 +11,13 @@ static float val[F_COUNT] = {0};
 static bool errDht = false, errSoil = false, errLight = false;
 static uint32_t untilMs = 0;
 static bool active = false;
+static bool soilKick = false;  // neue Bodenfeuchte-Vorgabe -> sofort einmal gießen (Demo)
+
+bool demoTakeSoilKick() {
+  bool k = soilKick;
+  soilKick = false;
+  return k;
+}
 
 static int fieldIndex(const String &name) {
   for (int i = 0; i < F_COUNT; i++)
@@ -82,6 +89,7 @@ void demoApplyFromServer(JsonVariantConst demo) {
     if (newHas[i] != has[i] || (newHas[i] && newVal[i] != val[i])) changed = true;
   if (nDht != errDht || nSoil != errSoil || nLight != errLight) changed = true;
 
+  if (newHas[F_SOIL] && (!has[F_SOIL] || newVal[F_SOIL] != val[F_SOIL])) soilKick = true;
   for (int i = 0; i < F_COUNT; i++) { has[i] = newHas[i]; val[i] = newVal[i]; }
   errDht = nDht; errSoil = nSoil; errLight = nLight;
   startTimer(ttl);
@@ -97,6 +105,7 @@ void demoSetValue(const String &field, float value, uint32_t seconds) {
   }
   has[i] = true;
   val[i] = value;
+  if (i == F_SOIL) soilKick = true;
   startTimer(seconds);
   applyTankIfNeeded(true);
   demoPrint();

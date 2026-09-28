@@ -81,16 +81,27 @@ static void measureAndAct() {
   displaySetSoil(current.soil_pct, current.soil_ok);
   displaySetTankEmpty(tankIsEmpty());
 
-  // Alarm (Summer) bei kritischen Zuständen. Piept nur, wenn ein Problem NEU auftritt,
-  // danach höchstens alle ALARM_REPEAT_MS. DHT11 liefert gelegentlich einzelne
-  // Fehlmessungen -> erst nach 3 Fehlern in Folge als Ausfall werten.
-  static uint8_t dhtFails = 0;
-  dhtFails = current.dht_ok ? 0 : min(dhtFails + 1, 10);
+  // Alarm (Summer) bei kritischen Zuständen. Sensorfehler zählen erst, wenn sie
+  // länger als 60 s anhalten (DHT11 setzt gern mal kurz aus). Siehe buzzerAlarm().
+  static uint32_t dhtBadSince = 0, soilBadSince = 0;
+  uint32_t nowMs = millis();
+  if (current.dht_ok) dhtBadSince = 0; else if (!dhtBadSince) dhtBadSince = nowMs;
+  if (current.soil_ok) soilBadSince = 0; else if (!soilBadSince) soilBadSince = nowMs;
+  bool demoErr = demoActive();  // im Demo-Modus Fehler sofort melden
   uint8_t problems = 0;
   if (tankIsEmpty()) problems |= 1;
-  if (!current.soil_ok) problems |= 2;
-  if (dhtFails >= 3) problems |= 4;
+  if (soilBadSince && (demoErr || nowMs - soilBadSince > 60000)) problems |= 2;
+  if (dhtBadSince && (demoErr || nowMs - dhtBadSince > 60000)) problems |= 4;
   buzzerAlarm(problems);
+
+  // Demo: neue Bodenfeuchte-Vorgabe unter dem Grenzwert -> sofort einmal gießen (ohne Pause)
+  if (demoTakeSoilKick() && current.soil_ok && current.soil_pct < settings.moisture_min_pct && !pumpRunning()) {
+    if (pumpStart(settings.max_pump_s_per_run, "Demo", false)) {
+      autoWateredSinceLast = true;
+      wateringSession = true;
+      return;
+    }
+  }
 
   // Automatische Bewässerung
   if (!settings.auto_water || !current.soil_ok || pumpRunning()) return;
@@ -109,6 +120,13 @@ static void measureAndAct() {
   }
   if (current.soil_pct < settings.moisture_min_pct) wateringSession = true;
   if (current.soil_pct >= settings.moisture_target_pct) wateringSession = false;
+  if (wateringSession && pumpCooldownActive()) {
+    static uint32_t lastCdMsg = 0;
+    if (lastCdMsg == 0 || millis() - lastCdMsg > 30000) {
+      lastCdMsg = millis();
+      Serial.printf("[PUMPE] Erde trocken, Pause nach letztem Gießen: noch %lu s\n", (unsigned long)pumpCooldownLeftS());
+    }
+  }
   if (wateringSession && !pumpCooldownActive()) {
     if (pumpStart(settings.max_pump_s_per_run, "auto", true)) {
       autoWateredSinceLast = true;

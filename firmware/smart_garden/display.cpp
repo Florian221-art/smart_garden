@@ -16,7 +16,8 @@ static uint8_t beepsLeft = 0;
 static bool buzzerOn = false;
 static uint32_t buzzerNext = 0;
 static uint32_t lastAlarm = 0;
-static uint8_t lastProblems = 0;
+static uint8_t alarmed = 0;           // Probleme, für die schon gepiept wurde
+static uint32_t clearedSince[8] = {0};  // seit wann ein Problem weg ist
 
 // Status-LED
 static uint8_t ledMode = 0;
@@ -60,10 +61,11 @@ void displayTestSegments(int n) {
 }
 
 void displayLedTest() {
-  Serial.println("[LED] Test: Segment 1 (ROT) bis 10 (gruen) – falls gruen zuerst leuchtet: CFG_LEDBAR_REVERSE = true");
+  Serial.println("[LED] Test: Segment 1 muss ROT sein, Segment 2 orange, 3-10 gruen.");
+  Serial.println("[LED] Leuchtet zuerst ein GRUENES Segment -> oben CFG_LEDBAR_REVERSE = true setzen.");
   for (int i = 1; i <= 10; i++) {
     ledbarShow((1u << i) - 1, CFG_LEDBAR_REVERSE);
-    delay(150);
+    delay(250);
   }
   delay(500);
   lastBits = 0xFFFFFFFF;
@@ -114,13 +116,23 @@ void buzzerBeep(uint8_t count) {
 }
 
 void buzzerAlarm(uint8_t problems) {
-  bool isNew = (problems & ~lastProblems) != 0;
-  bool repeat = problems != 0 && millis() - lastAlarm >= ALARM_REPEAT_MS;
-  lastProblems = problems;
+  uint32_t now = millis();
+  // Ein Problem gilt erst als erledigt, wenn es 5 min lang weg war -> kein Dauerpiepen bei Wackelkontakt
+  for (int b = 0; b < 8; b++) {
+    uint8_t m = 1 << b;
+    if (problems & m) clearedSince[b] = 0;
+    else if (alarmed & m) {
+      if (!clearedSince[b]) clearedSince[b] = now ? now : 1;
+      else if (now - clearedSince[b] > 300000) alarmed &= ~m;
+    }
+  }
+  bool isNew = (problems & ~alarmed) != 0;
+  bool repeat = problems != 0 && now - lastAlarm >= ALARM_REPEAT_MS;
+  alarmed |= problems;
   if (!problems || !(isNew || repeat)) return;
-  lastAlarm = millis();
+  lastAlarm = now;
   Serial.printf("[ALARM]%s%s%s\n", (problems & 1) ? " Tank leer (\"refill\" eingeben)" : "",
-                (problems & 2) ? " Bodensensor-Fehler" : "", (problems & 4) ? " DHT11-Fehler" : "");
+                (problems & 2) ? " Bodensensor-Fehler" : "", (problems & 4) ? " DHT11 liefert seit >60 s keine Werte (Kabel D4/3V3/GND pruefen)" : "");
   buzzerBeep(3);
 }
 

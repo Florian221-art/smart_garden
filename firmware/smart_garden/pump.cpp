@@ -22,6 +22,11 @@ bool pumpCooldownActive() {
   return everRan && (millis() - lastStopMs) < settings.pump_cooldown_s * 1000UL;
 }
 
+uint32_t pumpCooldownLeftS() {
+  if (!pumpCooldownActive()) return 0;
+  return settings.pump_cooldown_s - (millis() - lastStopMs) / 1000UL;
+}
+
 bool pumpStart(float seconds, const char *reason, bool respectCooldown) {
   if (running) return false;
   if (tankIsEmpty()) {
