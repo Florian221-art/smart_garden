@@ -25,7 +25,7 @@ Ganz oben in **`smart_garden.ino`** im Block **„EINSTELLUNGEN – HIER ANPASSE
 | `CFG_SERVER_URL` | `http://10.42.0.1:8000` |
 | `CFG_API_KEY` | wird auf dem Server beim Anlegen des Geräts erzeugt |
 | `CFG_DEVICE_ID` | `esp32-kuebel-01` |
-| `CFG_LEDBAR_MODE` | `0` = Zeiger (2 LEDs an der Position: trocken = rot, feucht = grün) · `1` = Füllbalken ab Rot |
+| `CFG_LEDBAR_MODE` | `2` = Trockenheitsbalken ab Grün (Standard: feucht = wenige grüne, je trockener desto mehr, ganz trocken auch orange + rot) · `0` = Zeiger (2 LEDs an der Position: trocken = rot, feucht = grün) · `1` = Füllbalken ab Rot |
 | `CFG_LEDBAR_REVERSE` | `true`, falls die Anzeige gespiegelt erscheint (grün bei trockener Erde) |
 | `CFG_BUZZER_ENABLED` | `false` = Summer komplett stumm |
 
@@ -40,8 +40,8 @@ Ohne gültiges WLAN funktionieren Sensoren, LED-Bar, Pumpe und Demo-Befehle trot
 3. **Hochladen**. Falls „Connecting…“ hängen bleibt: **BOOT**-Taste gedrückt halten, bis der Upload startet.
 4. *Werkzeuge → Serieller Monitor*, **115200 Baud**, Zeilenende **„Neue Zeile“**.
 
-Beim Start: LED-Bar läuft einmal von Segment 1 (rot) bis 10 (grün) durch, der Summer piept kurz.
-Leuchtet dabei zuerst Grün → oben `CFG_LEDBAR_REVERSE = true` setzen (zum Ausprobieren ohne Hochladen: `ledflip`).
+Beim Start: LED-Bar füllt sich einmal von Grün über Orange bis Rot, der Summer piept kurz.
+Leuchtet dabei zuerst Rot → oben `CFG_LEDBAR_REVERSE = true` setzen (zum Ausprobieren ohne Hochladen: `ledflip`).
 
 ## 4. Kalibrieren (einmal, dauert 2 Minuten)
 
@@ -81,7 +81,7 @@ Der Demo-Modus lässt sich im Dashboard auch per Knopf auslösen (Admin). Demo-W
 ## 6. Was die Firmware macht
 
 - Misst alle 2 s: Bodenfeuchte (kapazitiv, GPIO34), Licht (GPIO35), Temperatur/Luftfeuchte (DHT11, GPIO4)
-- LED-Bar: Bodenfeuchte 0–100 % → Position 1–10 (rot = trocken, grün = feucht), als Zeiger (Standard) oder Füllbalken; < 10 % blinkt rot; Tank leer → Segment 1 blinkt schnell; Sensorfehler → Segment 1/10 abwechselnd
+- LED-Bar (Standard `CFG_LEDBAR_MODE = 2`): je trockener, desto mehr LEDs – erst die grünen, unter 20 % zusätzlich Orange, unter 10 % auch Rot (blinkt); Alternativen: Zeiger / Füllbalken ab Rot; Tank leer → Segment 1 blinkt schnell; Sensorfehler → Segment 1/10 abwechselnd
 - Summer: piept nur, wenn ein Problem **neu** auftritt (Tank leer, Sensorfehler), danach höchstens alle 10 min; Grund steht im seriellen Monitor als `[ALARM] …`
 - **Tank leer (geschätzt) sperrt die Pumpe** (Trockenlaufschutz). Nach dem Auffüllen `refill` eingeben oder BOOT 3 s halten.
 - Automatisches Gießen: unter `moisture_min_pct` startet eine Gieß-Sitzung, Pumpe läuft stoßweise (`max_pump_s_per_run`, Pause `pump_cooldown_s`) bis `moisture_target_pct` erreicht ist
