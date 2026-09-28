@@ -10,8 +10,8 @@ C++ / Arduino-Framework. Verkabelung: [`docs/hardware/verkabelung.md`](../../doc
 3. *Werkzeuge → Board → Boardverwalter:* **esp32 by Espressif Systems** installieren (Version **3.x**).
 4. *Werkzeuge → Bibliotheken verwalten* – installieren:
    - **DHT sensor library** (Adafruit), Frage nach Abhängigkeiten mit „Alle installieren“ beantworten (→ Adafruit Unified Sensor)
-   - **Grove LED Bar** (Seeed Studio)
    - **ArduinoJson** (Benoit Blanchon, Version 7.x)
+   - Die Grove LED Bar braucht **keine** Bibliothek – der Treiber ist eingebaut (`ledbar.cpp`).
 5. Treiber für den USB-Chip **CP2102** (Silicon Labs), falls Windows keinen COM-Port anzeigt.
 
 ## 2. Zugangsdaten eintragen

@@ -1,8 +1,6 @@
 #include "display.h"
 #include "garden_config.h"
-#include <Grove_LED_Bar.h>
-
-static Grove_LED_Bar bar(PIN_LEDBAR_DCKI, PIN_LEDBAR_DI, LEDBAR_GREEN_TO_RED_DEFAULT, LED_BAR_10);
+#include "ledbar.h"
 
 static float soilPct = 0;
 static bool soilOk = true;
@@ -23,7 +21,7 @@ static uint8_t ledMode = 0;
 
 static void showBits(uint32_t bits) {
   if (bits != lastBits) {
-    bar.setBits(bits);
+    ledbarShow(bits, calib.ledbar_green_to_red);
     lastBits = bits;
   }
 }
@@ -32,8 +30,7 @@ void displayBegin() {
   pinMode(PIN_BUZZER, OUTPUT);
   digitalWrite(PIN_BUZZER, LOW);
   pinMode(PIN_STATUS_LED, OUTPUT);
-  bar.begin();
-  bar.setGreenToRed(calib.ledbar_green_to_red);
+  ledbarBegin(PIN_LEDBAR_DCKI, PIN_LEDBAR_DI);
   showBits(0);
 }
 
@@ -48,7 +45,6 @@ void displayIdentify() { identifyUntil = millis() + 5000; }
 
 void displayFlip() {
   calib.ledbar_green_to_red = !calib.ledbar_green_to_red;
-  bar.setGreenToRed(calib.ledbar_green_to_red);
   lastBits = 0xFFFFFFFF;
   configSaveCalibration();
   Serial.printf("[LED] Richtung umgedreht (greenToRed=%d)\n", calib.ledbar_green_to_red);
@@ -57,7 +53,7 @@ void displayFlip() {
 void displayLedTest() {
   Serial.println("[LED] Test: Segment 1 (soll ROT sein) bis 10 (grün)");
   for (int i = 1; i <= 10; i++) {
-    bar.setBits((1UL << i) - 1);
+    ledbarShow((1u << i) - 1, calib.ledbar_green_to_red);
     delay(150);
   }
   delay(500);
