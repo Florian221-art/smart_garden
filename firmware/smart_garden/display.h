@@ -10,6 +10,7 @@ void displayIdentify();                // 5 s Lauflicht
 void displayLedTest();                 // füllt die Bar einmal von Segment 1 bis 10
 void displayFlip();                    // Richtung der LED-Bar umdrehen (bis Neustart)
 void displayTestSegments(int n);       // genau n Segmente 10 s lang anzeigen
+void displaySwapPins();                // DI/DCKI tauschen (bis Neustart) + Test
 
 void buzzerBeep(uint8_t count);        // kurze Pieptöne (nicht blockierend)
 void buzzerBeepForced(uint8_t count);  // piept auch wenn stumm geschaltet (Test)

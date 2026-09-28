@@ -33,7 +33,8 @@ void displayBegin() {
   pinMode(PIN_BUZZER, OUTPUT);
   digitalWrite(PIN_BUZZER, LOW);
   pinMode(PIN_STATUS_LED, OUTPUT);
-  ledbarBegin(PIN_LEDBAR_DCKI, PIN_LEDBAR_DI);
+  if (CFG_LEDBAR_SWAP_PINS) ledbarBegin(PIN_LEDBAR_DI, PIN_LEDBAR_DCKI);
+  else ledbarBegin(PIN_LEDBAR_DCKI, PIN_LEDBAR_DI);
   showBits(0);
 }
 
@@ -51,6 +52,16 @@ void displayFlip() {
   lastBits = 0xFFFFFFFF;
   Serial.printf("[LED] Richtung umgedreht (reverse=%d). Dauerhaft: oben im Sketch CFG_LEDBAR_REVERSE = %s setzen.\n",
                 CFG_LEDBAR_REVERSE, CFG_LEDBAR_REVERSE ? "true" : "false");
+}
+
+void displaySwapPins() {
+  CFG_LEDBAR_SWAP_PINS = !CFG_LEDBAR_SWAP_PINS;
+  if (CFG_LEDBAR_SWAP_PINS) ledbarBegin(PIN_LEDBAR_DI, PIN_LEDBAR_DCKI);
+  else ledbarBegin(PIN_LEDBAR_DCKI, PIN_LEDBAR_DI);
+  Serial.printf("[LED] Pins getauscht (swap=%d): Takt=GPIO%d, Daten=GPIO%d. Reagiert die Bar jetzt, oben CFG_LEDBAR_SWAP_PINS = %s setzen.\n",
+                CFG_LEDBAR_SWAP_PINS, CFG_LEDBAR_SWAP_PINS ? PIN_LEDBAR_DI : PIN_LEDBAR_DCKI,
+                CFG_LEDBAR_SWAP_PINS ? PIN_LEDBAR_DCKI : PIN_LEDBAR_DI, CFG_LEDBAR_SWAP_PINS ? "true" : "false");
+  displayLedTest();
 }
 
 void displayTestSegments(int n) {
