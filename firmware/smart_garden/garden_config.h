@@ -2,7 +2,7 @@
 #pragma once
 #include <Arduino.h>
 
-#define FW_VERSION "0.2.1"
+#define FW_VERSION "0.2.2"
 
 // ---------------------------------------------------------------------------
 // Zugangsdaten (WLAN, Server, API-Key) – werden OBEN in smart_garden.ino eingetragen
@@ -13,6 +13,7 @@ extern const char *CFG_SERVER_URL;
 extern const char *CFG_API_KEY;
 extern const char *CFG_DEVICE_ID;
 extern bool CFG_LEDBAR_REVERSE;
+extern bool CFG_LEDBAR_SWAP_PINS;
 extern int CFG_LEDBAR_MODE;
 extern bool CFG_BUZZER_ENABLED;
 

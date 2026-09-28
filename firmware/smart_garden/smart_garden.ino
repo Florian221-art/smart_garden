@@ -16,6 +16,7 @@ const char *CFG_DEVICE_ID     = "esp32-kuebel-01";        // Name des Geräts
 int  CFG_LEDBAR_MODE    = 0;      // 0 = Zeiger: nur 2 LEDs an der Position des Werts (trocken = rot, feucht = grün)
                                   // 1 = Füllbalken ab Rot (trocken = nur rot, feucht = ganzer Balken)
 bool CFG_LEDBAR_REVERSE = false;  // true = Anzeige spiegeln, falls rot/grün vertauscht erscheint
+bool CFG_LEDBAR_SWAP_PINS = false; // true, wenn die Bar gar nicht reagiert (DI/DCKI = D18/D19 vertauscht)
 
 // --- Summer ----------------------------------------------------------------
 bool CFG_BUZZER_ENABLED = true;   // false = Summer komplett stumm
@@ -270,6 +271,7 @@ static void printHelp() {
       "  cal light dark|bright  aktuellen Rohwert als dunkel/hell speichern\n"
       "  ledtest | ledflip      LED-Bar testen / Richtung umdrehen (bis Neustart)\n"
       "  ledseg <0-10>          genau so viele Segmente 10 s lang anzeigen (Test)\n"
+      "  ledswap                Daten-/Taktpin der LED-Bar tauschen (wenn sie nicht reagiert)\n"
       "  mute                   Summer an/aus (bis Neustart)\n"
       "  beep                   Summer testen\n"
       "  send                   sofort an Server senden"));
@@ -318,6 +320,7 @@ static void handleSerialCommand(String line) {
   else if (c == "ledtest") displayLedTest();
   else if (c == "ledflip") displayFlip();
   else if (c == "ledseg" && n >= 2) displayTestSegments(parts[1].toInt());
+  else if (c == "ledswap") displaySwapPins();
   else if (c == "mute") { CFG_BUZZER_ENABLED = !CFG_BUZZER_ENABLED; Serial.printf("[SUMMER] %s\n", CFG_BUZZER_ENABLED ? "an" : "stumm"); }
   else if (c == "beep") buzzerBeepForced(2);
   else if (c == "send") lastSendMs = 0;
