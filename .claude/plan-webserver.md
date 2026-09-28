@@ -240,6 +240,18 @@ _(von Claude-Web gepflegt)_
       Aenderungen stehen vorerst im Server-Log (`smart_garden.control`), echtes Zugriffsprotokoll folgt.
 - [ ] Optional aus dem Plan noch nicht gebaut: "Demo-Cooldown" (pump_cooldown_s kurz auf 30 s)
 
+### Phase 2 – Teil 3: Handy (Branch `feature/web-mobil`)
+
+- [x] `npm run dev:mobil` (= `vite --host`): Dashboard im WLAN erreichbar, `/api` wird weiter vom Mac-Proxy bedient
+- [x] FastAPI liefert `web/dist/` unter `/` aus, falls gebaut (`SMART_GARDEN_WEB_DIST` ueberschreibbar) -
+      auf dem Pi reicht damit ein Dienst; Handy im Hotspot: `http://10.42.0.1:8000`
+- [x] Web-App-Manifest + Icons (192/512/maskable/apple-touch), theme-color hell/dunkel, viewport-fit=cover
+- [x] Handy-Layout: 2 Spalten Kacheln + Szenarien, Touch-Ziele >= 44 px, safe-area (Notch/Home-Leiste),
+      Fokusrahmen nach Antippen von Diagrammen weg (Tastatur-Fokus bleibt), Demo-Beschriftung in der Legende
+- [x] Geprueft: iPhone-13-Emulation hell/dunkel, Tipp auf Szenario + Diagramm, kein horizontales Scrollen,
+      `dev:mobil` per Netzwerk-IP inkl. `/api`, FastAPI liefert Seite/Manifest/Icons + API parallel
+- [ ] Kein Service Worker/Offline-Modus (braucht HTTPS - kommt ggf. mit Caddy in Phase 3)
+
 ### Als Naechstes
 
 - Login + Rollen (Admin/Leser) und damit Demo/Befehle absichern, Zugriffsprotokoll

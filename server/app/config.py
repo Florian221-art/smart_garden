@@ -15,6 +15,11 @@ DATABASE_URL = os.environ.get(
     "SMART_GARDEN_DB_URL", f"sqlite:///{BASE_DIR / 'smart_garden.db'}"
 )
 
+# Fertig gebautes Dashboard (web/dist, erzeugt mit `npm run build`). Existiert der
+# Ordner, liefert FastAPI es unter / aus - dann braucht es auf dem Pi (und fuers
+# Handy im Hotspot-WLAN) keinen separaten Webserver. /api bleibt davon unberuehrt.
+WEB_DIST = Path(os.environ.get("SMART_GARDEN_WEB_DIST", BASE_DIR.parent / "web" / "dist"))
+
 # Rate-Limit laut api-contract.md Abschnitt 2: max. 1 Request / 2s pro Geraet
 RATE_LIMIT_SECONDS = float(os.environ.get("SMART_GARDEN_RATE_LIMIT_S", "2.0"))
 

@@ -38,7 +38,7 @@ const SCENARIOS: Scenario[] = [
   {
     id: 'sensorausfall',
     title: 'Sensorausfall',
-    effect: 'Temperatur-/Luftfeuchtesensor liefert nichts',
+    effect: 'Temperatur- und Luftfeuchtesensor liefern nichts',
     force_errors: ['dht_read_failed'],
   },
   {
@@ -59,7 +59,7 @@ const DURATIONS = [
 ]
 
 const btn =
-  'rounded-lg border px-3 py-2 text-sm font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:cursor-not-allowed disabled:opacity-50'
+  'min-h-11 rounded-lg border px-3 py-2 text-sm font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:cursor-not-allowed disabled:opacity-50'
 const btnNeutral = `${btn} border-slate-300 bg-white text-slate-800 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700`
 
 interface Props {
@@ -162,7 +162,7 @@ export default function DemoPanel({ deviceId, demo, remaining, onChange, reading
   return (
     <section
       aria-labelledby="demo-titel"
-      className="rounded-xl border border-violet-300 bg-white p-4 shadow-sm dark:border-violet-800 dark:bg-slate-900"
+      className="rounded-xl border border-violet-300 bg-white p-3 shadow-sm sm:p-4 dark:border-violet-800 dark:bg-slate-900"
     >
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <div>
@@ -183,7 +183,7 @@ export default function DemoPanel({ deviceId, demo, remaining, onChange, reading
                 type="button"
                 aria-pressed={duration === d.s}
                 onClick={() => setDuration(d.s)}
-                className={`rounded-md px-2.5 py-1 focus-visible:outline-2 focus-visible:outline-blue-600 ${
+                className={`min-h-9 rounded-md px-2.5 py-1 focus-visible:outline-2 focus-visible:outline-blue-600 ${
                   duration === d.s
                     ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900'
                     : 'hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -226,7 +226,7 @@ export default function DemoPanel({ deviceId, demo, remaining, onChange, reading
 
       {/* Szenarien */}
       <h3 className="mb-2 text-sm font-semibold text-slate-900 dark:text-slate-50">Szenarien (ein Klick)</h3>
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-2 lg:grid-cols-5">
         {SCENARIOS.map((s) => {
           const isActive = demo?.scenario === s.id
           return (
@@ -246,8 +246,8 @@ export default function DemoPanel({ deviceId, demo, remaining, onChange, reading
                 {isActive && <span aria-hidden="true">● </span>}
                 {s.title}
               </div>
-              <div className="mt-0.5 text-xs text-slate-600 dark:text-slate-300">{s.effect}</div>
-              {s.hint && <div className="mt-1 text-xs text-amber-800 dark:text-amber-300">{s.hint}</div>}
+              <div className="mt-0.5 text-xs text-slate-600 [overflow-wrap:anywhere] dark:text-slate-300">{s.effect}</div>
+              {s.hint && <div className="mt-1 text-xs text-amber-800 [overflow-wrap:anywhere] dark:text-amber-300">{s.hint}</div>}
             </button>
           )
         })}
@@ -263,8 +263,8 @@ export default function DemoPanel({ deviceId, demo, remaining, onChange, reading
             const c = custom[f.key]
             const id = `demo-${f.key}`
             return (
-              <div key={f.key} className="flex items-center gap-3 text-sm">
-                <label className="flex w-40 shrink-0 items-center gap-2 text-slate-800 dark:text-slate-200">
+              <div key={f.key} className="flex items-center gap-2 text-sm sm:gap-3">
+                <label className="flex min-h-11 w-32 shrink-0 items-center gap-2 sm:w-40 text-slate-800 dark:text-slate-200">
                   <input
                     type="checkbox"
                     checked={c.on}
@@ -285,7 +285,7 @@ export default function DemoPanel({ deviceId, demo, remaining, onChange, reading
                   onChange={(e) => setCustom({ ...custom, [f.key]: { ...c, value: Number(e.target.value) } })}
                   className="w-full accent-violet-600 disabled:opacity-40"
                 />
-                <output htmlFor={id} className="w-16 shrink-0 text-right tabular-nums text-slate-900 dark:text-slate-50">
+                <output htmlFor={id} className="w-14 shrink-0 text-right tabular-nums text-slate-900 dark:text-slate-50">
                   {String(c.value).replace('.', ',')} {f.unit}
                 </output>
               </div>
@@ -296,7 +296,7 @@ export default function DemoPanel({ deviceId, demo, remaining, onChange, reading
           <legend className="mb-1 text-slate-800 dark:text-slate-200">Sensorausfall erzwingen</legend>
           <div className="flex flex-wrap gap-x-5 gap-y-1">
             {ERRORS.map((e) => (
-              <label key={e} className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+              <label key={e} className="flex min-h-11 items-center gap-2 text-slate-700 dark:text-slate-300">
                 <input
                   type="checkbox"
                   className="h-4 w-4"
@@ -322,7 +322,7 @@ export default function DemoPanel({ deviceId, demo, remaining, onChange, reading
 
       {/* Geraetebefehle */}
       <h3 className="mb-2 mt-4 text-sm font-semibold text-slate-900 dark:text-slate-50">Gerät</h3>
-      <div className="flex flex-wrap gap-2">
+      <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
         <button type="button" disabled={busy} onClick={() => command({ pump_run_s: 5 }, 'Jetzt gießen')} className={btnNeutral}>
           Jetzt gießen (5 s)
         </button>

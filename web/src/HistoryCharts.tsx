@@ -144,6 +144,10 @@ export default function HistoryCharts({ deviceId }: { deviceId: string }) {
       tickFormat,
       tableFor,
       demo: demoRanges(points, bucketMs),
+      // Demo-Zeitraeume stehen in der Legende statt als Text im Diagramm (wird am Rand sonst abgeschnitten)
+      demoLegend: points.some((p) => p.demo)
+        ? [{ label: 'Demo-Zeitraum', kind: 'area' as const, color: 'var(--viz-demo)' }]
+        : [],
       totalWater,
       waterings,
       cfg: data.config,
@@ -153,7 +157,7 @@ export default function HistoryCharts({ deviceId }: { deviceId: string }) {
   const rangeLabel = RANGES.find((r) => r.key === range)!.label
 
   return (
-    <section aria-labelledby="verlauf-titel" className="viz-root mt-10">
+    <section aria-labelledby="verlauf-titel" className="viz-root mt-8 sm:mt-10">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h2 id="verlauf-titel" className="text-lg font-bold text-slate-900 dark:text-slate-50">
           Verlauf
@@ -165,7 +169,7 @@ export default function HistoryCharts({ deviceId }: { deviceId: string }) {
               type="button"
               aria-pressed={range === r.key}
               onClick={() => setRange(r.key)}
-              className={`rounded-md px-3 py-1 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 ${
+              className={`min-h-9 rounded-md px-3 py-1 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 ${
                 range === r.key
                   ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900'
                   : 'text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
@@ -222,7 +226,7 @@ export default function HistoryCharts({ deviceId }: { deviceId: string }) {
                 { label: 'Automatisch gegossen', kind: 'dot', color: 'var(--series-2)' },
                 { label: `Gießschwelle ${view.cfg.moisture_min_pct} %`, kind: 'dash', color: 'var(--status-warning)' },
                 { label: `Ziel ${view.cfg.moisture_target_pct} %`, kind: 'dash', color: 'var(--viz-muted)' },
-                ...(view.demo.length ? [{ label: 'Demo-Zeitraum', kind: 'area' as const, color: 'var(--viz-demo)' }] : []),
+                ...view.demoLegend,
               ]}
               table={view.tableFor('soil_moisture_pct', '%')}
             >
@@ -247,7 +251,7 @@ export default function HistoryCharts({ deviceId }: { deviceId: string }) {
               title="Wassertank (Schätzung)"
               summary={`aktuell ${fmt(view.points[view.points.length - 1].water_level_pct, 0)} %`}
               ariaLabel={`Geschätzter Tankfüllstand der letzten ${rangeLabel}, Warnschwelle ${view.cfg.tank_low_pct} Prozent.`}
-              legend={[{ label: `Warnung unter ${view.cfg.tank_low_pct} %`, kind: 'dash', color: 'var(--status-warning)' }]}
+              legend={[{ label: `Warnung unter ${view.cfg.tank_low_pct} %`, kind: 'dash', color: 'var(--status-warning)' }, ...view.demoLegend]}
               table={view.tableFor('water_level_pct', '%', 0)}
             >
               <TimeSeriesChart
@@ -283,6 +287,7 @@ export default function HistoryCharts({ deviceId }: { deviceId: string }) {
                 return mm ? `${fmt(mm[0])}–${fmt(mm[1])} °C` : undefined
               })()}
               ariaLabel={`Lufttemperatur der letzten ${rangeLabel} in Grad Celsius.`}
+              legend={view.demoLegend}
               table={view.tableFor('air_temp_c', '°C')}
             >
               <TimeSeriesChart
@@ -301,6 +306,7 @@ export default function HistoryCharts({ deviceId }: { deviceId: string }) {
               title="Luftfeuchte"
               summary={`Ø ${fmt(avg(view.points, 'air_humidity_pct'), 0)} %`}
               ariaLabel={`Relative Luftfeuchte der letzten ${rangeLabel} in Prozent.`}
+              legend={view.demoLegend}
               table={view.tableFor('air_humidity_pct', '%', 0)}
             >
               <TimeSeriesChart
@@ -320,6 +326,7 @@ export default function HistoryCharts({ deviceId }: { deviceId: string }) {
               title="Licht"
               summary="0 % = dunkel"
               ariaLabel={`Helligkeit der letzten ${rangeLabel} in Prozent, zeigt den Tag-Nacht-Verlauf.`}
+              legend={view.demoLegend}
               table={view.tableFor('light_pct', '%', 0)}
             >
               <TimeSeriesChart

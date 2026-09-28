@@ -16,7 +16,7 @@ const FIELD_UNIT: Record<string, string> = Object.fromEntries(FIELDS.map((f) => 
 /** z. B. "Bodenfeuchte 12 % · Temperatur-/Luftfeuchtesensor (DHT11) konnte nicht gelesen werden" */
 export function describeDemo(d: Pick<DemoState, 'overrides' | 'force_errors'>): string {
   const parts = Object.entries(d.overrides).map(
-    ([k, v]) => `${FIELD_LABEL[k] ?? k} ${String(v).replace('.', ',')} ${FIELD_UNIT[k] ?? ''}`.trim(),
+    ([k, v]) => `${FIELD_LABEL[k] ?? k} ${String(v).replace('.', ',')}\u00a0${FIELD_UNIT[k] ?? ''}`.trim(),
   )
   for (const e of d.force_errors) parts.push(describeError(e))
   return parts.join(' · ')

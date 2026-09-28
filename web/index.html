@@ -2,9 +2,21 @@
 <html lang="de">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- viewport-fit=cover: Seite nutzt den ganzen Bildschirm, Abstände zu Notch/Home-Leiste per safe-area -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Smart Garden</title>
+    <meta name="description" content="Intelligenter Pflanzkübel – Messwerte, Verlauf und Demo-Steuerung" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- Als App auf dem Home-Bildschirm (iPhone: Teilen → Zum Home-Bildschirm, Android: Menü → App installieren) -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Garden" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="theme-color" content="#f8fafc" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#020617" media="(prefers-color-scheme: dark)" />
+    <meta name="format-detection" content="telephone=no" />
   </head>
   <body>
     <div id="root"></div>

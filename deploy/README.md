@@ -37,5 +37,18 @@ Reihenfolge (Phase 1):
 5. **Test ohne Hardware:** `python tools/fake_esp.py --url http://10.42.0.1:8000 --key <api-key>`
    (vom Laptop im Hotspot-WLAN aus, oder lokal gegen `localhost:8000` waehrend der Entwicklung).
 
+6. **Dashboard fuers Handy (und alle Laptops im Hotspot):**
+   ```
+   cd /opt/smart-garden/web
+   npm install
+   npm run build          # erzeugt web/dist/
+   sudo systemctl restart smart-garden-api
+   ```
+   Liegt `web/dist/` vor, liefert FastAPI das Dashboard selbst unter `/` aus.
+   Handy mit dem WLAN "SmartGarden" verbinden, im Browser `http://10.42.0.1:8000` oeffnen.
+   Tipp: iPhone "Teilen -> Zum Home-Bildschirm", Android "Menue -> App installieren" -
+   dann startet das Dashboard wie eine App (eigenes Icon, ohne Browserleiste).
+   Node.js wird nur zum Bauen gebraucht; alternativ `web/dist/` auf dem Laptop bauen und kopieren.
+
 Ab Phase 3 kommen dazu: Caddy (HTTPS via `tls internal`), Ollama-Installation,
 taegliches SQLite-Backup. Diese Datei wird dann erweitert.
