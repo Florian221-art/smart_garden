@@ -2,7 +2,7 @@
 #pragma once
 #include <Arduino.h>
 
-#define FW_VERSION "0.1.0"
+#define FW_VERSION "0.2.0"
 
 // ---------------------------------------------------------------------------
 // Zugangsdaten (WLAN, Server, API-Key) – werden OBEN in smart_garden.ino eingetragen
@@ -12,6 +12,9 @@ extern const char *CFG_WIFI_PASSWORD;
 extern const char *CFG_SERVER_URL;
 extern const char *CFG_API_KEY;
 extern const char *CFG_DEVICE_ID;
+extern bool CFG_LEDBAR_REVERSE;
+extern int CFG_LEDBAR_MODE;
+extern bool CFG_BUZZER_ENABLED;
 
 // ---------------------------------------------------------------------------
 // Pins (siehe docs/hardware/verkabelung.md)
@@ -26,10 +29,6 @@ constexpr uint8_t PIN_RELAY = 27;     // Grove Relay SIG (HIGH = Pumpe an)
 constexpr uint8_t PIN_BOOT_BTN = 0;   // BOOT-Taste (3 s halten = Tank aufgefüllt)
 constexpr uint8_t PIN_STATUS_LED = 2; // Onboard-LED
 
-// LED-Bar: false = Segment 1 (rot) ist der Anfang der Anzeige.
-// Falls sich die Anzeige vom grünen Ende aus füllt: auf true setzen (oder seriell "ledflip").
-constexpr bool LEDBAR_GREEN_TO_RED_DEFAULT = false;
-
 // ---------------------------------------------------------------------------
 // Harte Sicherheitsgrenzen – kann der Server NICHT überschreiben
 // ---------------------------------------------------------------------------
@@ -43,7 +42,7 @@ constexpr uint32_t MAX_DEMO_S = 600;
 constexpr uint32_t SENSOR_PERIOD_MS = 2000;  // lokale Messung (LED-Bar, Auto-Bewässerung)
 constexpr uint32_t HTTP_TIMEOUT_MS = 4000;
 constexpr uint32_t WIFI_RETRY_MS = 10000;
-constexpr uint32_t ALARM_REPEAT_MS = 60000;  // Summer-Alarm höchstens einmal pro Minute
+constexpr uint32_t ALARM_REPEAT_MS = 600000; // Summer wiederholt einen bestehenden Alarm höchstens alle 10 min
 
 // ---------------------------------------------------------------------------
 // Einstellungen vom Server (API-Vertrag "config") – werden im Flash gespeichert
@@ -68,7 +67,7 @@ struct Calibration {
   int soil_raw_wet = 1300;   // Sensor in Wasser (bis zur Linie!)
   int light_raw_dark = 4095; // abgedeckt
   int light_raw_bright = 300; // Handylampe direkt drauf
-  bool ledbar_green_to_red = LEDBAR_GREEN_TO_RED_DEFAULT;
+  bool ledbar_green_to_red = false;  // ungenutzt (Richtung jetzt über CFG_LEDBAR_REVERSE)
 };
 
 extern Settings settings;

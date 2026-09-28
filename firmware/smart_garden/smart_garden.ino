@@ -1,3 +1,27 @@
+// ============================================================================
+//  EINSTELLUNGEN – HIER ANPASSEN
+//  (Achtung: Das GitHub-Repo ist öffentlich – echtes WLAN-Passwort/API-Key
+//   nicht committen. Vor "git pull": "git stash", danach "git stash pop".)
+// ============================================================================
+
+// --- WLAN + Server --------------------------------------------------------
+const char *CFG_WIFI_SSID     = "SmartGarden";            // WLAN-Name (Hotspot des Raspberry Pi)
+const char *CFG_WIFI_PASSWORD = "hier-passwort";          // WLAN-Passwort (von Nico)
+const char *CFG_SERVER_URL    = "http://10.42.0.1:8000";  // Server auf dem Pi (später: "https://10.42.0.1")
+const char *CFG_API_KEY       = "hier-api-key";           // API-Key des Geräts (vom Server)
+const char *CFG_DEVICE_ID     = "esp32-kuebel-01";        // Name des Geräts
+
+// --- LED-Bar (Bodenfeuchte) -----------------------------------------------
+// Segment 1 der Bar ist rot, Segment 2 orange, Segmente 3-10 grün.
+int  CFG_LEDBAR_MODE    = 0;      // 0 = Zeiger: nur 2 LEDs an der Position des Werts (trocken = rot, feucht = grün)
+                                  // 1 = Füllbalken ab Rot (trocken = nur rot, feucht = ganzer Balken)
+bool CFG_LEDBAR_REVERSE = false;  // true = Anzeige spiegeln, falls rot/grün vertauscht erscheint
+
+// --- Summer ----------------------------------------------------------------
+bool CFG_BUZZER_ENABLED = true;   // false = Summer komplett stumm
+
+// ============================================================================
+
 /*
   Smart Garden – ESP32-Firmware
   Hackathon Euregio 2026 · Team Florian Schoenen & Nico Steins
@@ -12,17 +36,6 @@
 
   Serielle Konsole (115200 Baud, Zeilenende "Neue Zeile"): "help" eingeben.
 */
-
-// ============================================================================
-//  EINSTELLUNGEN – HIER ANPASSEN
-// ============================================================================
-const char *CFG_WIFI_SSID     = "SmartGarden";            // WLAN-Name (Hotspot des Raspberry Pi)
-const char *CFG_WIFI_PASSWORD = "hier-passwort";          // WLAN-Passwort (von Nico)
-const char *CFG_SERVER_URL    = "http://10.42.0.1:8000";  // Server auf dem Pi (Phase 3: "https://10.42.0.1")
-const char *CFG_API_KEY       = "hier-api-key";           // API-Key des Geräts (vom Server)
-const char *CFG_DEVICE_ID     = "esp32-kuebel-01";        // Name des Geräts
-// Achtung: Das Repo ist öffentlich – echtes Passwort/API-Key NICHT committen.
-// ============================================================================
 
 #include <ArduinoJson.h>
 #include <WiFi.h>
@@ -68,15 +81,29 @@ static void measureAndAct() {
   displaySetSoil(current.soil_pct, current.soil_ok);
   displaySetTankEmpty(tankIsEmpty());
 
-  // Alarm (Summer) bei kritischen Zuständen. DHT11 liefert gelegentlich einzelne
+  // Alarm (Summer) bei kritischen Zuständen. Piept nur, wenn ein Problem NEU auftritt,
+  // danach höchstens alle ALARM_REPEAT_MS. DHT11 liefert gelegentlich einzelne
   // Fehlmessungen -> erst nach 3 Fehlern in Folge als Ausfall werten.
   static uint8_t dhtFails = 0;
   dhtFails = current.dht_ok ? 0 : min(dhtFails + 1, 10);
-  if (tankIsEmpty() || !current.soil_ok || dhtFails >= 3) buzzerAlarm();
+  uint8_t problems = 0;
+  if (tankIsEmpty()) problems |= 1;
+  if (!current.soil_ok) problems |= 2;
+  if (dhtFails >= 3) problems |= 4;
+  buzzerAlarm(problems);
 
   // Automatische Bewässerung
   if (!settings.auto_water || !current.soil_ok || pumpRunning()) return;
   if (tankIsEmpty() || pumpTodaySeconds() >= settings.max_pump_s_per_day) {  // Trockenlaufschutz / Tageslimit
+    static uint32_t lastBlockMsg = 0;
+    if (current.soil_pct < settings.moisture_min_pct && (lastBlockMsg == 0 || millis() - lastBlockMsg > 30000)) {
+      lastBlockMsg = millis();
+      if (tankIsEmpty())
+        Serial.printf("[PUMPE] Auto-Gießen blockiert: Tank leer (geschätzt %.0f ml) -> \"refill\" eingeben oder BOOT 3 s halten\n",
+                      tankRemainingMl());
+      else
+        Serial.println("[PUMPE] Auto-Gießen blockiert: Tageslimit erreicht");
+    }
     wateringSession = false;
     return;
   }
@@ -223,7 +250,9 @@ static void printHelp() {
       "  refill                 Tank als aufgefüllt markieren\n"
       "  cal soil dry|wet       aktuellen Rohwert als trocken/nass speichern\n"
       "  cal light dark|bright  aktuellen Rohwert als dunkel/hell speichern\n"
-      "  ledtest | ledflip      LED-Bar testen / Richtung umdrehen\n"
+      "  ledtest | ledflip      LED-Bar testen / Richtung umdrehen (bis Neustart)\n"
+      "  ledseg <0-10>          genau so viele Segmente 10 s lang anzeigen (Test)\n"
+      "  mute                   Summer an/aus (bis Neustart)\n"
       "  beep                   Summer testen\n"
       "  send                   sofort an Server senden"));
 }
@@ -270,7 +299,9 @@ static void handleSerialCommand(String line) {
   }
   else if (c == "ledtest") displayLedTest();
   else if (c == "ledflip") displayFlip();
-  else if (c == "beep") { bool b = settings.buzzer_enabled; settings.buzzer_enabled = true; buzzerBeep(2); settings.buzzer_enabled = b; }
+  else if (c == "ledseg" && n >= 2) displayTestSegments(parts[1].toInt());
+  else if (c == "mute") { CFG_BUZZER_ENABLED = !CFG_BUZZER_ENABLED; Serial.printf("[SUMMER] %s\n", CFG_BUZZER_ENABLED ? "an" : "stumm"); }
+  else if (c == "beep") buzzerBeepForced(2);
   else if (c == "send") lastSendMs = 0;
   else Serial.println("Unbekannter Befehl – \"help\" eingeben");
 }
@@ -320,6 +351,9 @@ void setup() {
   buzzerBeep(1);
   netBegin();
   printHelp();
+  if (tankIsEmpty())
+    Serial.printf("[TANK] Achtung: Tank laut Schätzung leer (%.0f ml) – Pumpe gesperrt. \"refill\" eingeben, wenn aufgefüllt.\n",
+                  tankRemainingMl());
   lastSendMs = millis() - settings.interval_s * 1000UL + 5000;  // erste Nachricht nach ~5 s
 }
 
