@@ -1,0 +1,24 @@
+# Secrets
+secrets.h
+.env
+*.key
+*.pem
+
+# PlatformIO
+.pio/
+.vscode/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Daten
+*.db
+*.sqlite
+*.sqlite3
+
+# OS
+.DS_Store
+Thumbs.db
