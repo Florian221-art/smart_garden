@@ -107,10 +107,36 @@ Mit der fertigen ESP32-Firmware und dem aktualisierten
 Der API-Vertrag selbst (`.claude/api-contract.md`) wurde **nicht**
 geändert, daher war keine Vertragsanpassung nötig.
 
+## Diagramme im Dashboard (Phase 2, Teil 1)
+
+Unter den Kacheln gibt es jetzt den Bereich **Verlauf**:
+
+- Zeitraum umschaltbar: 1 Stunde, 24 Stunden, 7 Tage (Aktualisierung alle 30 s).
+- Kennzahlen für den Zeitraum: Wasserverbrauch (geschätzt aus Pumpenlaufzeit ×
+  Durchfluss), wie oft automatisch gegossen wurde, Ø Bodenfeuchte.
+- **Bodenfeuchte** mit Gießschwelle und Zielwert (gestrichelt) und orangen
+  Punkten dort, wo der ESP selbst gegossen hat – man sieht den Sägezahn aus
+  Austrocknen und Gießen.
+- **Wassertank** (Schätzung) mit Warnschwelle.
+- **Wasserverbrauch** als Balken pro 5 Minuten / Stunde / Tag.
+- **Temperatur, Luftfeuchte, Licht** (Tag-Nacht-Verlauf).
+- Demo-Zeiträume sind in allen Diagrammen hinterlegt und mit „DEMO“ beschriftet;
+  fällt ein Sensor aus, hat die Linie eine Lücke, der Tooltip nennt den Fehler.
+- Jede Grafik lässt sich als Tabelle aufklappen; Farben sind für Farbenblindheit
+  und hell/dunkel geprüft.
+
+Backend dazu: `GET /api/v1/devices/{id}/readings?from=&to=&bucket=` (Mittelwerte
+pro Zeitabschnitt) und `GET /api/v1/devices/{id}/config`. Zum Ausprobieren ohne
+Hardware: `python -m app.dev_seed esp32-kuebel-01 --hours 48` füllt die
+**Entwicklungs**-Datenbank mit 48 h simuliertem Verlauf.
+
+Behoben: Zeitstempel wurden ohne Zeitzone ausgeliefert, der Browser zeigte
+„Letzter Kontakt“ deshalb 2 h falsch an.
+
 ## Bekannte Lücken / Als Nächstes
 
 - Hotspot-Skript auf echtem Pi verifizieren
-- Phase 2 laut Plan: Recharts-Diagramme, Warnungen/Alerts, Login+Rollen
+- Phase 2 (Rest): Warnungen/Alerts, Login+Rollen
   (argon2 ist schon eingebunden), i18n (NL/DE/EN), Demo-Modus-Endpunkte +
   Dashboard-Bereich, KI-Stub
 - API-Key + WLAN-Passwort müssen an Florian übergeben werden (siehe

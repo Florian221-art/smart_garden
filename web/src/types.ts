@@ -20,3 +20,45 @@ export interface LatestReading {
   errors: string[]
   demo_overrides: string[]
 }
+
+// GET /api/v1/devices/{id}/config
+export interface DeviceConfig {
+  interval_s: number
+  moisture_min_pct: number
+  moisture_target_pct: number
+  auto_water: boolean
+  max_pump_s_per_run: number
+  pump_cooldown_s: number
+  max_pump_s_per_day: number
+  buzzer_enabled: boolean
+  tank_capacity_ml: number
+  pump_flow_ml_per_s: number
+  tank_low_pct: number
+}
+
+// Ein Zeit-Bucket aus GET /api/v1/devices/{id}/readings (Mittelwerte bzw. Summen)
+export interface HistoryPoint {
+  t: string
+  n: number
+  soil_moisture_pct: number | null
+  light_pct: number | null
+  air_temp_c: number | null
+  air_humidity_pct: number | null
+  water_level_pct: number | null
+  tank_remaining_ml: number | null
+  rssi_dbm: number | null
+  pump_on_s: number
+  water_ml: number
+  auto_water_count: number
+  demo: boolean
+  errors: string[]
+}
+
+export interface HistoryResponse {
+  device_id: string
+  from: string
+  to: string
+  bucket_s: number
+  config: DeviceConfig
+  points: HistoryPoint[]
+}

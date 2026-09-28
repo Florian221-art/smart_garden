@@ -4,7 +4,7 @@ from __future__ import annotations
 from fastapi import FastAPI
 
 from .db import init_db
-from .routers import readings
+from .routers import history, readings
 
 app = FastAPI(
     title="Smart Garden API",
@@ -13,6 +13,7 @@ app = FastAPI(
 )
 
 app.include_router(readings.router)
+app.include_router(history.router)
 
 
 @app.on_event("startup")
