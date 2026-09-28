@@ -1,0 +1,86 @@
+// garden_config.h – Pins, Standardwerte, Einstellungen (Server-Config + Kalibrierung)
+#pragma once
+#include <Arduino.h>
+
+#define FW_VERSION "0.1.0"
+
+// ---------------------------------------------------------------------------
+// Zugangsdaten: secrets.h (nicht im Git). Vorlage: secrets.h.example
+// ---------------------------------------------------------------------------
+#if __has_include("secrets.h")
+#include "secrets.h"
+#else
+#warning "secrets.h fehlt – kopiere secrets.h.example nach secrets.h und trage WLAN/API-Key ein. Es wird mit Platzhaltern kompiliert."
+#define WIFI_SSID "SmartGarden"
+#define WIFI_PASSWORD "CHANGE_ME"
+#define SERVER_URL "http://10.42.0.1:8000"
+#define API_KEY "CHANGE_ME"
+#define DEVICE_ID "esp32-kuebel-01"
+#endif
+
+// ---------------------------------------------------------------------------
+// Pins (siehe docs/hardware/verkabelung.md)
+// ---------------------------------------------------------------------------
+constexpr uint8_t PIN_SOIL = 34;      // Kapazitiver Bodenfeuchtesensor AOUT (ADC1)
+constexpr uint8_t PIN_LIGHT = 35;     // LDR-Modul AO (ADC1)
+constexpr uint8_t PIN_DHT = 4;        // DHT11 SIG
+constexpr uint8_t PIN_LEDBAR_DI = 18; // Grove LED Bar DI (Daten)
+constexpr uint8_t PIN_LEDBAR_DCKI = 19; // Grove LED Bar DCKI (Takt)
+constexpr uint8_t PIN_BUZZER = 26;    // aktiver Summer (+)
+constexpr uint8_t PIN_RELAY = 27;     // Grove Relay SIG (HIGH = Pumpe an)
+constexpr uint8_t PIN_BOOT_BTN = 0;   // BOOT-Taste (3 s halten = Tank aufgefüllt)
+constexpr uint8_t PIN_STATUS_LED = 2; // Onboard-LED
+
+// LED-Bar: false = Segment 1 (rot) ist der Anfang der Anzeige.
+// Falls sich die Anzeige vom grünen Ende aus füllt: auf true setzen (oder seriell "ledflip").
+constexpr bool LEDBAR_GREEN_TO_RED_DEFAULT = false;
+
+// ---------------------------------------------------------------------------
+// Harte Sicherheitsgrenzen – kann der Server NICHT überschreiben
+// ---------------------------------------------------------------------------
+constexpr float HARD_MAX_PUMP_S_PER_RUN = 15.0f;
+constexpr float HARD_MAX_PUMP_S_PER_DAY = 300.0f;
+constexpr uint32_t HARD_MIN_COOLDOWN_S = 10;
+constexpr float TANK_EMPTY_PCT = 5.0f;      // darunter keine Bewässerung (Trockenlaufschutz)
+constexpr uint32_t MAX_DEMO_S = 600;
+
+// Zeiten
+constexpr uint32_t SENSOR_PERIOD_MS = 2000;  // lokale Messung (LED-Bar, Auto-Bewässerung)
+constexpr uint32_t HTTP_TIMEOUT_MS = 4000;
+constexpr uint32_t WIFI_RETRY_MS = 10000;
+constexpr uint32_t ALARM_REPEAT_MS = 60000;  // Summer-Alarm höchstens einmal pro Minute
+
+// ---------------------------------------------------------------------------
+// Einstellungen vom Server (API-Vertrag "config") – werden im Flash gespeichert
+// ---------------------------------------------------------------------------
+struct Settings {
+  uint32_t interval_s = 15;
+  float moisture_min_pct = 30;
+  float moisture_target_pct = 55;
+  bool auto_water = true;
+  float max_pump_s_per_run = 5;
+  uint32_t pump_cooldown_s = 300;
+  float max_pump_s_per_day = 60;
+  bool buzzer_enabled = true;
+  float tank_capacity_ml = 1500;
+  float pump_flow_ml_per_s = 20;
+  float tank_low_pct = 20;
+};
+
+// Kalibrierung der Analogsensoren (seriell: "cal soil dry", "cal soil wet", ...)
+struct Calibration {
+  int soil_raw_dry = 2900;   // Sensor an der Luft / trockene Erde
+  int soil_raw_wet = 1300;   // Sensor in Wasser (bis zur Linie!)
+  int light_raw_dark = 4095; // abgedeckt
+  int light_raw_bright = 300; // Handylampe direkt drauf
+  bool ledbar_green_to_red = LEDBAR_GREEN_TO_RED_DEFAULT;
+};
+
+extern Settings settings;
+extern Calibration calib;
+
+void configBegin();           // lädt Settings + Kalibrierung aus NVS
+void configSaveSettings();
+void configSaveCalibration();
+void configClampSettings(Settings &s); // harte Grenzen anwenden
+void configPrint();

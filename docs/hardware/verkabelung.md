@@ -1,72 +1,73 @@
 # Pinout und Verkabelungsplan
 
-Stand: 28.09.2026 · Board: ESP32 DevKit V1 (ESP-WROOM-32, 30 Pins, CP2102)
+Stand: 28.09.2026 (v2: kapazitiver Bodenfeuchtesensor) · Board: ESP32 DevKit V1 (ESP-WROOM-32, 30 Pins, CP2102)
 
-> **Sicherheit:** Die 12 V der Pumpe dürfen **nie** an einen ESP32-Pin oder an die Plus-Schiene des Breadboards kommen. Der 12-V-Kreis läuft nur über die Schraubklemmen des Relais. Erst alles verkabeln, dann Strom anschließen.
+> **Sicherheit:** Die 12 V der Pumpe dürfen **nie** an einen ESP32-Pin oder an die Plus-Schiene des Breadboards kommen. Der 12-V-Kreis läuft nur über die Schraubklemme des Relais. Erst alles verkabeln, dann Strom anschließen.
 
 ## 1. Pinbelegung auf einen Blick
 
-| ESP32-Pin | Beschriftung Board | Funktion | Bauteil | Richtung |
-|---|---|---|---|---|
-| GPIO34 | D34 | Bodenfeuchte analog | IDUINO S | Eingang (ADC1) |
-| GPIO25 | D25 | Versorgung Bodensensor (nur beim Messen an) | IDUINO + | Ausgang |
-| GPIO35 | D35 | Licht analog | LDR-Modul AO | Eingang (ADC1) |
-| GPIO32 | D32 | *reserviert:* Tank-Füllstand | – | Eingang (ADC1) |
-| GPIO4 | D4 | Temperatur/Luftfeuchte (DHT-Protokoll) | Grove DHT11 SIG | bidirektional |
-| GPIO18 | D18 | LED-Bar Daten | Grove LED Bar DI | Ausgang |
-| GPIO19 | D19 | LED-Bar Takt | Grove LED Bar DCKI | Ausgang |
-| GPIO26 | D26 | Summer | Piezo (+) bzw. NPN-Basis | Ausgang |
-| GPIO27 | D27 | Pumpen-Relais | Grove Relay SIG | Ausgang |
-| GPIO2 | D2 | Status-LED (onboard) | – | Ausgang |
-| 3V3 | 3V3 | 3,3 V Versorgung | alle Module außer Summer Var. B | – |
-| VIN | VIN | 5 V vom USB | nur Summer (Variante B) | – |
-| GND | GND | Masse | alle | – |
+| ESP32-Pin | Beschriftung Board | Bauteil | Anschluss am Bauteil |
+|---|---|---|---|
+| GPIO34 | D34 | Bodenfeuchtesensor (kapazitiv v2.0, HW-390) | AOUT (gelb) |
+| GPIO35 | D35 | Lichtsensor LDR-Modul | AO |
+| GPIO4 | D4 | Temp./Luftfeuchte Grove v1.2 (DHT11) | SIG (gelb) |
+| GPIO18 | D18 | Grove LED Bar v2.0 | DI (gelb) |
+| GPIO19 | D19 | Grove LED Bar v2.0 | DCKI (weiß) |
+| GPIO26 | D26 | Summer | rot (+) |
+| GPIO27 | D27 | Grove Relay (Pumpe) | SIG (gelb) |
+| GPIO0 | – | BOOT-Taste (onboard) | 3 s halten = Tank aufgefüllt |
+| GPIO2 | – | Onboard-LED | WLAN-Status |
+| 3V3 | 3V3 | **alle** Module | VCC (rot) |
+| GND | GND | **alle** Module | GND (schwarz) |
+
+Frei/reserviert: GPIO25, GPIO32 (ADC1) für spätere Erweiterungen.
 
 Warum diese Pins:
 
 - Analoge Sensoren nur an **ADC1** (GPIO32–39). ADC2 funktioniert nicht, solange WLAN aktiv ist.
-- GPIO34/35 sind reine Eingänge – perfekt für Sensoren.
 - Strapping-Pins (GPIO0, 2, 12, 15) nicht für externe Bauteile, sonst bootet der ESP evtl. nicht.
-- GPIO27 ist beim Booten LOW → Pumpe läuft beim Einschalten nicht an.
+- GPIO27 ist beim Booten LOW → die Pumpe läuft beim Einschalten nicht an.
+- **Alles läuft mit 3,3 V** – kein Bauteil an 5 V/VIN anschließen (Ausnahme: Summer Variante B).
 
-## 2. Grove-Kabelfarben
+## 2. Kabelfarben
 
-DHT11, LED-Bar und Relais haben 4-polige Grove-Buchsen. Mit einem Grove-auf-Jumper-Kabel gilt:
+Grove-Stecker (DHT11, LED-Bar, Relais – 4-polig) und Bodensensor (3-polig):
 
-| Farbe | Grove-Pin | Bedeutung |
-|---|---|---|
-| Gelb | 1 | Signal 1 (SIG bzw. DI) |
-| Weiß | 2 | Signal 2 (NC bzw. DCKI) |
-| Rot | 3 | VCC |
-| Schwarz | 4 | GND |
+| Farbe | Bedeutung |
+|---|---|
+| Gelb | Signal (SIG / DI / AOUT) |
+| Weiß | 2. Signal (nur LED-Bar: DCKI) |
+| Rot | VCC → **3V3** |
+| Schwarz | GND |
 
 ## 3. Verkabelung pro Bauteil
 
 ### Stromschienen des Breadboards
 
-- ESP32 **3V3** → rote Schiene (+) · ESP32 **GND** → blaue Schiene (−)
-- Alles, was „3V3“ oder „GND“ braucht, von diesen Schienen nehmen.
+- ESP32 **3V3** → rote Schiene (+)
+- ESP32 **GND** → blaue Schiene (−)
+- Achtung: Bei langen Breadboards sind die Schienen oft **in der Mitte unterbrochen** (Lücke in der roten/blauen Linie) → ggf. mit kurzem Kabel überbrücken.
 
-### Bodenfeuchtesensor IDUINO (S / + / −)
+### Bodenfeuchtesensor „Capacitive Soil Moisture Sensor v2.0“ (GND / VCC / AOUT)
 
-| Sensor | → | ESP32 |
-|---|---|---|
-| S | → | GPIO34 |
-| + | → | GPIO25 |
-| − | → | GND |
+| Sensor | Kabel | → | ESP32 |
+|---|---|---|---|
+| AOUT | gelb | → | GPIO34 |
+| VCC | rot | → | 3V3-Schiene |
+| GND | schwarz | → | GND-Schiene |
 
-Der Sensor bekommt nur Strom, während gemessen wird (GPIO25 kurz HIGH). Das verhindert, dass die Metallstreifen im feuchten Boden schnell korrodieren.
+- Nur bis zur **weißen Linie** in die Erde stecken – die Elektronik oben darf nicht nass werden.
+- Kapazitiv = keine offenen Metallkontakte → korrodiert nicht, darf dauerhaft Strom haben.
+- Trocken = hoher Rohwert (~2 900), nass = niedriger Rohwert (~1 300). Einmal kalibrieren (Firmware-README).
 
 ### Lichtsensor LDR-Modul (VCC / GND / DO / AO)
 
 | Modul | → | ESP32 |
 |---|---|---|
-| VCC | → | 3V3 |
-| GND | → | GND |
+| VCC | → | 3V3-Schiene |
+| GND | → | GND-Schiene |
 | AO | → | GPIO35 |
-| DO | → | nicht anschließen |
-
-Hinweis: Bei diesen Modulen ist der AO-Wert meist **hoch, wenn es dunkel ist**. Die Firmware rechnet das um.
+| DO | → | **nicht anschließen** |
 
 ### Temperatur/Luftfeuchte Grove v1.2 (DHT11)
 
@@ -74,8 +75,10 @@ Hinweis: Bei diesen Modulen ist der AO-Wert meist **hoch, wenn es dunkel ist**. 
 |---|---|---|
 | Gelb (SIG) | → | GPIO4 |
 | Weiß (NC) | → | nicht anschließen |
-| Rot (VCC) | → | 3V3 |
-| Schwarz (GND) | → | GND |
+| Rot (VCC) | → | 3V3-Schiene |
+| Schwarz (GND) | → | GND-Schiene |
+
+Pull-up-Widerstand ist auf dem Grove-Board schon drauf.
 
 ### Grove LED Bar v2.0
 
@@ -83,8 +86,10 @@ Hinweis: Bei diesen Modulen ist der AO-Wert meist **hoch, wenn es dunkel ist**. 
 |---|---|---|
 | Gelb (DI) | → | GPIO18 |
 | Weiß (DCKI) | → | GPIO19 |
-| Rot (VCC) | → | 3V3 |
-| Schwarz (GND) | → | GND |
+| Rot (VCC) | → | 3V3-Schiene |
+| Schwarz (GND) | → | GND-Schiene |
+
+Anzeige: Segment 1 = rot (trocken) … Segment 10 = grün (nass). Füllt sich die Bar falsch herum → seriell `ledflip`.
 
 ### Grove Relay (Pumpe)
 
@@ -94,37 +99,37 @@ Steuerseite (Grove-Buchse):
 |---|---|---|
 | Gelb (SIG) | → | GPIO27 |
 | Weiß (NC) | → | nicht anschließen |
-| Rot (VCC) | → | 3V3 (Relais hat eine 3-V-Spule, **nicht** an 5 V) |
-| Schwarz (GND) | → | GND |
+| Rot (VCC) | → | 3V3-Schiene (3-V-Relais, **nicht** an 5 V) |
+| Schwarz (GND) | → | GND-Schiene |
 
-Lastseite (grüne Schraubklemme J1, 2 Anschlüsse = Schließer):
+Lastseite (grüne Schraubklemme J1 = Schließer):
 
 ```
 12-V-Netzteil (+) ────────── Klemme J1 (links)
                               [Relais-Kontakt]
                              Klemme J1 (rechts) ──── Pumpe (+)
-12-V-Netzteil (−) ──────────────────────────────── Pumpe (−)
+12-V-Netzteil (−) ────────────────────────────────── Pumpe (−)
 
-Freilaufdiode 1N4007 direkt an der Pumpe:
+optional Freilaufdiode 1N4007 direkt an der Pumpe:
   Kathode (Ring) an Pumpe (+), Anode an Pumpe (−)
 ```
 
-- Das Relais trennt den 12-V-Kreis galvanisch vom ESP32 – **keine** gemeinsame Masse nötig.
-- Pumpe ohne markierte Polarität? Kurz testen; pumpt sie falsch herum, Anschlüsse tauschen (Diode mit umdrehen).
-- Pumpe nie trocken laufen lassen.
+- Das Relais trennt den 12-V-Kreis vom ESP32 – **keine** gemeinsame Masse nötig.
+- Pumpt sie falsch herum → Anschlüsse an der Pumpe tauschen (Diode mitdrehen).
+- Pumpe nie trocken laufen lassen, Ansaugschlauch muss im Wasser liegen.
 
 ### Summer LF-PB30W35B (rot = +, schwarz = −)
 
-**Variante A – direkt (erst testen):**
+**Variante A – direkt (zuerst probieren, keine Zusatzteile):**
 
 | Summer | → | ESP32 |
 |---|---|---|
 | Rot (+) | → | GPIO26 |
-| Schwarz (−) | → | GND |
+| Schwarz (−) | → | GND-Schiene |
 
-Der Summer ist für 9 V ausgelegt, an 3,3 V ist er leiser. Wenn er laut genug ist, reicht Variante A.
+Der Summer ist für 9 V gebaut und an 3,3 V leiser. Test: seriell `beep`.
 
-**Variante B – lauter, mit NPN-Transistor (BC547/2N2222) + 1 kΩ:**
+**Variante B – lauter (nur falls A zu leise), NPN-Transistor BC547/2N2222 + 1 kΩ:**
 
 ```
 GPIO26 ── 1 kΩ ── Basis (NPN)
@@ -140,40 +145,49 @@ VIN (5 V) ── Summer rot (+)
                            | EN                  D23 |
                            | VP                  D22 |
                            | VN                  TX0 |
-   Boden S (IDUINO) -----> | D34                 RX0 |
+   Boden AOUT (gelb) ----> | D34                 RX0 |
    LDR AO -------------->  | D35                 D21 |
-   (Tank, spaeter) ----->  | D32                 D19 | -----> LED-Bar DCKI (weiss)
+   (frei)                  | D32                 D19 | -----> LED-Bar DCKI (weiss)
                            | D33                 D18 | -----> LED-Bar DI (gelb)
-   Boden + (Versorg.) <--- | D25                  D5 |
-   Summer <--------------- | D26                 TX2 |
+   (frei)                  | D25                  D5 |
+   Summer + <------------- | D26                 TX2 |
    Relais SIG (gelb) <---- | D27                 RX2 |
                            | D14                  D4 | <----> DHT11 SIG (gelb)
                            | D12                  D2 |  (Onboard-LED)
                            | D13                 D15 |
-                           | GND                 GND | -----> GND-Schiene
-   (Summer Var. B) 5 V --- | VIN                 3V3 | -----> 3V3-Schiene
+                           | GND                 GND | -----> GND-Schiene (blau)
+   (Summer Var. B) 5 V --- | VIN                 3V3 | -----> 3V3-Schiene (rot)
                            +---------[USB]-----------+
 
-   3V3-Schiene: LDR VCC, DHT11 VCC, LED-Bar VCC, Relais VCC
-   GND-Schiene: LDR GND, DHT11 GND, LED-Bar GND, Relais GND, Bodensensor −, Summer −
+   3V3-Schiene: Boden VCC, LDR VCC, DHT11 VCC, LED-Bar VCC, Relais VCC
+   GND-Schiene: Boden GND, LDR GND, DHT11 GND, LED-Bar GND, Relais GND, Summer −
 ```
 
-## 5. Besorgliste
+## 5. Was ihr noch braucht
 
-- [ ] Grove-auf-Jumper-Kabel (Buchse) ×3 für DHT11, LED-Bar, Relais
-- [ ] Jumper-Kabel männlich-männlich / männlich-weiblich
-- [ ] 12-V-Netzteil ≥ 1,5 A mit Hohlstecker-Adapter/Schraubklemme
-- [ ] Freilaufdiode 1N4007
-- [ ] Silikonschlauch passend zur Pumpe, Wasserbehälter
-- [ ] optional: NPN-Transistor + 1 kΩ (Summer), Füllstandssensor/Schwimmerschalter
-- [ ] Micro-USB-**Datenkabel** für den ESP32 (kein reines Ladekabel)
+**Pflicht:**
+
+- [ ] Jumper-Kabel (Breadboard-Kabel) männlich-männlich, ca. 15 Stück
+- [ ] Adapter für die Grove-/Sensorkabel aufs Breadboard – entweder Grove-auf-Jumper-Kabel (habt ihr) oder die Stecker mit männlichen Jumper-Kabeln in die Buchse stecken
+- [ ] 12-V-Netzteil mit Anschluss für die zwei Kabel (Hohlstecker-auf-Schraubklemme-Adapter oder abisolierte Kabel)
+- [ ] Micro-USB-**Datenkabel** (✓ vorhanden)
+
+**Widerstände: keine nötig.** DHT11-Pull-up, LDR-Spannungsteiler und Relais-Transistor sind auf den Modulen schon verbaut.
+
+**Optional:**
+
+- [ ] Freilaufdiode 1N4007 an der Pumpe (Schutz vor Störimpulsen)
+- [ ] NPN-Transistor BC547/2N2222 + 1-kΩ-Widerstand, falls der Summer zu leise ist
+- [ ] Isolierband / Heißkleber, um die Sensor-Elektronik vor Spritzwasser zu schützen
 
 ## 6. Inbetriebnahme in dieser Reihenfolge
 
-1. Nur ESP32 per USB → Testprogramm flashen, serielle Ausgabe prüfen
-2. DHT11 anschließen → Temperatur/Luftfeuchte prüfen
-3. LDR → Wert mit Hand abdecken, muss sich ändern
-4. Bodensensor → trocken / in Wasserglas messen (Kalibrierwerte notieren!)
-5. LED-Bar, Summer
-6. Relais **ohne** Pumpe → Klicken hören, LED am Relais leuchtet
-7. Zuletzt 12-V-Kreis mit Pumpe (Schlauch im Wasser!)
+1. Nur ESP32 per USB → Firmware hochladen, seriellen Monitor öffnen (115200 Baud)
+2. Stromschienen verbinden (3V3, GND)
+3. DHT11 anschließen → `status`: Temperatur/Luftfeuchte plausibel?
+4. LDR → Sensor abdecken, Wert muss sich ändern
+5. Bodensensor → an der Luft vs. im Wasserglas messen, dann `cal soil dry` / `cal soil wet`
+6. LED-Bar → `ledtest` (Segment 1 muss rot sein, sonst `ledflip`)
+7. Summer → `beep`
+8. Relais **ohne** Pumpe → `pump 2`: Klicken + LED am Relais
+9. Zuletzt 12-V-Kreis mit Pumpe (Schlauch im Wasser!) → `pump 3`
