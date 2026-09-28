@@ -176,4 +176,47 @@ Dashboard-Bereich „Demo“ (nur Admin):
 
 _(von Claude-Web gepflegt)_
 
-- [ ] Phase 1
+### Phase 1 (Branch `feature/server-phase1-grundgeruest`)
+
+- [x] `deploy/setup_hotspot.sh`: NetworkManager-Hotspot "SmartGarden" auf `wlan0`, Pi-IP `10.42.0.1`,
+      autoconnect, ufw-Regeln (22/80/443/8000). Noch **nicht auf echtem Pi getestet** (kein Pi verfuegbar) -
+      Skript ist idempotent und prueft `nmcli`-Verfuegbarkeit; Test folgt sobald Hardware da ist.
+      `deploy/smart-garden-api.service` (systemd-Unit) + `deploy/README.md` (Setup-Anleitung) ebenfalls angelegt.
+- [x] `server/`: FastAPI-Grundgerüst (SQLAlchemy/SQLite, WAL-Modus)
+  - `POST /api/v1/readings` exakt nach Vertrag v1.2: Pydantic-Validierung, `X-API-Key`-Pruefung (argon2,
+    zeitkonstant), Rate-Limit 1 Request/2s pro Geraet (429), Antwort mit `commands`/`config`/`demo` (demo
+    aktuell immer `null`, folgt Phase 2)
+  - `GET /api/v1/devices/{id}/latest` fuers Dashboard (noch ohne Auth - Login/Rollen kommen Phase 2)
+  - `GET /healthz`
+  - `python -m app.cli create-device <id>` zum Anlegen von Geraet + API-Key (Key wird einmalig im Klartext
+    ausgegeben, in DB nur Hash)
+  - Getestet lokal mit `tools/fake_esp.py` (von Claude-ESP, Branch `feature/esp-fake-esp`, noch nicht in
+    `main`): 200 bei gueltigem Request, 401 bei falschem/fehlendem Key und unbekanntem Geraet, 429 bei zu
+    schnellen Requests, `GET .../latest` liefert korrekt zurueck was `fake_esp.py` gesendet hat
+  - Tabellen `devices`, `readings`, `device_config`, `pending_commands` (fuer `alerts`, `users`,
+    `access_log`, `demo_state`, `insights_cache` siehe Phase 2/3)
+- [x] `web/`: React-Grundgerüst (Vite + TypeScript + Tailwind v4, react-i18next noch nicht eingebunden -
+      folgt mit Mehrsprachigkeit in Phase 2)
+  - `Dashboard`-Komponente pollt `GET /api/v1/devices/{id}/latest` alle 5s (Vite-Dev-Proxy `/api` ->
+    `localhost:8000`) und zeigt alle aktuellen Sensordaten (Bodenfeuchte inkl. Rohwert, Licht, Temperatur,
+    Luftfeuchte, Tank inkl. Schaetzungs-Hinweis, Pumpe, Geraetestatus/RSSI/Uptime, Fehler, DEMO-Banner falls
+    `demo_overrides` gesetzt)
+  - `tsc -b` laeuft fehlerfrei durch; End-to-End gegen laufenden FastAPI-Server + `fake_esp.py` getestet
+  - Geraete-ID (`esp32-kuebel-01`) ist Phase 1 noch fest verdrahtet - Geraeteauswahl folgt Phase 2
+  - Farbskala Bodenfeuchte ist vorbereitet (gruen/gelb/rot je nach `%`), aber **nicht** die einzige
+    Information (Zahl+Text immer sichtbar, WCAG-Vorgabe)
+
+### Als Naechstes
+
+- PR fuer diesen Branch oeffnen (`[server/web/deploy]` Praefix, kein `[CONTRACT]`, da `api-contract.md`
+  nicht angefasst wurde)
+- Phase 2: Diagramme (Recharts), Warnungen/Alerts, Login+Rollen (argon2 ist schon eingebunden), i18n
+  (NL/DE/EN), Demo-Modus (Endpunkte + Dashboard-Bereich), KI-Stub
+- Hotspot-Skript auf echter Pi-Hardware verifizieren, sobald verfuegbar
+
+### Blocker
+
+- Kein Zugriff auf echte Pi-Hardware in dieser Umgebung -> `deploy/setup_hotspot.sh` ist ungetestet
+  (nur Code-Review-Stand). Bitte auf dem Pi gegenpruefen.
+- `tools/fake_esp.py` ist nur auf `feature/esp-fake-esp` vorhanden, noch nicht in `main` gemerged - Tests
+  liefen gegen den Remote-Branch-Stand (lokal ausgecheckt, nicht committet).

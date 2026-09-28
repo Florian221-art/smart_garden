@@ -1,0 +1,24 @@
+# systemd-Unit fuer die FastAPI-App auf dem Pi.
+# Installieren: sudo cp deploy/smart-garden-api.service /etc/systemd/system/
+#               sudo systemctl daemon-reload
+#               sudo systemctl enable --now smart-garden-api
+#
+# Erwartet: venv unter /opt/smart-garden/server/.venv (siehe deploy/README.md)
+[Unit]
+Description=Smart Garden FastAPI Server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=smartgarden
+WorkingDirectory=/opt/smart-garden/server
+Environment=SMART_GARDEN_DB_URL=sqlite:////opt/smart-garden/server/smart_garden.db
+ExecStart=/opt/smart-garden/server/.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
