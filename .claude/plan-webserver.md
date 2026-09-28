@@ -1,86 +1,102 @@
 # Plan Claude-Web (Nico)
 
-Zuständig für: **Webserver/API**, **Datenbank**, **Dashboard**, **KI-Modul**, **Deployment auf dem Raspberry Pi 5 inkl. WLAN-Hotspot**.
+Zuständig für: **Backend/API**, **Datenbank**, **Dashboard**, **KI-Modul**, **Deployment auf dem Raspberry Pi 5 inkl. WLAN-Hotspot**.
 Schnittstelle zum ESP: `.claude/api-contract.md` – **zuerst lesen**. Regeln: `.claude/CLAUDE.md`.
 Plan und Status bitte nur in dieser Datei pflegen (Abschnitt **Status** unten).
 
-## Zielplattform
+## Festgelegter Tech-Stack (vom Team entschieden)
 
-- Raspberry Pi 5, Raspberry Pi OS 64-bit (Bookworm/Trixie), Python 3.11+
-- Alles läuft lokal auf dem Pi, **keine Cloud, keine CDNs** (Datenschutz + funktioniert ohne Internet)
-
-## Empfohlener Stack
-
-| Bereich | Wahl |
+| Bereich | Technik |
 |---|---|
-| API | FastAPI + Uvicorn |
-| DB | SQLite (WAL-Modus), SQLAlchemy oder `sqlite3` |
-| Dashboard | Statisches HTML/CSS/JS im Ordner `web/`, von FastAPI ausgeliefert; Chart.js **lokal** eingebunden |
-| KI | Python-Paket `ai/` (numpy, optional scikit-learn), läuft im Server-Prozess |
-| Reverse Proxy / TLS | Caddy mit `tls internal` (selbstsigniertes Zertifikat) |
+| Backend/API | **Python** – FastAPI + Uvicorn, Pydantic |
+| Datenbank | SQLite (WAL-Modus), SQLAlchemy |
+| KI | **Python** – scikit-learn, numpy/pandas; Chatbot über **Ollama** lokal auf dem Pi |
+| Frontend | **React + Tailwind CSS** (Vite, TypeScript empfohlen) |
+| Diagramme | Recharts |
+| Mehrsprachigkeit | react-i18next (NL/DE/EN) |
+| Reverse Proxy / TLS | Caddy mit `tls internal` |
 | Dienste | systemd-Units in `deploy/` |
-| Firewall | ufw: nur 22 (SSH), 80, 443 (+ 8000 während Phase 1) |
+| Firewall | ufw: 22, 80, 443 (+ 8000 während Phase 1) |
+
+Zielplattform: Raspberry Pi 5, **8 GB RAM**, Raspberry Pi OS 64-bit, Python 3.11+, Node.js nur zum Bauen.
+Alles läuft lokal, **keine Cloud, keine CDNs**, keine externen Fonts (Datenschutz + funktioniert ohne Internet).
+
+## Ordnerstruktur
+
+```
+server/        FastAPI-App (app/main.py, routers/, models.py, db.py, auth.py, alerts.py)
+ai/            KI-Paket (garden_ai.py, models/, train.py, chatbot.py, tests/)
+web/           React-Projekt (Vite + Tailwind); `npm run build` → web/dist/
+deploy/        Hotspot-Setup, systemd-Units, Caddyfile, Install-Skript
+docs/server/   Sicherheitsanalyse, Infrastrukturdiagramm, API-Doku
+```
+
+- Entwicklung: FastAPI auf dem Laptop (`uvicorn --reload`), React mit `npm run dev` (Vite-Proxy auf `/api`). Testdaten mit `tools/fake_esp.py`.
+- Produktion: `web/dist/` wird von Caddy (oder FastAPI) als statische Seite ausgeliefert, `/api` geht an FastAPI. Bauen auf dem Laptop oder direkt auf dem Pi.
 
 ## Aufgaben
 
-### 0. Netzwerk: WLAN-Hotspot auf dem Pi (`deploy/`)
+### 0. Netzwerk: WLAN-Hotspot auf dem Pi (`deploy/`) – zuerst!
 
-- NetworkManager-Hotspot auf `wlan0`: SSID `SmartGarden`, WPA2, Pi-IP `10.42.0.1` (Standard bei `ipv4.method shared`)
-  - z. B. `nmcli dev wifi hotspot ifname wlan0 ssid SmartGarden password <geheim>` + Autostart (`connection.autoconnect yes`)
-- Internet für den Pi (Updates) über Ethernet, falls vorhanden
+- NetworkManager-Hotspot auf `wlan0`: SSID `SmartGarden`, WPA2, Pi-IP `10.42.0.1`
+  - z. B. `nmcli dev wifi hotspot ifname wlan0 ssid SmartGarden password <geheim>` + `connection.autoconnect yes`
+- Internet für den Pi (Updates, Ollama-Modell laden) über Ethernet
 - WLAN-Passwort **nicht** committen; Florian bekommt es für `secrets.h` im ESP
-- Möglichst früh einrichten – der ESP braucht das Netz für den ersten echten Test
 
 ### 1. API (`server/`)
 
-- `POST /api/v1/readings` exakt nach Vertrag (Pydantic-Validierung, API-Key-Prüfung, Rate-Limit, Antwort mit `commands` + `config`)
-- API-Keys **gehasht** speichern (z. B. SHA-256), Vergleich zeitkonstant
-- Lese-Endpunkte fürs Dashboard, z. B.:
+- `POST /api/v1/readings` exakt nach Vertrag (Pydantic, API-Key-Prüfung, Rate-Limit, Antwort mit `commands` + `config`)
+- API-Keys **gehasht** speichern, Vergleich zeitkonstant; Gerät + Key per CLI-Befehl anlegen
+- Endpunkte fürs Dashboard, z. B.:
   - `GET /api/v1/devices/{id}/latest`
-  - `GET /api/v1/devices/{id}/readings?from=&to=&bucket=` (Grafiken, optional aggregiert)
-  - `GET /api/v1/devices/{id}/insights` → KI-Ergebnis (siehe 4.)
+  - `GET /api/v1/devices/{id}/readings?from=&to=&bucket=`
+  - `GET /api/v1/devices/{id}/insights` (KI-Ergebnis)
+  - `POST /api/v1/chat` (Chatbot, siehe 4.)
   - `GET /api/v1/alerts`, `POST /api/v1/alerts/{id}/ack`
-  - `GET/PUT /api/v1/devices/{id}/config` (nur Admin; inkl. Tankgröße und Pumpen-Durchfluss)
-  - `POST /api/v1/devices/{id}/commands` (nur Admin: manuell gießen, **Tank aufgefüllt**, identify)
-- Live-Updates: Polling alle 5 s reicht; optional Server-Sent Events
+  - `GET/PUT /api/v1/devices/{id}/config` (Admin; inkl. Tankgröße, Durchfluss)
+  - `POST /api/v1/devices/{id}/commands` (Admin: gießen, **Tank aufgefüllt**, identify)
+  - `POST /api/v1/auth/login`, `/logout`, `GET /api/v1/auth/me`
+- OpenAPI-Doku von FastAPI ist gleichzeitig die API-Dokumentation
 
 ### 2. Datenbank
 
-Vorschlag Tabellen: `devices`, `readings`, `alerts`, `commands`, `device_config`, `users`, `access_log`.
+Tabellen: `devices`, `readings`, `alerts`, `commands`, `device_config`, `users`, `access_log`, `insights_cache`.
 
-- **Datenaufbewahrung:** Rohwerte 30 Tage, danach nur Stundenmittel (täglicher Job)
-- Keine personenbezogenen Daten außer Benutzerkonten
+- **Datenaufbewahrung:** Rohwerte 30 Tage, danach Stundenmittel (täglicher Job)
+- Keine personenbezogenen Daten außer Benutzerkonten; Chat-Verläufe **nicht** dauerhaft speichern
 
 ### 3. Sicherheit
 
-- Rollen **Admin** / **Leser**; Login mit Session-Cookie (HttpOnly, Secure, SameSite=Strict), Passwörter mit bcrypt/argon2
-- Leser dürfen nur lesen; Konfiguration, Befehle, Benutzerverwaltung nur Admin
-- **Zugriffsprotokoll** (Zeit, Benutzer/Gerät, IP, Methode, Pfad, Status) in `access_log` + Ansicht für Admin
-- CSRF-Schutz für schreibende Dashboard-Requests, Security-Header (CSP ohne externe Quellen)
-- **OWASP-Bedrohungsmodellierung** in `docs/server/security.md` (Florian liefert ESP-/Hardware-Teil zu)
+- Rollen **Admin** / **Leser**; Session-Cookie (HttpOnly, Secure, SameSite=Strict), Passwörter mit argon2/bcrypt
+- Leser nur lesen (+ Chatbot); Config, Befehle, Benutzer nur Admin
+- **Zugriffsprotokoll** (Zeit, Benutzer/Gerät, IP, Methode, Pfad, Status) + Admin-Ansicht
+- CSRF-Schutz, Security-Header (CSP ohne externe Quellen), Rate-Limit auf Login und Chat
+- Chatbot: Prompt-Injection bedenken – Bot hat **nur Lesezugriff** auf Messwerte, kann keine Befehle auslösen
+- **OWASP-Bedrohungsmodell** in `docs/server/security.md` (Florian liefert ESP-/Hardware-Teil)
 
-### 4. KI-Modul (`ai/`)
+### 4. KI (`ai/`, komplett Python)
 
-Vorgeschlagene Schnittstelle (intern, darf Claude-Web frei ändern):
+Stufe B – Modelle (Pflicht):
+
+1. **Wasserbedarf-Prognose:** scikit-learn-Regressionsmodell (z. B. GradientBoosting/RandomForest) – Eingaben: aktuelle Feuchte, Trend, Temperatur, Luftfeuchte, Licht, Tageszeit → Stunden bis `moisture_min_pct`. Training auf simulierten Verläufen (`train.py`), später mit echten Daten nachtrainieren. Modell als Datei in `ai/models/`.
+2. **Anomalie-Erkennung:** IsolationForest + einfache Regeln (Sprung, „Sensor hängt“, plötzlicher Temperaturanstieg)
+3. **Pflanzenstress-Score** 0–100 mit Begründungen (`ok` / `warn` / `critical`)
+4. **Tank-Prognose:** Tage bis Tank leer (aus Verbrauchstrend)
+5. **Wasserersparnis/CO₂** gegenüber festem Gießplan
+
+Stufe C – Pflanzen-Chatbot (wenn Zeit):
+
+- **Ollama** auf dem Pi, kleines Modell (z. B. `llama3.2:3b` oder `qwen2.5:3b`, ~2–3 GB RAM)
+- Server baut den Prompt aus aktuellen Messwerten + KI-Ergebnis + kurzem Pflanzenwissen (Tomate, Erdbeere, Kräuter, Kapuzinerkresse)
+- Antwort in der Sprache der Oberfläche (NL/DE/EN), Streaming ans Frontend
+- Läuft komplett offline → Datenschutz-Argument für die Präsentation
+
+Schnittstelle (Vorschlag):
 
 ```python
 from ai.garden_ai import analyze
-result = analyze(readings: list[dict], config: dict) -> dict
+result = analyze(readings: list[dict], config: dict) -> dict   # < 1 s, keine Exceptions
 ```
-
-- `readings` aufsteigend nach Zeit, max. 7 Tage, Felder aus dem Vertrag + `received_at`
-- < 1 s auf dem Pi, keine Netzwerkzugriffe, keine Exceptions (zu wenig Daten → `null`)
-
-Inhalte:
-
-1. **Wasserbedarf-Prognose:** Trend der Bodenfeuchte (Regression, Pumpenereignisse herausgerechnet) → Stunden bis `moisture_min_pct`, korrigiert nach Temperatur/Licht
-2. **Anomalie-Erkennung:** robuster Z-Score (Median/MAD), Sprungerkennung (z. B. plötzlicher Temperaturanstieg), „Sensor hängt“
-3. **Pflanzenstress-Score** 0–100 mit Begründungen (`ok` / `warn` / `critical`)
-4. **Tank-Prognose:** Wann ist der Tank leer (aus Verbrauchstrend)?
-5. **Wasserersparnis/CO₂** gegenüber festem Gießplan (Nachhaltigkeit)
-6. Ergebnisse mit `message_key`s für i18n; Unit-Tests mit synthetischen Daten
-
-Beispiel-Rückgabe:
 
 ```json
 {
@@ -93,34 +109,31 @@ Beispiel-Rückgabe:
 }
 ```
 
-### 5. Dashboard (`web/`)
+### 5. Dashboard (`web/`, React + Tailwind)
 
-- Kacheln: Bodenfeuchte, Licht, Temperatur, Luftfeuchte, **Tank (geschätzt, klar als Schätzung gekennzeichnet)**, Pumpe/Wasserverbrauch, KI-Prognose, Stress-Level
-- Echtzeit-Grafiken (letzte Stunde / 24 h / 7 Tage)
-- Verständliche Statusmeldungen (z. B. „Die Erde ist trocken – bald wird gegossen.“)
-- **Mehrsprachig NL/DE/EN** über JSON-Sprachdateien; alle `message_key`s übersetzen
-- **WCAG 2.1 AA:** Kontrast ≥ 4.5:1, Tastatur, sichtbarer Fokus, `aria-live` für Warnungen, nie nur Farbe, skalierbare Schrift, einfache Sprache
+- Kacheln: Bodenfeuchte, Licht, Temperatur, Luftfeuchte, **Tank (als Schätzung gekennzeichnet)**, Pumpe/Wasserverbrauch, KI-Prognose, Stress-Level
+- Echtzeit-Diagramme (1 h / 24 h / 7 Tage), Polling alle 5 s
+- Verständliche Statusmeldungen („Die Erde ist trocken – bald wird gegossen.“)
+- Chatbot-Fenster (Stufe C)
+- **NL/DE/EN** mit react-i18next; alle `message_key`s übersetzen; Sprache umschaltbar
+- **WCAG 2.1 AA:** Kontrast ≥ 4.5:1, Tastatur, sichtbarer Fokus, `aria-live` für Warnungen, nie nur Farbe, skalierbare Schrift, einfache Sprache, Hell/Dunkel-Modus
 - Nachhaltigkeit: gesparte Wassermenge, CO₂-Schätzung
-- Admin: Grenzwerte, Tankgröße, Durchfluss, manuell gießen, „Tank aufgefüllt“, Benutzer, Zugriffsprotokoll
+- Admin: Grenzwerte, Tankgröße, Durchfluss, gießen, „Tank aufgefüllt“, Benutzer, Zugriffsprotokoll
 
 ### 6. Deployment (`deploy/`)
 
-- Installationsanleitung/Skript (Hotspot, venv, systemd, Caddy, ufw)
-- Tägliches Backup der SQLite-DB (`sqlite3 .backup`)
-- Optional Monitoring (`/healthz`, später Grafana/Prometheus)
-
-## Testen ohne Hardware
-
-`python tools/fake_esp.py --url http://localhost:8000 --key <key> --interval 2` (liefert Claude-ESP).
+- Install-Skript: Hotspot, Python-venv, systemd, Caddy, ufw, Ollama
+- Tägliches SQLite-Backup (`sqlite3 .backup`)
+- `/healthz`; optional Monitoring (Prometheus/Grafana)
 
 ## Reihenfolge
 
 | Phase | Inhalt |
 |---|---|
-| 1 | Hotspot auf dem Pi, FastAPI-Grundgerüst, `POST /readings` + DB, einfaches Dashboard |
-| 2 | Grafiken, Warnungen, Login + Rollen, i18n, KI-Stub |
-| 3 | KI v1, Admin-Funktionen (Config, Befehle, Tank), HTTPS via Caddy, Zugriffsprotokoll |
-| 4 | Deployment finalisieren, Tests, Sicherheitsanalyse, Infrastrukturdiagramm |
+| 1 | Hotspot, FastAPI-Grundgerüst, `POST /readings` + DB, React-Grundgerüst mit aktuellen Werten |
+| 2 | Diagramme, Warnungen, Login + Rollen, i18n, KI-Stub |
+| 3 | KI Stufe B, Admin-Funktionen, HTTPS via Caddy, Zugriffsprotokoll |
+| 4 | Chatbot (Stufe C), Deployment finalisieren, Tests, Sicherheitsanalyse, Infrastrukturdiagramm |
 
 ## Status
 

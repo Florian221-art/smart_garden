@@ -6,11 +6,12 @@ Version: **1.1** (28.09.2026) · Besitzer: Claude-ESP · Änderungen nur per `[C
 
 ```
             WLAN-Hotspot "SmartGarden" (vom Pi aufgespannt, WPA2)
-[ESP32 + Sensoren/Aktoren] --HTTP(S) POST alle N s--> [Raspberry Pi 5, 10.42.0.1]
-                                                     ├─ Caddy (HTTPS, Reverse Proxy)
-                                                     ├─ FastAPI-Server (server/) + KI-Modul (ai/)
-                                                     ├─ SQLite-DB
-                                                     └─ Dashboard (web/)
+[ESP32, C++/Arduino] --HTTP(S) POST alle N s--> [Raspberry Pi 5 (8 GB), 10.42.0.1]
+                                               ├─ Caddy (HTTPS, Reverse Proxy)
+                                               ├─ FastAPI (server/, Python) + KI-Modul (ai/, Python)
+                                               ├─ SQLite-DB
+                                               ├─ Ollama (lokales Sprachmodell für Chatbot, optional)
+                                               └─ Dashboard (web/, React + Tailwind, statischer Build)
 [Browser Schüler/Lehrer im Hotspot] --HTTPS--> Pi
 ```
 
@@ -127,7 +128,7 @@ tank_remaining_ml -= pump_laufzeit_s × pump_flow_ml_per_s
 
 - **Der ESP ist maßgeblich:** Er rechnet mit, speichert den Wert dauerhaft im Flash (überlebt Neustart) und meldet ihn bei jedem POST.
 - Nachfüllen: Button „Tank aufgefüllt“ im Dashboard → Command `tank_refilled` (alternativ: BOOT-Taste am ESP 3 s halten).
-- `tank_capacity_ml` und `pump_flow_ml_per_s` stellt der Admin im Dashboard ein. Durchfluss einmal auspessen: Pumpe 10 s laufen lassen, Menge im Messbecher ablesen, durch 10 teilen.
+- `tank_capacity_ml` und `pump_flow_ml_per_s` stellt der Admin im Dashboard ein. Durchfluss einmal ausmessen: Pumpe 10 s laufen lassen, Menge im Messbecher ablesen, durch 10 teilen.
 - Unter `tank_low_pct` → Warnung (Server-Alert, LED-Bar, Summer). Bei ≤ 5 % stoppt der ESP die automatische Bewässerung (Trockenlaufschutz) und meldet `tank_empty`.
 - Der Server berechnet den Wasserverbrauch über `pump_on_s_since_last × pump_flow_ml_per_s`.
 
