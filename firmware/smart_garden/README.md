@@ -14,17 +14,20 @@ C++ / Arduino-Framework. Verkabelung: [`docs/hardware/verkabelung.md`](../../doc
    - Die Grove LED Bar braucht **keine** Bibliothek – der Treiber ist eingebaut (`ledbar.cpp`).
 5. Treiber für den USB-Chip **CP2102** (Silicon Labs), falls Windows keinen COM-Port anzeigt.
 
-## 2. Zugangsdaten eintragen
+## 2. Einstellungen eintragen
 
 Ganz oben in **`smart_garden.ino`** im Block **„EINSTELLUNGEN – HIER ANPASSEN“**:
 
-| Variable | Wert |
+| Variable | Bedeutung |
 |---|---|
-| `CFG_WIFI_SSID` | `SmartGarden` (Hotspot des Pi) |
-| `CFG_WIFI_PASSWORD` | von Nico |
+| `CFG_WIFI_SSID` | WLAN-Name, `SmartGarden` (Hotspot des Pi) |
+| `CFG_WIFI_PASSWORD` | WLAN-Passwort (von Nico) |
 | `CFG_SERVER_URL` | `http://10.42.0.1:8000` |
 | `CFG_API_KEY` | wird auf dem Server beim Anlegen des Geräts erzeugt |
 | `CFG_DEVICE_ID` | `esp32-kuebel-01` |
+| `CFG_LEDBAR_MODE` | `0` = Zeiger (2 LEDs an der Position: trocken = rot, feucht = grün) · `1` = Füllbalken ab Rot |
+| `CFG_LEDBAR_REVERSE` | `true`, falls die Anzeige gespiegelt erscheint (grün bei trockener Erde) |
+| `CFG_BUZZER_ENABLED` | `false` = Summer komplett stumm |
 
 **Das Repo ist öffentlich:** echtes Passwort und API-Key nicht committen. Vor einem `git pull` die lokale Änderung mit `git stash` beiseitelegen und danach mit `git stash pop` zurückholen.
 
@@ -38,7 +41,7 @@ Ohne gültiges WLAN funktionieren Sensoren, LED-Bar, Pumpe und Demo-Befehle trot
 4. *Werkzeuge → Serieller Monitor*, **115200 Baud**, Zeilenende **„Neue Zeile“**.
 
 Beim Start: LED-Bar läuft einmal von Segment 1 (rot) bis 10 (grün) durch, der Summer piept kurz.
-Füllt sich die Bar vom grünen Ende aus → im seriellen Monitor `ledflip` eingeben (wird gespeichert).
+Leuchtet dabei zuerst Grün → oben `CFG_LEDBAR_REVERSE = true` setzen (zum Ausprobieren ohne Hochladen: `ledflip`).
 
 ## 4. Kalibrieren (einmal, dauert 2 Minuten)
 
@@ -67,8 +70,10 @@ Pumpen-Durchfluss messen: Schlauch in einen Messbecher, `pump 10` eingeben, Meng
 | `pump 3` | Pumpe 3 s laufen lassen (Sicherheitsgrenzen gelten) |
 | `stop` | Pumpe sofort aus |
 | `refill` | Tank als aufgefüllt markieren (oder BOOT-Taste 3 s halten) |
-| `ledtest` / `ledflip` | LED-Bar testen / Richtung umdrehen |
-| `beep` | Summer testen |
+| `ledtest` / `ledflip` | LED-Bar testen / Richtung umdrehen (bis Neustart) |
+| `ledseg 3` | genau 3 Segmente (ab Segment 1) 10 s lang anzeigen – zum Prüfen der Richtung |
+| `beep` | Summer testen (piept auch, wenn stumm) |
+| `mute` | Summer an/aus (bis Neustart) |
 | `send` | sofort an den Server senden |
 
 Der Demo-Modus lässt sich im Dashboard auch per Knopf auslösen (Admin). Demo-Werte werden an den Server als `demo_overrides` gemeldet.
@@ -76,7 +81,9 @@ Der Demo-Modus lässt sich im Dashboard auch per Knopf auslösen (Admin). Demo-W
 ## 6. Was die Firmware macht
 
 - Misst alle 2 s: Bodenfeuchte (kapazitiv, GPIO34), Licht (GPIO35), Temperatur/Luftfeuchte (DHT11, GPIO4)
-- LED-Bar: Bodenfeuchte 0–100 % → 1–10 Segmente (rot = trocken, grün = feucht); < 10 % blinkt rot; Tank leer → Segment 1 blinkt schnell; Sensorfehler → Segment 1/10 abwechselnd
+- LED-Bar: Bodenfeuchte 0–100 % → Position 1–10 (rot = trocken, grün = feucht), als Zeiger (Standard) oder Füllbalken; < 10 % blinkt rot; Tank leer → Segment 1 blinkt schnell; Sensorfehler → Segment 1/10 abwechselnd
+- Summer: piept nur, wenn ein Problem **neu** auftritt (Tank leer, Sensorfehler), danach höchstens alle 10 min; Grund steht im seriellen Monitor als `[ALARM] …`
+- **Tank leer (geschätzt) sperrt die Pumpe** (Trockenlaufschutz). Nach dem Auffüllen `refill` eingeben oder BOOT 3 s halten.
 - Automatisches Gießen: unter `moisture_min_pct` startet eine Gieß-Sitzung, Pumpe läuft stoßweise (`max_pump_s_per_run`, Pause `pump_cooldown_s`) bis `moisture_target_pct` erreicht ist
 - **Sicherheitsgrenzen** (auch im Demo-Modus): max. 15 s pro Lauf, Tageslimit, Pause, kein Pumpen bei Tank ≤ 5 %, Relais beim Start aus, kein HTTP-Request während die Pumpe läuft
 - Tank-Schätzung aus Pumpenlaufzeit × Durchfluss, im Flash gespeichert

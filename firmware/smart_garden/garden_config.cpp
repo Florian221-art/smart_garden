@@ -48,6 +48,8 @@ void configPrint() {
                 settings.max_pump_s_per_run, (unsigned long)settings.pump_cooldown_s, settings.max_pump_s_per_day);
   Serial.printf("[CFG] tank=%.0fml durchfluss=%.1fml/s tank_low=%.0f%% summer=%d\n", settings.tank_capacity_ml,
                 settings.pump_flow_ml_per_s, settings.tank_low_pct, settings.buzzer_enabled);
-  Serial.printf("[CAL] boden trocken=%d nass=%d | licht dunkel=%d hell=%d | ledbar greenToRed=%d\n", calib.soil_raw_dry,
-                calib.soil_raw_wet, calib.light_raw_dark, calib.light_raw_bright, calib.ledbar_green_to_red);
+  Serial.printf("[CAL] boden trocken=%d nass=%d | licht dunkel=%d hell=%d\n", calib.soil_raw_dry, calib.soil_raw_wet,
+                calib.light_raw_dark, calib.light_raw_bright);
+  Serial.printf("[LED] modus=%d (0=Zeiger, 1=Balken) reverse=%d | Summer %s\n", CFG_LEDBAR_MODE, CFG_LEDBAR_REVERSE,
+                (CFG_BUZZER_ENABLED && settings.buzzer_enabled) ? "an" : "stumm");
 }
