@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { LatestReading } from './types'
 import StatTile from './components/StatTile'
+import { describeError } from './errorMessages'
 
 const DEVICE_ID = 'esp32-kuebel-01' // Phase 1: fest; Geraeteauswahl folgt in Phase 2
 const POLL_INTERVAL_MS = 5000 // laut plan-webserver.md Abschnitt 6
@@ -109,7 +110,14 @@ export default function Dashboard() {
         />
         <StatTile
           label="Fehler"
-          value={reading && reading.errors.length > 0 ? reading.errors.join(', ') : 'keine'}
+          value={
+            reading && reading.errors.length > 0
+              ? reading.errors.map(describeError).join('; ')
+              : 'keine'
+          }
+          hint={
+            reading && reading.errors.length > 0 ? `Code(s): ${reading.errors.join(', ')}` : undefined
+          }
           tone={reading && reading.errors.length > 0 ? 'critical' : 'ok'}
         />
       </section>
