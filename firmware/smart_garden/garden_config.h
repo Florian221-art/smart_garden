@@ -5,18 +5,13 @@
 #define FW_VERSION "0.1.0"
 
 // ---------------------------------------------------------------------------
-// Zugangsdaten: secrets.h (nicht im Git). Vorlage: secrets.h.example
+// Zugangsdaten (WLAN, Server, API-Key) – werden OBEN in smart_garden.ino eingetragen
 // ---------------------------------------------------------------------------
-#if __has_include("secrets.h")
-#include "secrets.h"
-#else
-#warning "secrets.h fehlt – kopiere secrets.h.example nach secrets.h und trage WLAN/API-Key ein. Es wird mit Platzhaltern kompiliert."
-#define WIFI_SSID "SmartGarden"
-#define WIFI_PASSWORD "CHANGE_ME"
-#define SERVER_URL "http://10.42.0.1:8000"
-#define API_KEY "CHANGE_ME"
-#define DEVICE_ID "esp32-kuebel-01"
-#endif
+extern const char *CFG_WIFI_SSID;
+extern const char *CFG_WIFI_PASSWORD;
+extern const char *CFG_SERVER_URL;
+extern const char *CFG_API_KEY;
+extern const char *CFG_DEVICE_ID;
 
 // ---------------------------------------------------------------------------
 // Pins (siehe docs/hardware/verkabelung.md)

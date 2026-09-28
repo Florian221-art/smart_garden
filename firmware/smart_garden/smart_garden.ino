@@ -13,6 +13,17 @@
   Serielle Konsole (115200 Baud, Zeilenende "Neue Zeile"): "help" eingeben.
 */
 
+// ============================================================================
+//  EINSTELLUNGEN – HIER ANPASSEN
+// ============================================================================
+const char *CFG_WIFI_SSID     = "SmartGarden";            // WLAN-Name (Hotspot des Raspberry Pi)
+const char *CFG_WIFI_PASSWORD = "hier-passwort";          // WLAN-Passwort (von Nico)
+const char *CFG_SERVER_URL    = "http://10.42.0.1:8000";  // Server auf dem Pi (Phase 3: "https://10.42.0.1")
+const char *CFG_API_KEY       = "hier-api-key";           // API-Key des Geräts (vom Server)
+const char *CFG_DEVICE_ID     = "esp32-kuebel-01";        // Name des Geräts
+// Achtung: Das Repo ist öffentlich – echtes Passwort/API-Key NICHT committen.
+// ============================================================================
+
 #include <ArduinoJson.h>
 #include <WiFi.h>
 #include "garden_config.h"
@@ -138,7 +149,7 @@ static void handleCommands(JsonObjectConst cmd) {
 
 static void sendReading() {
   JsonDocument doc;
-  doc["device_id"] = DEVICE_ID;
+  doc["device_id"] = CFG_DEVICE_ID;
   doc["fw_version"] = FW_VERSION;
   doc["seq"] = seq;
   doc["uptime_s"] = millis() / 1000;
@@ -297,7 +308,7 @@ void setup() {
   Serial.begin(115200);
   delay(300);
   Serial.println();
-  Serial.printf("=== Smart Garden ESP32 – Firmware %s – Gerät %s ===\n", FW_VERSION, DEVICE_ID);
+  Serial.printf("=== Smart Garden ESP32 – Firmware %s – Gerät %s ===\n", FW_VERSION, CFG_DEVICE_ID);
 
   pinMode(PIN_BOOT_BTN, INPUT_PULLUP);
   configBegin();
