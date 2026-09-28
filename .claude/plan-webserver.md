@@ -222,17 +222,31 @@ _(von Claude-Web gepflegt)_
 - [x] `pydantic` 2.9.2 -> 2.13.5: alte Version hatte keine fertigen Pakete fuer Python 3.14 (Nicos Mac) und
       liess sich dort nicht bauen. Geprueft: fertige Pakete fuer macOS arm64/Py3.14 und Pi (aarch64, Py3.11/3.13)
 
+### Phase 2 – Teil 2: Demo-Modus (Branch `feature/web-demo-modus`)
+
+- [x] `GET/PUT/DELETE /api/v1/devices/{id}/demo`: Overrides (nur Vertragsfelder, Wertebereiche geprueft),
+      erzwungene Fehler (`dht_read_failed`, `soil_out_of_range`, `light_read_failed`), Dauer 10–600 s, Szenario-Name.
+      Tabelle `demo_state`; laeuft serverseitig ab. `POST /readings` schickt `demo` jetzt echt an den ESP
+      (`expires_in_s` = Restzeit).
+- [x] `GET/POST /api/v1/devices/{id}/commands`: gießen (auf `max_pump_s_per_run` begrenzt), Tank aufgefuellt,
+      identify, Summer - genau einmal zugestellt (Tabelle `pending_commands`).
+- [x] Dashboard "Demo-Steuerung": 5 Szenario-Buttons aus Abschnitt 5, eigene Werte per Schieberegler,
+      Sensorausfall-Checkboxen, Dauer 1/2/5/10 min, Countdown, "Demo beenden", Geraetebefehle,
+      Anzeige ob das Geraet die Demo uebernommen hat; Banner fuer alle oben (sticky); DEMO-Badge an Kacheln;
+      Steuerung ein-/ausblendbar (fuer die Beamer-Ansicht).
+- [x] Getestet mit `fake_esp.py` (auch unter Python 3.14): Szenarien kommen an, ESP giesst bei "Trockene Erde",
+      Befehle einmal zugestellt, Ablauf/Beenden, 422 fuer ungueltige Eingaben; Browser-Klicktest per Playwright.
+- [ ] **Offen: nur Admin** - Login/Rollen fehlen noch, bis dahin kann jeder im Hotspot-WLAN Demo/Befehle ausloesen.
+      Aenderungen stehen vorerst im Server-Log (`smart_garden.control`), echtes Zugriffsprotokoll folgt.
+- [ ] Optional aus dem Plan noch nicht gebaut: "Demo-Cooldown" (pump_cooldown_s kurz auf 30 s)
+
 ### Als Naechstes
 
-- PR fuer diesen Branch oeffnen (`[server/web/deploy]` Praefix, kein `[CONTRACT]`, da `api-contract.md`
-  nicht angefasst wurde)
-- Phase 2 (Rest): Warnungen/Alerts, Login+Rollen (argon2 ist schon eingebunden), i18n
-  (NL/DE/EN), Demo-Modus (Endpunkte + Dashboard-Bereich), KI-Stub
+- Login + Rollen (Admin/Leser) und damit Demo/Befehle absichern, Zugriffsprotokoll
+- Warnungen/Alerts, i18n (NL/DE/EN), KI-Stub
+- Mit echtem ESP testen (Florian): Demo-Szenarien, "Tank aufgefuellt" nach "Tank fast leer"
 - Hotspot-Skript auf echter Pi-Hardware verifizieren, sobald verfuegbar
 
 ### Blocker
 
-- Kein Zugriff auf echte Pi-Hardware in dieser Umgebung -> `deploy/setup_hotspot.sh` ist ungetestet
-  (nur Code-Review-Stand). Bitte auf dem Pi gegenpruefen.
-- `tools/fake_esp.py` ist nur auf `feature/esp-fake-esp` vorhanden, noch nicht in `main` gemerged - Tests
-  liefen gegen den Remote-Branch-Stand (lokal ausgecheckt, nicht committet).
+- Kein Zugriff auf echte Pi-Hardware in dieser Umgebung -> `deploy/setup_hotspot.sh` ist ungetestet.

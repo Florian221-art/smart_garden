@@ -133,11 +133,39 @@ Hardware: `python -m app.dev_seed esp32-kuebel-01 --hours 48` füllt die
 Behoben: Zeitstempel wurden ohne Zeitzone ausgeliefert, der Browser zeigte
 „Letzter Kontakt“ deshalb 2 h falsch an.
 
+## Demo-Modus für die Präsentation (Phase 2, Teil 2)
+
+Im Dashboard gibt es die **Demo-Steuerung** (unter den Kacheln, oben rechts
+ein-/ausblendbar). Sie überschreibt Messwerte **auf dem ESP** – so reagiert die
+echte Hardware (Pumpe, LED-Bar, Summer), wie im API-Vertrag Abschnitt 4
+vorgesehen. Die Sicherheitsgrenzen der Pumpe gelten weiter.
+
+- **Szenarien per Klick:** Trockene Erde (12 % → ESP gießt), Hitzewelle
+  (38 °C / 25 %), Tank fast leer (4 %), Sensorausfall (DHT11), Nacht (Licht 2 %).
+- **Eigene Werte:** Schieberegler für Bodenfeuchte, Licht, Temperatur,
+  Luftfeuchte, Tank und Checkboxen für Sensorausfälle.
+- **Dauer** 1/2/5/10 min mit Countdown; „Demo beenden“ schaltet sofort zurück.
+  Der ESP übernimmt Änderungen mit seiner nächsten Meldung (alle ~15 s) – die
+  Steuerung zeigt an, sobald das Gerät die Demo-Werte meldet.
+- **Gerät:** Jetzt gießen (5 s), Tank aufgefüllt, Gerät finden (LED blinkt),
+  Piepen – jeweils genau einmal an den ESP zugestellt.
+- Solange die Demo läuft, sehen **alle** oben einen violetten Banner; betroffene
+  Kacheln tragen „DEMO“, im Verlauf ist der Zeitraum hinterlegt.
+
+**Tipp für die Präsentation:** Nach „Tank fast leer“ merkt sich der ESP die
+Tank-Schätzung von 4 % – danach „Tank aufgefüllt“ drücken.
+
+**Noch offen:** Laut Plan dürfen das nur Admins. Login/Rollen gibt es noch
+nicht, bis dahin kann jeder im Hotspot-WLAN die Demo auslösen. Jede Änderung
+wird im Server-Terminal protokolliert.
+
+Backend: `GET/PUT/DELETE /api/v1/devices/{id}/demo`,
+`GET/POST /api/v1/devices/{id}/commands`.
+
 ## Bekannte Lücken / Als Nächstes
 
 - Hotspot-Skript auf echtem Pi verifizieren
 - Phase 2 (Rest): Warnungen/Alerts, Login+Rollen
-  (argon2 ist schon eingebunden), i18n (NL/DE/EN), Demo-Modus-Endpunkte +
-  Dashboard-Bereich, KI-Stub
+  (argon2 ist schon eingebunden), i18n (NL/DE/EN), KI-Stub
 - API-Key + WLAN-Passwort müssen an Florian übergeben werden (siehe
   Blocker in `.claude/plan-esp.md`)
