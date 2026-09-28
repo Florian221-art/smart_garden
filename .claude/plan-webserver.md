@@ -1,7 +1,8 @@
 # Plan Claude-Web (Nico)
 
 Zuständig für: **Webserver/API**, **Datenbank**, **Dashboard**, **Deployment auf dem Raspberry Pi 5**.
-Schnittstelle zum ESP und zum KI-Modul: `.claude/api-contract.md` – **zuerst lesen**. Regeln: `CLAUDE.md`.
+Schnittstelle zum ESP und zum KI-Modul: `.claude/api-contract.md` – **zuerst lesen**. Regeln: `.claude/CLAUDE.md`.
+Plan und Status bitte nur in dieser Datei pflegen (Abschnitt **Status** unten).
 
 ## Zielplattform
 

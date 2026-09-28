@@ -1,6 +1,6 @@
 # API-Vertrag ESP32 ⇄ Server ⇄ KI-Modul
 
-Version: **1.0** (28.09.2026) · Besitzer: Claude-ESP · Änderungen nur per `[CONTRACT]`-PR (siehe `CLAUDE.md`).
+Version: **1.0** (28.09.2026) · Besitzer: Claude-ESP · Änderungen nur per `[CONTRACT]`-PR (siehe `.claude/CLAUDE.md`).
 
 ## 1. Architektur
 
@@ -67,7 +67,7 @@ Body (alle Messfelder dürfen `null` sein, wenn Sensor fehlt/defekt):
 | `auto_water_triggered` | bool | ESP hat seit letztem POST selbst gegossen |
 | `errors` | string[] | Fehlercodes, z. B. `"dht_read_failed"`, `"soil_out_of_range"` |
 
-Der **Zeitstempel setzt der Server** (`received_at`, UTC). Der ESP sendet keine Uhrzeit.
+Den **Zeitstempel setzt der Server** (`received_at`, UTC). Der ESP sendet keine Uhrzeit.
 
 ### Antwort 200
 
