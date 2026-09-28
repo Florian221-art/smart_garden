@@ -29,7 +29,7 @@ function Swatch({ kind, color }: { kind: LegendItem['kind']; color: string }) {
 
 export default function ChartCard({ title, summary, ariaLabel, legend, children, table }: ChartCardProps) {
   return (
-    <section className="rounded-xl border border-slate-300/60 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+    <section className="min-w-0 rounded-xl border border-slate-300/60 bg-white p-3 shadow-sm sm:p-4 dark:border-slate-700 dark:bg-slate-900">
       <div className="mb-2 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-50">{title}</h3>
         {summary && <span className="text-sm text-slate-600 dark:text-slate-300">{summary}</span>}
@@ -49,7 +49,7 @@ export default function ChartCard({ title, summary, ariaLabel, legend, children,
       </div>
       {table && table.rows.length > 0 && (
         <details className="mt-2 text-xs text-slate-600 dark:text-slate-300">
-          <summary className="cursor-pointer select-none rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600">
+          <summary className="flex min-h-11 cursor-pointer select-none items-center rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600">
             Als Tabelle anzeigen
           </summary>
           <div className="mt-2 max-h-60 overflow-auto">

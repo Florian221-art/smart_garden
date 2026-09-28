@@ -4,7 +4,9 @@ from __future__ import annotations
 import logging
 
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 
+from .config import WEB_DIST
 from .db import init_db
 from .routers import control, history, readings
 
@@ -30,3 +32,10 @@ def _on_startup() -> None:
 @app.get("/healthz")
 def healthz() -> dict:
     return {"ok": True}
+
+
+# Dashboard ausliefern, falls gebaut (muss NACH den API-Routen stehen, sonst
+# wuerde / die /api-Pfade verdecken). In der Entwicklung laeuft stattdessen Vite.
+if (WEB_DIST / "index.html").is_file():
+    app.mount("/", StaticFiles(directory=WEB_DIST, html=True), name="dashboard")
+    logging.getLogger("smart_garden").info("Dashboard wird ausgeliefert aus %s", WEB_DIST)

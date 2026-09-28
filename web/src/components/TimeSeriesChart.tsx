@@ -135,7 +135,6 @@ export default function TimeSeriesChart({
       fill="var(--viz-demo)"
       fillOpacity={1}
       ifOverflow="extendDomain"
-      label={{ value: 'DEMO', position: 'insideTop', fill: 'var(--viz-demo-text)', fontSize: 10 }}
     />
   ))
 

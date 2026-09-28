@@ -86,21 +86,27 @@ export default function Dashboard() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6 dark:bg-slate-950">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       {demo && (
         <div
           role="status"
           aria-live="polite"
-          className="sticky top-0 z-20 -mx-6 -mt-6 mb-6 bg-violet-700 px-6 py-2 text-sm text-white shadow dark:bg-violet-800"
+          className="sticky top-0 z-20 bg-violet-700 px-4 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))] text-sm text-white shadow sm:px-6 dark:bg-violet-800"
         >
           <strong>DEMO-MODUS</strong> – noch {fmtCountdown(remaining)} · simuliert: {describeDemo(demo)}
         </div>
       )}
 
-      <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900 dark:text-slate-50">
-            Smart Garden – {DEVICE_ID}
+      {/* Innenabstand inkl. Notch/Home-Leiste (safe-area), auf dem Handy etwas schmaler */}
+      <div
+        className={`mx-auto max-w-7xl px-[max(1rem,env(safe-area-inset-left))] pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-6 sm:pb-6 ${
+          demo ? 'pt-4 sm:pt-6' : 'pt-[max(1rem,env(safe-area-inset-top))] sm:pt-6'
+        }`}
+      >
+      <header className="mb-5 flex flex-wrap items-center justify-between gap-3 sm:mb-6">
+        <div className="min-w-0">
+          <h1 className="text-lg font-bold text-slate-900 sm:text-xl dark:text-slate-50">
+            Smart Garden <span className="font-normal text-slate-500 dark:text-slate-400">– {DEVICE_ID}</span>
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400">
             {reading ? `Letzter Kontakt: ${new Date(reading.received_at).toLocaleTimeString('de-DE')}` : 'Warte auf erste Daten…'}
@@ -111,9 +117,16 @@ export default function Dashboard() {
           onClick={toggleControls}
           aria-expanded={showControls}
           aria-controls="demo-steuerung"
-          className="rounded-lg border border-violet-300 px-3 py-1.5 text-sm font-medium text-violet-800 hover:bg-violet-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 dark:border-violet-700 dark:text-violet-200 dark:hover:bg-violet-950"
+          className="min-h-11 rounded-lg border border-violet-300 px-3 py-1.5 text-sm font-medium text-violet-800 hover:bg-violet-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 dark:border-violet-700 dark:text-violet-200 dark:hover:bg-violet-950"
         >
-          {showControls ? 'Demo-Steuerung ausblenden' : 'Demo-Steuerung'}
+          {showControls ? (
+            <>
+              <span className="sm:hidden">Demo ausblenden</span>
+              <span className="hidden sm:inline">Demo-Steuerung ausblenden</span>
+            </>
+          ) : (
+            'Demo-Steuerung'
+          )}
         </button>
       </header>
 
@@ -127,7 +140,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <section aria-label="Aktuelle Messwerte" className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <StatTile
           label="Bodenfeuchte"
           value={fmt(reading?.soil_moisture_pct ?? null, '%')}
@@ -183,6 +196,7 @@ export default function Dashboard() {
       )}
 
       <HistoryCharts deviceId={DEVICE_ID} />
+      </div>
     </div>
   )
 }

@@ -162,6 +162,25 @@ wird im Server-Terminal protokolliert.
 Backend: `GET/PUT/DELETE /api/v1/devices/{id}/demo`,
 `GET/POST /api/v1/devices/{id}/commands`.
 
+## Dashboard auf dem Handy
+
+- **Zu Hause / in der Entwicklung:** `npm run dev:mobil` statt `npm run dev`
+  (im Ordner `web`). Vite zeigt dann eine Zeile `Network: http://192.168.x.y:5173` –
+  diese Adresse auf dem Handy öffnen (Handy im selben WLAN wie der Mac). Beim
+  ersten Mal fragt macOS evtl., ob „node“ eingehende Verbindungen annehmen darf →
+  erlauben. Das Backend bleibt auf dem Mac (`127.0.0.1:8000`), Vite leitet `/api` weiter.
+- **Auf dem Pi (Hackathon):** `npm run build` erzeugt `web/dist/`; FastAPI liefert das
+  dann selbst unter `/` aus. Handy ins WLAN „SmartGarden“, `http://10.42.0.1:8000`.
+- **Als App:** iPhone „Teilen → Zum Home-Bildschirm“, Android „App installieren“ –
+  eigenes Icon (Keimling mit Wassertropfen), startet ohne Browserleiste.
+- Handy-Layout: Kacheln zweispaltig, Tipp-Flächen ≥ 44 px, Abstand zu Notch und
+  Home-Leiste, Demo-Steuerung zweispaltig, Diagramme per Antippen (Tooltip).
+  Geprüft als iPhone 13 (hell/dunkel): kein seitliches Scrollen, keine Konsolenfehler.
+
+**Achtung:** Mit `dev:mobil` sieht **jeder im selben WLAN** das Dashboard – inklusive
+Demo-Steuerung, solange es noch keinen Login gibt. Zu Hause ok, in fremden WLANs
+(Schule, Hackathon) besser den normalen `npm run dev` nutzen.
+
 ## Bekannte Lücken / Als Nächstes
 
 - Hotspot-Skript auf echtem Pi verifizieren
