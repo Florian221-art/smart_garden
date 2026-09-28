@@ -13,7 +13,9 @@ const char *CFG_DEVICE_ID     = "esp32-kuebel-01";        // Name des Geräts
 
 // --- LED-Bar (Bodenfeuchte) -----------------------------------------------
 // Segment 1 der Bar ist rot, Segment 2 orange, Segmente 3-10 grün.
-int  CFG_LEDBAR_MODE    = 0;      // 0 = Zeiger: nur 2 LEDs an der Position des Werts (trocken = rot, feucht = grün)
+int  CFG_LEDBAR_MODE    = 2;      // 2 = Trockenheitsbalken ab Grün (Standard): feucht = wenige grüne LEDs,
+                                  //     je trockener, desto mehr grüne -> dann orange -> ganz trocken auch rot
+                                  // 0 = Zeiger: nur 2 LEDs an der Position des Werts (trocken = rot, feucht = grün)
                                   // 1 = Füllbalken ab Rot (trocken = nur rot, feucht = ganzer Balken)
 bool CFG_LEDBAR_REVERSE = false;  // true = Anzeige spiegeln, falls rot/grün vertauscht erscheint
 bool CFG_LEDBAR_SWAP_PINS = false; // true, wenn die Bar gar nicht reagiert (DI/DCKI = D18/D19 vertauscht)
