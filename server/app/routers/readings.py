@@ -12,6 +12,7 @@ from .. import models
 from ..auth import verify_api_key
 from ..config import DEFAULT_DEVICE_CONFIG
 from ..db import get_db
+from ..demo import esp_payload, get_active
 from ..ratelimit import check_rate_limit
 from ..timeutil import iso_utc
 from ..schemas import (
@@ -97,7 +98,7 @@ def post_reading(
         ok=True,
         commands=CommandsOut(**commands),
         config=ConfigOut(**config_dict),
-        demo=None,  # Demo-Modus folgt in Phase 2
+        demo=esp_payload(get_active(db, payload.device_id)),
     )
 
 

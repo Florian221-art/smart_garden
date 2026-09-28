@@ -142,3 +142,21 @@ class Reading(Base):
     demo_overrides: Mapped[list] = mapped_column(JSON, default=list)
 
     device: Mapped["Device"] = relationship(back_populates="readings")
+
+
+class DemoState(Base):
+    """Aktiver Demo-Modus eines Geraets (api-contract.md Abschnitt 4).
+
+    Wird bei jeder Antwort auf POST /readings als `demo` an den ESP geschickt,
+    solange expires_at in der Zukunft liegt. Der ESP ueberschreibt dann selbst
+    die Messwerte, damit die echte Hardware reagiert.
+    """
+
+    __tablename__ = "demo_state"
+
+    device_id: Mapped[str] = mapped_column(ForeignKey("devices.id"), primary_key=True)
+    overrides: Mapped[dict] = mapped_column(JSON, default=dict)
+    force_errors: Mapped[list] = mapped_column(JSON, default=list)
+    scenario: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    started_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+    expires_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True))
