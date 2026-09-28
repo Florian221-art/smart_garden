@@ -1,6 +1,6 @@
 # API-Vertrag ESP32 ⇄ Server
 
-Version: **1.1** (28.09.2026) · Besitzer: Claude-ESP · Änderungen nur per `[CONTRACT]`-PR (siehe `.claude/CLAUDE.md`).
+Version: **1.2** (28.09.2026) · Besitzer: Claude-ESP · Änderungen nur per `[CONTRACT]`-PR (siehe `.claude/CLAUDE.md`).
 
 ## 1. Architektur und Netzwerk
 
@@ -49,8 +49,10 @@ Body (alle Messfelder dürfen `null` sein, wenn Sensor fehlt/defekt):
   "tank_remaining_ml": 1240,
   "water_level_pct": 82.7,
   "pump_on_s_since_last": 0.0,
+  "pump_running": false,
   "auto_water_triggered": false,
-  "errors": []
+  "errors": [],
+  "demo_overrides": []
 }
 ```
 
@@ -70,8 +72,10 @@ Body (alle Messfelder dürfen `null` sein, wenn Sensor fehlt/defekt):
 | `tank_remaining_ml` | float ≥ 0 | **Geschätzte** Restmenge im Tank (siehe Abschnitt 3) |
 | `water_level_pct` | float 0–100 | **Geschätzter** Füllstand = `tank_remaining_ml / tank_capacity_ml × 100` |
 | `pump_on_s_since_last` | float ≥ 0 | Pumpenlaufzeit seit letztem erfolgreichen POST |
+| `pump_running` | bool | Pumpe läuft gerade |
 | `auto_water_triggered` | bool | ESP hat seit letztem POST selbst gegossen |
 | `errors` | string[] | Fehlercodes, z. B. `"dht_read_failed"`, `"soil_out_of_range"`, `"tank_empty"` |
+| `demo_overrides` | string[] | Namen der Felder, deren Wert gerade **überschrieben** ist (Demo-Modus, Abschnitt 4). Leer = alles echt gemessen. |
 
 Den **Zeitstempel setzt der Server** (`received_at`, UTC). Der ESP sendet keine Uhrzeit.
 
@@ -98,7 +102,8 @@ Den **Zeitstempel setzt der Server** (`received_at`, UTC). Der ESP sendet keine 
     "tank_capacity_ml": 1500,
     "pump_flow_ml_per_s": 20,
     "tank_low_pct": 20
-  }
+  },
+  "demo": null
 }
 ```
 
@@ -107,6 +112,7 @@ Den **Zeitstempel setzt der Server** (`received_at`, UTC). Der ESP sendet keine 
 - `identify`: LED-Bar blinkt 5 s (Gerät im Raum finden).
 - `tank_refilled`: Tank wurde aufgefüllt → ESP setzt `tank_remaining_ml = tank_capacity_ml`.
 - `config` wird jedes Mal komplett mitgeschickt; ESP übernimmt die Werte (mit eigenen Sicherheitsgrenzen).
+- `demo`: `null` = Demo-Modus aus, sonst Objekt nach Abschnitt 4. Wird bei **jeder** Antwort mitgeschickt, solange aktiv.
 
 ### Fehler
 
@@ -132,13 +138,50 @@ tank_remaining_ml -= pump_laufzeit_s × pump_flow_ml_per_s
 - Unter `tank_low_pct` → Warnung (Server-Alert, LED-Bar, Summer). Bei ≤ 5 % stoppt der ESP die automatische Bewässerung (Trockenlaufschutz) und meldet `tank_empty`.
 - Der Server berechnet den Wasserverbrauch über `pump_on_s_since_last × pump_flow_ml_per_s`.
 
-## 4. Warnungen
+## 4. Demo-Modus (Sensorwerte überschreiben)
+
+Zweck: In der Präsentation Fehler, Bewässerung und Benachrichtigungen **auf Knopfdruck** auslösen. Die Überschreibung passiert **auf dem ESP**, damit die echte Hardware reagiert (Pumpe läuft, LED-Bar wechselt auf Rot, Summer piept) und der Server die Werte ganz normal verarbeitet (Alerts, KI).
+
+Objekt `demo` in der Serverantwort:
+
+```json
+"demo": {
+  "expires_in_s": 120,
+  "overrides": {
+    "soil_moisture_pct": 12,
+    "air_temp_c": 38.5
+  },
+  "force_errors": ["dht_read_failed"]
+}
+```
+
+| Feld | Bedeutung |
+|---|---|
+| `expires_in_s` | Nach so vielen Sekunden ohne neue Demo-Anweisung verwirft der ESP die Überschreibungen selbst (Schutz, falls der Server ausfällt). Max. 600. |
+| `overrides` | Nur die enthaltenen Felder werden ersetzt. Erlaubt: `soil_moisture_pct`, `light_pct`, `air_temp_c`, `air_humidity_pct`, `water_level_pct` (setzt die Tank-Schätzung entsprechend). |
+| `force_errors` | Fehlercodes, die der ESP so meldet und behandelt, als wäre der Sensor ausgefallen (Wert wird `null`). |
+
+Verhalten auf dem ESP:
+
+- Überschriebene Werte laufen durch die **komplette Logik** (Auto-Bewässerung, LED-Bar, Summer, Tank-Schutz).
+- Sicherheitsgrenzen der Pumpe gelten **immer** (max. Laufzeit, Cooldown, Tageslimit) – auch im Demo-Modus.
+- Jede Nachricht meldet in `demo_overrides`, welche Felder gerade nicht echt sind. Rohwerte (`*_raw`) bleiben immer echt.
+- `demo: null` oder abgelaufenes `expires_in_s` → sofort zurück zu echten Messwerten.
+- Zusätzlich über die serielle Konsole (115200 Baud) steuerbar, falls der Server nicht erreichbar ist: `demo soil 12`, `demo temp 38`, `demo error dht`, `demo off`.
+
+Server:
+
+- Nur **Admin** darf den Demo-Modus setzen; jede Änderung ins Zugriffsprotokoll.
+- Werte mit nicht-leerem `demo_overrides` werden in der DB markiert, im Dashboard als „DEMO“ gekennzeichnet und **nicht** fürs KI-Training verwendet.
+- Vorgefertigte Szenarien siehe `.claude/plan-webserver.md` (Abschnitt Demo-Modus).
+
+## 5. Warnungen
 
 Warnungen (Alerts) erzeugt der Server aus Grenzwerten, Fehlercodes und KI-Ergebnis. Texte **nur als Schlüssel** (`message_key`), Übersetzung im Frontend.
 
-## 5. Test ohne Hardware
+## 6. Test ohne Hardware
 
-`tools/fake_esp.py` (Claude-ESP) sendet realistische Fake-Messwerte im Vertragsformat, wertet die Antwort aus (inkl. `pump_run_s`, `tank_refilled`) und simuliert den Tank:
+`tools/fake_esp.py` (Claude-ESP) sendet realistische Fake-Messwerte im Vertragsformat, wertet die Antwort aus (inkl. `pump_run_s`, `tank_refilled`, `demo`) und simuliert den Tank:
 
 ```
 python tools/fake_esp.py --url http://localhost:8000 --key <api-key> --interval 2
