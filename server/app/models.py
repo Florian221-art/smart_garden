@@ -20,7 +20,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from .config import DEFAULT_DEVICE_CONFIG
+from .config import DEFAULT_DEVICE_CONFIG, MAX_PUMP_S_PER_RUN
 from .db import Base
 
 
@@ -70,7 +70,8 @@ class DeviceConfig(Base):
             "moisture_min_pct": self.moisture_min_pct,
             "moisture_target_pct": self.moisture_target_pct,
             "auto_water": self.auto_water,
-            "max_pump_s_per_run": self.max_pump_s_per_run,
+            # nie laenger als MAX_PUMP_S_PER_RUN, auch wenn in der DB mehr steht
+            "max_pump_s_per_run": min(self.max_pump_s_per_run, MAX_PUMP_S_PER_RUN),
             "pump_cooldown_s": self.pump_cooldown_s,
             "max_pump_s_per_day": self.max_pump_s_per_day,
             "buzzer_enabled": self.buzzer_enabled,

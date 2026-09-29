@@ -310,3 +310,6 @@ _(von Claude-Web gepflegt)_
       (`db._migrate`, SQLite `user_version`): gespeicherte 5 → 0,5, bewusst andere Werte bleiben.
 - [x] Letzte feste deutsche Texte in `web/src/api.ts` übersetzt; neue Schlüssel `water.*`, `api.*` in DE/EN/NL (224 Schlüssel).
 - [x] Getestet mit `tools/fake_esp.py` + Playwright: Klick → "Gegossen: 0,5 s, ca. 10 ml" nach ~12 s; Tank leer → gesperrt.
+- [x] Harte Grenze 0,5 s pro Pumpenstoß im Server (`config.MAX_PUMP_S_PER_RUN`): gilt für die Config an den ESP
+      (`DeviceConfig.as_dict`), für jeden Gieß-Befehl (`control.queue_command`) und im Dashboard (`MAX_PUMP_S`).
+      Getestet: DB-Wert 5 s + Anfrage 10 s → überall 0,5 s. Mehrfaches Drücken addiert nichts.

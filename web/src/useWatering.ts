@@ -25,6 +25,10 @@ export interface WaterState {
   error: string | null
 }
 
+/** Laengster Pumpenstoss vom Dashboard aus - wie MAX_PUMP_S_PER_RUN im Server (config.py).
+ *  Die Pumpe ist stark: mehr als 0,5 s setzt den Kuebel unter Wasser. */
+export const MAX_PUMP_S = 0.5
+
 const PENDING_POLL_MS = 2000
 const RESULT_POLL_MS = 3000
 const DONE_VISIBLE_MS = 45000
@@ -125,7 +129,9 @@ export function useWatering(deviceId: string) {
       deliveredAtRef.current = null
       setState({ ...IDLE, phase: 'sending', sentAt: Date.now() })
       try {
-        const p = await sendJson<PendingCommands>(`${base}/commands`, 'POST', { pump_run_s: seconds })
+        const p = await sendJson<PendingCommands>(`${base}/commands`, 'POST', {
+          pump_run_s: Math.min(seconds, MAX_PUMP_S),
+        })
         setState((s) => ({ ...s, phase: p.pump_run_s > 0 ? 'queued' : 'error', error: null }))
       } catch (e) {
         setState((s) => ({ ...s, phase: 'error', error: e instanceof Error ? e.message : String(e) }))

@@ -15,7 +15,7 @@ import {
 } from 'lucide-react'
 import type { DeviceConfig, LatestReading, PendingCommands } from '../types'
 import { sendJson } from '../api'
-import { useWatering } from '../useWatering'
+import { MAX_PUMP_S, useWatering } from '../useWatering'
 import { soilStatus } from '../status'
 import { fmtNumber } from '../format'
 import { Button, Card, StatusLine, toneSoft, type Tone } from './ui'
@@ -45,7 +45,7 @@ export default function WaterNowCard({ deviceId, reading, offline, config, now }
     at: 0,
   })
 
-  const pumpS = config?.max_pump_s_per_run ?? 0.5
+  const pumpS = Math.min(config?.max_pump_s_per_run ?? MAX_PUMP_S, MAX_PUMP_S)
   const ml = config ? Math.round(pumpS * config.pump_flow_ml_per_s) : null
   const intervalS = config?.interval_s ?? 15
 
