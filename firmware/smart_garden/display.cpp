@@ -21,6 +21,9 @@ static bool testOn = false;
 static uint16_t testBits = 0;
 static uint32_t ledTestStart = 0;      // Start der Testanimation, 0 = keine
 static bool ledTestRunning = false;
+static uint32_t diagStart = 0;         // "leddiag" seit (millis)
+static bool diagOn = false;
+static int diagShown = -1;             // zuletzt angezeigte Variante
 
 // --- Summer --------------------------------------------------------------------
 static uint8_t beepsLeft = 0;
@@ -53,10 +56,32 @@ static void showBits(uint32_t bits) {
   }
 }
 
-static void applyPins() {
-  if (CFG_LEDBAR_SWAP_PINS) ledbarBegin(PIN_LEDBAR_DI, PIN_LEDBAR_DCKI);
+static void applyPinsSwap(bool swap) {
+  if (swap) ledbarBegin(PIN_LEDBAR_DI, PIN_LEDBAR_DCKI);
   else ledbarBegin(PIN_LEDBAR_DCKI, PIN_LEDBAR_DI);
   lastBits = 0xFFFFFFFF;
+}
+
+static void applyPins() {
+  applyPinsSwap(CFG_LEDBAR_SWAP_PINS);
+  ledbarSetOptions(CFG_LEDBAR_BRIGHTNESS, CFG_LEDBAR_SLOW, CFG_LEDBAR_LATCH_CLOCK);
+}
+
+// Fehlersuche: 8 Varianten (Pins normal/getauscht × hell+schnell/gedimmt+langsam
+// × Latch mit/ohne Takt). Jede zeigt 3 s lang Segment 1-3 (rot, orange, 1x grün),
+// dann 1 s alles aus. Die Variante, die genau das zeigt, ist die richtige.
+void displayDiag() {
+  diagStart = millis();
+  diagOn = true;
+  diagShown = -1;
+  Serial.println("[LED] Diagnose: 8 Varianten je 4 s. Richtig ist die, bei der GENAU rot + orange + 1 gruen leuchten.");
+}
+
+static void diagVariant(int v, bool &swap, uint8_t &bright, bool &slow, bool &latchClk) {
+  swap = v & 1;
+  bright = (v & 2) ? 0x40 : 0xFF;
+  slow = (v & 2);
+  latchClk = !(v & 4);
 }
 
 void displayBegin() {
@@ -139,7 +164,28 @@ static void updateBar() {
   bool blinkFast = (now / 250) % 2;
   bool blinkSlow = (now / 500) % 2;
 
-  // Priorität: Testanimation > ledseg-Test > Lauflicht > Sensorfehler > Bodenfeuchte
+  // Priorität: Diagnose > Testanimation > ledseg-Test > Lauflicht > Sensorfehler > Bodenfeuchte
+  if (diagOn) {
+    uint32_t t = now - diagStart;
+    int v = t / 4000;
+    if (v < 8) {
+      bool swap, slow, latchClk;
+      uint8_t bright;
+      diagVariant(v, swap, bright, slow, latchClk);
+      if (v != diagShown) {
+        diagShown = v;
+        applyPinsSwap(swap);
+        ledbarSetOptions(bright, slow, latchClk);
+        Serial.printf("[LED] Variante %d: Pins %s, Helligkeit %s, Latch %s\n", v + 1, swap ? "getauscht" : "normal",
+                      bright == 0xFF ? "voll/schnell" : "gedimmt/langsam", latchClk ? "mit Takt" : "ohne Takt");
+      }
+      ledbarShow((t % 4000) < 3000 ? 0x007 : 0x000, CFG_LEDBAR_REVERSE);  // jedes Bild neu senden
+      return;
+    }
+    diagOn = false;
+    applyPins();
+    Serial.println("[LED] Diagnose fertig. Bitte melden, welche Variante(n) richtig waren.");
+  }
   if (ledTestRunning) {
     uint32_t step = (now - ledTestStart) / 250;  // alle 250 ms ein Segment mehr
     if (step < 10) {
@@ -147,11 +193,7 @@ static void updateBar() {
       showBits((ALL_SEGMENTS << (10 - n)) & ALL_SEGMENTS);
       return;
     }
-    if (step < 12) {  // kurz voll stehen lassen
-      showBits(ALL_SEGMENTS);
-      return;
-    }
-    ledTestRunning = false;
+    ledTestRunning = false;  // danach direkt die echte Anzeige (nicht alle LEDs stehen lassen)
   }
   if (within(testOn, testStart, 10000)) {
     showBits(testBits);

@@ -17,7 +17,7 @@
 #pragma once
 #include <Arduino.h>
 
-#define FW_VERSION "0.3.1"
+#define FW_VERSION "0.3.5"  // bei jeder Änderung erhöhen UND ganz oben in smart_garden.ino eintragen
 
 // -----------------------------------------------------------------------------
 // 1. Zugangsdaten + Schalter – definiert ganz oben in smart_garden.ino.
@@ -33,6 +33,9 @@ extern const char *CFG_API_KEY;
 extern const char *CFG_DEVICE_ID;
 extern bool CFG_LEDBAR_REVERSE;
 extern bool CFG_LEDBAR_SWAP_PINS;
+extern int CFG_LEDBAR_BRIGHTNESS;
+extern bool CFG_LEDBAR_SLOW;
+extern bool CFG_LEDBAR_LATCH_CLOCK;
 extern int CFG_LEDBAR_MODE;
 extern bool CFG_BUZZER_ENABLED;
 
@@ -49,8 +52,10 @@ extern bool CFG_BUZZER_ENABLED;
 constexpr uint8_t PIN_SOIL = 34;        // Kapazitiver Bodenfeuchtesensor AOUT (ADC1, nur Eingang)
 constexpr uint8_t PIN_LIGHT = 35;       // LDR-Modul AO (ADC1, nur Eingang)
 constexpr uint8_t PIN_DHT = 4;          // DHT11 SIG (Pull-up sitzt auf dem Grove-Modul)
-constexpr uint8_t PIN_LEDBAR_DCKI = 18; // Grove LED Bar DCKI (Takt) – gelbes Grove-Kabel (im Test ermittelt)
-constexpr uint8_t PIN_LEDBAR_DI = 19;   // Grove LED Bar DI (Daten)  – weißes Grove-Kabel
+// Grove-Stecker der LED-Bar (Aufdruck auf der Platine: DI, DCKI, VCC, GND):
+// gelbes Kabel = DI (Daten), weißes Kabel = DCKI (Takt). Am 29.09. am Board bestätigt.
+constexpr uint8_t PIN_LEDBAR_DI = 18;   // Grove LED Bar DI (Daten) – gelbes Grove-Kabel an D18
+constexpr uint8_t PIN_LEDBAR_DCKI = 19; // Grove LED Bar DCKI (Takt) – weißes Grove-Kabel an D19
 constexpr uint8_t PIN_BUZZER = 26;      // aktiver Summer (+), HIGH = Ton
 constexpr uint8_t PIN_RELAY = 27;       // Grove Relay SIG, HIGH = Pumpe an
 constexpr uint8_t PIN_BOOT_BTN = 0;     // BOOT-Taste onboard (3 s halten = Tank aufgefüllt)
