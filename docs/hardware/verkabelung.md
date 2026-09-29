@@ -1,6 +1,6 @@
 # Pinout und Verkabelungsplan
 
-Stand: 28.09.2026 (v2: kapazitiver Bodenfeuchtesensor) · Board: ESP32 DevKit V1 (ESP-WROOM-32, 30 Pins, CP2102)
+Stand: 29.09.2026 (v2: kapazitiver Bodenfeuchtesensor, Firmware v0.3.0) · Board: ESP32 DevKit V1 (ESP-WROOM-32, 30 Pins, CP2102)
 
 > **Sicherheit:** Die 12 V der Pumpe dürfen **nie** an einen ESP32-Pin oder an die Plus-Schiene des Breadboards kommen. Der 12-V-Kreis läuft nur über die Schraubklemme des Relais. Erst alles verkabeln, dann Strom anschließen.
 
@@ -58,7 +58,7 @@ Grove-Stecker (DHT11, LED-Bar, Relais – 4-polig) und Bodensensor (3-polig):
 
 - Nur bis zur **weißen Linie** in die Erde stecken – die Elektronik oben darf nicht nass werden.
 - Kapazitiv = keine offenen Metallkontakte → korrodiert nicht, darf dauerhaft Strom haben.
-- Trocken = hoher Rohwert (~2 900), nass = niedriger Rohwert (~1 300). Einmal kalibrieren (Firmware-README).
+- Trocken = hoher Rohwert (~3 200), nass = niedriger Rohwert (~1 100). Einmal kalibrieren (Firmware-README).
 
 ### Lichtsensor LDR-Modul (VCC / GND / DO / AO)
 
@@ -89,7 +89,7 @@ Pull-up-Widerstand ist auf dem Grove-Board schon drauf.
 | Rot (VCC) | → | 3V3-Schiene |
 | Schwarz (GND) | → | GND-Schiene |
 
-Anzeige: Segment 1 = rot (trocken) … Segment 10 = grün (nass). Im Test (28.09.) ergab sich: gelbes Kabel = Takt, weißes = Daten – in der Firmware so eingestellt. Reagiert die Bar gar nicht, seriell `ledswap` probieren.
+Die Bar hat Segment 1 = rot, 2 = orange, 3–10 = grün. Standardanzeige: je trockener, desto mehr LEDs (siehe Firmware-README). Im Test (28.09.) ergab sich: gelbes Kabel = Takt, weißes = Daten – in der Firmware so eingestellt. Reagiert die Bar gar nicht, seriell `ledswap` probieren.
 
 ### Grove Relay (Pumpe)
 
@@ -187,7 +187,7 @@ VIN (5 V) ── Summer rot (+)
 3. DHT11 anschließen → `status`: Temperatur/Luftfeuchte plausibel?
 4. LDR → Sensor abdecken, Wert muss sich ändern
 5. Bodensensor → an der Luft vs. im Wasserglas messen, dann `cal soil dry` / `cal soil wet`
-6. LED-Bar → `ledtest` (Segment 1 muss rot sein, sonst `ledflip`)
+6. LED-Bar → `ledtest` (füllt sich von Grün nach Rot; beginnt sie mit Rot → `ledflip`)
 7. Summer → `beep`
 8. Relais **ohne** Pumpe → `pump 2`: Klicken + LED am Relais
 9. Zuletzt 12-V-Kreis mit Pumpe (Schlauch im Wasser!) → `pump 3`
