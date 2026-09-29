@@ -41,10 +41,15 @@ static bool within(bool &on, uint32_t start, uint32_t durationMs) {
   return on;
 }
 
+static uint32_t lastSendMs = 0;
+
+// Neu senden bei Änderung und zusätzlich jede Sekunde: Falls ein Rahmen durch
+// eine Störung falsch ankam, stimmt die Anzeige spätestens 1 s später wieder.
 static void showBits(uint32_t bits) {
-  if (bits != lastBits) {  // MY9221 nur bei Änderung neu beschreiben
+  if (bits != lastBits || millis() - lastSendMs >= 1000) {
     ledbarShow(bits, CFG_LEDBAR_REVERSE);
     lastBits = bits;
+    lastSendMs = millis();
   }
 }
 
