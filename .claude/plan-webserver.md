@@ -252,13 +252,27 @@ _(von Claude-Web gepflegt)_
       `dev:mobil` per Netzwerk-IP inkl. `/api`, FastAPI liefert Seite/Manifest/Icons + API parallel
 - [ ] Kein Service Worker/Offline-Modus (braucht HTTPS - kommt ggf. mit Caddy in Phase 3)
 
+### Deployment auf den Pi (Branch `deploy/pi-einrichtung`)
+
+- [x] `deploy/deploy_to_pi.sh <user>@<pi>` (Laptop): baut `web/dist`, kopiert per SSH, startet Installer,
+      holt fertige `secrets.h` fuer den ESP (gitignored)
+- [x] `deploy/install_pi.sh` (Pi, idempotent): Pakete, Benutzer `smartgarden`, `/opt/smart-garden`, venv,
+      Geraet + API-Key (bleibt bei Wiederholung erhalten), systemd-Dienst + Health-Check, Hotspot, Zugangsdaten
+      nur in `/opt/smart-garden/zugangsdaten.txt` (root, 600) und `~/smart-garden-secrets.h` (600)
+- [x] `setup_hotspot.sh` ESP32-tauglich: 2,4 GHz/Kanal 6, WPA2-RSN/CCMP, PMF aus, WLAN-Land DE, rfkill
+- [x] `app.cli issue-key` / `has-device`
+- [x] Getestet im Container (Python 3.11 wie Bookworm, nmcli/systemctl als Stubs): Erstinstallation,
+      Wiederholung (Key/Passwort/Messwerte bleiben), `NEW_API_KEY=1` (alter Key 401, neuer 200), Abbruch bei
+      Uplink ueber wlan0, kompletter Lauf von `deploy_to_pi.sh` inkl. Build und secrets.h
+- [ ] Auf echtem Pi pruefen (Nico): Hotspot sichtbar, ESP verbindet sich
+
 ### Als Naechstes
 
 - Login + Rollen (Admin/Leser) und damit Demo/Befehle absichern, Zugriffsprotokoll
 - Warnungen/Alerts, i18n (NL/DE/EN), KI-Stub
 - Mit echtem ESP testen (Florian): Demo-Szenarien, "Tank aufgefuellt" nach "Tank fast leer"
-- Hotspot-Skript auf echter Pi-Hardware verifizieren, sobald verfuegbar
+- Deployment/Hotspot auf echter Pi-Hardware verifizieren (`./deploy/deploy_to_pi.sh`)
 
 ### Blocker
 
-- Kein Zugriff auf echte Pi-Hardware in dieser Umgebung -> `deploy/setup_hotspot.sh` ist ungetestet.
+- Kein Zugriff auf echte Pi-Hardware in dieser Umgebung -> Hotspot nur mit Stubs getestet, Nico prueft auf dem Pi.

@@ -181,10 +181,27 @@ Backend: `GET/PUT/DELETE /api/v1/devices/{id}/demo`,
 Demo-Steuerung, solange es noch keinen Login gibt. Zu Hause ok, in fremden WLANs
 (Schule, Hackathon) besser den normalen `npm run dev` nutzen.
 
+## Deployment auf den Raspberry Pi
+
+Ein Befehl vom Laptop aus: `./deploy/deploy_to_pi.sh <benutzer>@<pi-adresse>`
+(Details in `deploy/README.md`). Das Skript baut das Dashboard, kopiert alles
+auf den Pi und richtet dort Server (systemd-Dienst, Port 8000, liefert API und
+Dashboard), Gerät + API-Key und den WLAN-Hotspot „SmartGarden“ ein.
+
+- Der Hotspot ist auf den ESP32 abgestimmt: nur 2,4 GHz (Kanal 6), reines WPA2,
+  PMF aus – mit WPA3/5 GHz verbindet sich der ESP32 oft nicht.
+- Zugangsdaten (WLAN-Passwort, API-Key) werden **auf dem Pi erzeugt** und nur dort
+  gespeichert (`/opt/smart-garden/zugangsdaten.txt`, nur root). Das Skript zeigt sie
+  am Ende an und legt eine fertige `firmware/smart_garden/secrets.h` auf dem Laptop ab
+  (von Git ignoriert). So landet nichts davon im öffentlichen Repo.
+- Wiederholbar: Datenbank, Key und Passwort bleiben erhalten.
+- Getestet in einer Linux-Umgebung mit Python 3.11 (wie Raspberry Pi OS Bookworm);
+  WLAN/systemd waren dort nur simuliert – der echte Hotspot muss auf dem Pi geprüft werden.
+
 ## Bekannte Lücken / Als Nächstes
 
-- Hotspot-Skript auf echtem Pi verifizieren
+- Deployment + Hotspot auf echtem Pi verifizieren
 - Phase 2 (Rest): Warnungen/Alerts, Login+Rollen
   (argon2 ist schon eingebunden), i18n (NL/DE/EN), KI-Stub
-- API-Key + WLAN-Passwort müssen an Florian übergeben werden (siehe
-  Blocker in `.claude/plan-esp.md`)
+- API-Key + WLAN-Passwort: erzeugt `deploy_to_pi.sh` – Florian bekommt die
+  `secrets.h` bzw. die Werte direkt (nicht über GitHub)
