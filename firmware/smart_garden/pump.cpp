@@ -1,48 +1,70 @@
+// =============================================================================
+//  pump.cpp – Pumpensteuerung (siehe pump.h)
+// =============================================================================
 #include "pump.h"
 #include "garden_config.h"
 #include "tank.h"
 
 static bool running = false;
-static uint32_t startMs = 0;
-static uint32_t durationMs = 0;
-static uint32_t lastStopMs = 0;
-static bool everRan = false;
-static float onSinceLast = 0;
-static float todaySeconds = 0;
+static uint32_t startMs = 0;      // millis() beim Einschalten
+static uint32_t durationMs = 0;   // geplante Laufzeit
+static uint32_t lastStopMs = 0;   // millis() beim letzten Ausschalten
+static bool everRan = false;      // gilt ab pumpBegin() als "gerade gelaufen" (siehe dort)
+static float onSinceLast = 0;     // Laufzeit seit dem letzten erfolgreichen POST
+static float todaySeconds = 0;    // Laufzeit im aktuellen 24-h-Fenster
 static uint32_t dayStartMs = 0;
 
+// Alle Zeitvergleiche arbeiten mit (millis() - start) als uint32_t – das
+// bleibt auch beim Überlauf von millis() nach ~49 Tagen korrekt.
+
 void pumpBegin() {
-  digitalWrite(PIN_RELAY, LOW);  // sicher AUS
+  digitalWrite(PIN_RELAY, LOW);  // Ausgangspegel festlegen, BEVOR der Pin Ausgang wird
   pinMode(PIN_RELAY, OUTPUT);
   digitalWrite(PIN_RELAY, LOW);
   dayStartMs = millis();
+  // Nach jedem (Neu-)Start so tun, als wäre die Pumpe gerade gelaufen: Die
+  // Auto-Bewässerung wartet erst pump_cooldown_s. Sonst könnte eine
+  // Neustart-Schleife (z. B. Watchdog) bei jedem Start sofort pumpen – das
+  // Tageslimit liegt nur im RAM und beginnt nach einem Neustart neu.
+  everRan = true;
+  lastStopMs = millis();
 }
 
+static uint32_t sinceLastStopMs() { return millis() - lastStopMs; }
+
 bool pumpCooldownActive() {
-  return everRan && (millis() - lastStopMs) < settings.pump_cooldown_s * 1000UL;
+  return everRan && sinceLastStopMs() < settings.pump_cooldown_s * 1000UL;
 }
 
 uint32_t pumpCooldownLeftS() {
   if (!pumpCooldownActive()) return 0;
-  return settings.pump_cooldown_s - (millis() - lastStopMs) / 1000UL;
+  return settings.pump_cooldown_s - sinceLastStopMs() / 1000UL;
 }
 
 bool pumpStart(float seconds, const char *reason, bool respectCooldown) {
   if (running) return false;
+  if (!(seconds > 0) || isinf(seconds)) return false;  // 0, negativ, NaN, unendlich
   if (tankIsEmpty()) {
-    Serial.printf("[PUMPE] blockiert (%s): Tank leer – Trockenlaufschutz\n", reason);
+    Serial.printf("[PUMPE] blockiert (%s): Tank leer – Trockenlaufschutz. Nach dem Auffüllen \"refill\".\n", reason);
+    return false;
+  }
+  // Harte Mindestpause gilt für JEDEN Start – auch Dashboard- und Demo-Befehle.
+  // Das verhindert, dass viele Befehle hintereinander die Pumpe dauerhaft laufen lassen.
+  if (everRan && sinceLastStopMs() < HARD_MIN_COOLDOWN_S * 1000UL) {
+    Serial.printf("[PUMPE] blockiert (%s): Mindestpause %lu s\n", reason, (unsigned long)HARD_MIN_COOLDOWN_S);
     return false;
   }
   if (respectCooldown && pumpCooldownActive()) return false;
+
   seconds = min(seconds, settings.max_pump_s_per_run);
   seconds = min(seconds, HARD_MAX_PUMP_S_PER_RUN);
-  float left = settings.max_pump_s_per_day - todaySeconds;
+  float dayLimit = min(settings.max_pump_s_per_day, HARD_MAX_PUMP_S_PER_DAY);
+  float left = dayLimit - todaySeconds;
   if (left <= 0.1f) {
-    Serial.printf("[PUMPE] blockiert (%s): Tageslimit %.0f s erreicht\n", reason, settings.max_pump_s_per_day);
+    Serial.printf("[PUMPE] blockiert (%s): Tageslimit %.0f s erreicht\n", reason, dayLimit);
     return false;
   }
   seconds = min(seconds, left);
-  if (seconds <= 0) return false;
 
   durationMs = (uint32_t)(seconds * 1000.0f);
   startMs = millis();
@@ -67,7 +89,10 @@ void pumpStop() {
 
 void pumpUpdate() {
   if (running && (millis() - startMs >= durationMs)) pumpStop();
-  // Tageszähler alle 24 h Laufzeit zurücksetzen (keine Uhr auf dem ESP)
+  // Sicherheitsnetz: Relais muss AUS sein, wenn keine Pumpe laufen soll
+  if (!running && digitalRead(PIN_RELAY) == HIGH) digitalWrite(PIN_RELAY, LOW);
+  // Tageszähler alle 24 h Laufzeit zurücksetzen. Der ESP hat keine Uhr; nach
+  // einem Neustart beginnt das Fenster neu (bekannte Einschränkung, siehe Doku).
   if (millis() - dayStartMs >= 86400000UL) {
     dayStartMs = millis();
     todaySeconds = 0;

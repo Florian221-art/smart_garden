@@ -22,3 +22,10 @@ venv/
 # OS
 .DS_Store
 Thumbs.db
+# macOS-Finder-Duplikate ("datei 2.py", "ordner 2/") – nicht versehentlich committen
+* 2.*
+* 2/
+* 2
+
+# Arduino-Build
+build/

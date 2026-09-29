@@ -1,86 +1,74 @@
 # Plan Claude-ESP (Florian)
 
-Zuständig für: **ESP32-Firmware (C++)**, **Test-Tools** (`tools/`), **Hardware-Doku** (`docs/hardware/`), Beiträge zu Sicherheitsanalyse und Präsentation (ESP-Teil).
+Zuständig für: **ESP32-Firmware (C++)**, **Test-Tools** (`tools/`), **Hardware-Doku** (`docs/hardware/`), Beiträge zu Sicherheitsanalyse und Präsentation (ESP-Teil), Root-`README.md`.
 Nicht zuständig: KI-Modul, Server, Dashboard (→ Claude-Web).
 Schnittstelle zum Server: `.claude/api-contract.md` (v1.2) · Regeln: `.claude/CLAUDE.md`
-Pinout + Verkabelung: **`docs/hardware/verkabelung.md`** · Firmware-Anleitung: **`firmware/smart_garden/README.md`**
+Pinout + Verkabelung: **`docs/hardware/verkabelung.md`** · Firmware-Anleitung: **`firmware/smart_garden/README.md`** · Sicherheit: **`docs/hardware/sicherheit-esp.md`**
 
 ## Rahmenbedingungen (mit Florian geklärt)
 
-- Firmware in **C++** (Arduino-Framework, ESP32-Core 3.x), geflasht mit der **Arduino IDE**. Florian lädt nur hoch → muss ohne Anpassungen kompilieren; nur `secrets.h` ausfüllen.
+- Firmware in **C++** (Arduino-Framework, ESP32-Core 3.x), geflasht mit der **Arduino IDE**. Florian lädt nur hoch → muss ohne Anpassungen kompilieren.
+- **Zugangsdaten als Variablen ganz oben im Sketch** (Florians Wunsch); optional `secrets.h` (gitignored, hat Vorrang) – empfohlen, weil das Repo öffentlich ist.
 - **Netzwerk:** Pi-Hotspot `SmartGarden`, Server `10.42.0.1`
 - **Kein Füllstandssensor:** Tank wird über Pumpenlaufzeit geschätzt (Vertrag Abschnitt 3)
-- **LED-Bar = Bodenfeuchte** mit Farbverlauf Rot (trocken) → Grün (feucht)
+- **LED-Bar = Bodenfeuchte.** Florians Wunsch (29.09.): „erst alle grünen, dann orange, ganz trocken auch rot“ → Modus 2 „Trockenheitsbalken ab Grün“ ist Standard.
 - **Demo-Modus** ist Pflicht (Vertrag Abschnitt 4)
-- **Bodensensor gewechselt** (28.09.): kapazitiver „Capacitive Soil Moisture Sensor v2.0“ (HW-390) statt resistivem IDUINO → dauerhaft an 3V3, GPIO25 frei
-- Vorhanden: Grove-Kabel, 12-V-Netzteil, Schlauch, Wasserbehälter, Grove Relay, Micro-USB-Kabel. Freilaufdiode optional. Keine Widerstände nötig.
-- HTTP während der Entwicklung, HTTPS mit Certificate Pinning in Phase 3 (in Firmware schon vorbereitet: `SERVER_CA_CERT`)
+- Kapazitiver Bodensensor (HW-390), dauerhaft an 3V3
+- HTTP während der Entwicklung, HTTPS mit Zertifikatsprüfung vorbereitet (`SERVER_CA_CERT` in `secrets.h`)
 
 ## Hardware
 
 | Teil | Typ | ESP32-Pin |
 |---|---|---|
-| Mikrocontroller | ESP32 DevKit (ESP-WROOM-32, CP2102, 30 Pin) | – |
-| Bodenfeuchte | Capacitive Soil Moisture Sensor v2.0 (HW-390) | AOUT → GPIO34, VCC → 3V3 |
-| Licht | MH-Sensor LDR-Modul | AO → GPIO35 |
-| Temp./Luftfeuchte | Grove v1.2 (**DHT11**) | SIG → GPIO4 |
-| Anzeige | Grove LED Bar v2.0 (MY9221) | DI → GPIO18, DCKI → GPIO19 |
-| Summer | Piezo LF-PB30W35B (aktiv) | GPIO26 (direkt) |
-| Pumpen-Relais | Grove Relay HLS8L-DC3V-S-C | SIG → GPIO27 |
-| Pumpe | 12 V DC 385 | über Relais |
+| Mikrocontroller | ESP32 DevKit V1 (ESP-WROOM-32, CP2102, 30 Pin) | – |
+| Bodenfeuchte | Capacitive Soil Moisture Sensor v2.0 (HW-390) | AOUT → GPIO34 |
+| Licht | LDR-Modul | AO → GPIO35 |
+| Temp./Luftfeuchte | Grove v1.2 (DHT11) | SIG → GPIO4 |
+| Anzeige | Grove LED Bar v2.0 (MY9221) | DCKI/Takt (gelb) → GPIO18, DI/Daten (weiß) → GPIO19 |
+| Summer | aktiv, LF-PB30W35B | GPIO26 |
+| Pumpen-Relais | Grove Relay | SIG → GPIO27 |
+| Pumpe | 12 V DC | über Relais-Schraubklemme |
 | Taster „Tank voll“ | BOOT-Taste onboard | GPIO0 |
-| Status-LED | Onboard | GPIO2 |
+| Status-LED | onboard | GPIO2 |
 
-## Firmware (`firmware/smart_garden/`) – v0.1.0 fertig, kompiliert (ESP32-Core 3.3.12, 81 % Flash)
+## Firmware-Versionen
 
-| Datei | Inhalt |
+| Version | Inhalt |
 |---|---|
-| `smart_garden.ino` | `setup()`/`loop()`, Messzyklus, Auto-Bewässerung, JSON senden, Serverantwort, serielle Konsole |
-| `garden_config.h/.cpp` | Pins, harte Sicherheitsgrenzen, Settings (Server-Config) + Kalibrierung in NVS |
-| `secrets.h.example` | Vorlage → `secrets.h` (WLAN, Server-URL, API-Key, Geräte-ID, optional CA-Zertifikat) |
-| `sensors.h/.cpp` | Bodenfeuchte kapazitiv, LDR, DHT11; Median-Filter, Kalibrierung |
-| `demo.h/.cpp` | Overrides, erzwungene Fehler, Ablauf-Timer, Anbindung an Server + Konsole |
-| `pump.h/.cpp` | Relais nicht blockierend, max. Laufzeit, Cooldown, Tageslimit, Laufzeitzähler |
-| `tank.h/.cpp` | Tank-Schätzung in NVS, Nachfüllen |
-| `display.h/.cpp` | LED-Bar Rot→Grün, Summer-Muster (nicht blockierend), Status-LED |
-| `garden_net.h/.cpp` | WLAN-Reconnect, HTTP(S)-POST, JSON-Antwort parsen |
-| `README.md` | Arduino-Setup, Bibliotheken, Upload, Kalibrierung, Konsolenbefehle |
+| 0.1.0 | komplette Firmware (Sensoren, LED-Bar, Summer, Demo, Pumpe, Tank, POST) |
+| 0.2.0 | WLAN-Variablen ganz oben, klarere Logs, eigener LED-Treiber |
+| 0.2.1 | DHT11 stabil (5 s, 30 s Hold), Alarm-Hysterese, Demo-Gießen ohne Cooldown |
+| 0.2.2/0.2.3 | LED-Bar-Pins tauschbar, korrigiert (gelb = Takt D18, weiß = Daten D19) |
+| 0.2.4 | LED-Modus 2 „Trockenheitsbalken ab Grün“ als Standard |
+| **0.3.0** | **Review:** Demo-Tank nur Anzeige (min(echt, Demo)), harte 10-s-Mindestpause für alle Starts, Kalibrier-Prüfung, Plausibilitätsprüfung Gießen (Sperre + Alarm), Task-Watchdog 20 s, Relais-Sicherheitsnetz, nicht blockierender LED-Test, Wertebereiche Demo, `putNumber()` (kein `nan` im JSON), `WiFi.persistent(false)`, optionale `secrets.h`, Code und Doku vollständig kommentiert |
 
 Hinweise für spätere Änderungen:
 
-- Dateinamen `garden_net.*` / `garden_config.*` bewusst so gewählt – `Network.h`/`config.h` kollidieren mit dem ESP32-Core 3.x (Windows ist nicht case-sensitiv).
-- Vorwärtsdeklarationen oben im `.ino` beibehalten (stabil gegenüber Arduino-Prototyp-Generierung).
-- Kompiliertest in der Cloud-Umgebung: arduino-cli mit manuell installiertem Core (GitHub-Releases), Bibliotheken per `git clone`.
-
-## Tools (`tools/`)
-
-- `fake_esp.py` (PR #3): simuliert den ESP inkl. Tank, Befehlen und Demo-Modus
-
-## Reihenfolge
-
-| Phase | Inhalt | Stand |
-|---|---|---|
-| 0 | Plan, Vertrag, Verkabelung, `tools/fake_esp.py` | ✓ |
-| 1–3 | Komplette Firmware (Sensoren, LED-Bar, Summer, Demo, Pumpe, Tank, POST) | ✓ kompiliert, **Hardwaretest ausstehend** |
-| 3b | Kalibrierung mit echter Hardware, Durchfluss messen, Test gegen echten Server | offen |
-| 3c | HTTPS mit Caddy-Root-Zertifikat (`SERVER_CA_CERT`) | offen |
-| 4 | Fotos/Schaltplan, Beitrag Sicherheitsanalyse (ESP-Teil) & Präsentation | offen |
+- Dateinamen `garden_net.*` / `garden_config.*` bewusst so gewählt (Kollision mit ESP32-Core unter Windows).
+- Vorwärtsdeklarationen oben im `.ino` beibehalten und für jede neue Funktion ergänzen (exuberant ctags der IDE erzeugt sonst falsche Prototypen).
+- Kompiliertest in der Cloud: `/tmp/bin/arduino-cli compile --fqbn espressif:esp32:esp32 --warnings all .` (Core manuell unter `/root/Arduino/hardware/espressif/esp32`, Libs per `git clone`). Muss ohne Warnungen durchlaufen.
+- Florian pusht nicht selbst: Claude-ESP pusht über GitHub-MCP (`push_files`) in `feature/esp-*`, erstellt PR und merged nach Florians Freigabe („alles was du machst muss sinnvoll im GitHub liegen“).
 
 ## Status
 
 Erledigt:
 
 - [x] Plan, API-Vertrag v1.2, Regeln (`.claude/`)
-- [x] Pinout + Verkabelungsplan v2 (kapazitiver Sensor)
-- [x] `tools/fake_esp.py` (PR #3)
-- [x] Firmware v0.1.0 komplett, kompiliert ohne Warnungen
+- [x] Pinout + Verkabelung, Sicherheitsanalyse ESP-Teil (`docs/hardware/sicherheit-esp.md`)
+- [x] `tools/fake_esp.py` + `tools/README.md` (auf Stand 0.3.0-Logik)
+- [x] Firmware 0.3.0, kompiliert ohne Warnungen; Hardware läuft (Sensoren, LED-Bar, Summer, Pumpe) mit 0.2.4
+- [x] Kalibrierung Boden (trocken 3248 / nass 1102)
+- [x] Code-Review 29.09. (ESP selbst, Server/Web per Subagent read-only) → Befunde Server als Issue `an-web`
+- [x] Root-README
 
 Als Nächstes:
 
-- [ ] Florian: aufbauen, hochladen, Inbetriebnahme nach `verkabelung.md` Abschnitt 6, Kalibrierung
-- [ ] Feedback aus Hardwaretest einarbeiten (LED-Bar-Richtung, Summer-Lautstärke, Rohwerte)
-- [ ] Test gegen Nicos Server, sobald `POST /api/v1/readings` läuft
-- [ ] ESP-Teil für `docs/server/security.md` (Bedrohungen: API-Key im Flash, unverschlüsseltes WLAN-Passwort, Manipulation der Pumpe → harte Grenzen)
+- [ ] Florian: 0.3.0 hochladen, Kurztest (`status`, `demo soil 12`, `demo tank 4` → danach wieder echter Tank, `pump 3` zweimal schnell → 2. blockiert)
+- [ ] Durchfluss messen (`pump 10` in Messbecher) → `pump_flow_ml_per_s`
+- [ ] Test gegen Nicos Server (WLAN-Passwort + API-Key in `secrets.h`)
+- [ ] HTTPS: Caddy-Root-Zertifikat als `SERVER_CA_CERT`
+- [ ] [CONTRACT]-Vorschlag: Fehlercode `watering_ineffective`, Demo-Tank als reine Anzeige im Vertrag beschreiben (PR offen, braucht Zustimmung beider)
+- [ ] Fotos/Schaltplan, Präsentationsbeitrag ESP
 
 Blocker:
 
