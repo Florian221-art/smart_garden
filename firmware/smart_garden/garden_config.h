@@ -17,7 +17,7 @@
 #pragma once
 #include <Arduino.h>
 
-#define FW_VERSION "0.3.6"  // bei jeder Änderung erhöhen UND ganz oben in smart_garden.ino eintragen
+#define FW_VERSION "0.3.8"  // bei jeder Änderung erhöhen UND ganz oben in smart_garden.ino eintragen
 
 // -----------------------------------------------------------------------------
 // 1. Zugangsdaten + Schalter – definiert ganz oben in smart_garden.ino.
@@ -38,6 +38,12 @@ extern bool CFG_LEDBAR_SLOW;
 extern bool CFG_LEDBAR_LATCH_CLOCK;
 extern int CFG_LEDBAR_MODE;
 extern bool CFG_BUZZER_ENABLED;
+
+// Version des Settings-Standards: erhöhen, wenn sich ein Standardwert ändert,
+// der auch auf bereits laufenden Geräten gelten soll. Dann verwirft
+// configBegin() die im Flash gespeicherten Settings (Kalibrierung bleibt).
+// 2 = Pumpenstoß 0,5 s statt 5 s (Firmware 0.3.8)
+constexpr uint8_t SETTINGS_VERSION = 2;
 
 // Platzhalter aus dem Sketch – solange diese drinstehen, warnt die Firmware beim Start.
 #define PLACEHOLDER_WIFI_PASSWORD "hier-passwort"
@@ -79,7 +85,10 @@ constexpr int MIN_SOIL_CAL_SPAN = 300;            // Rohwert trocken und nass m�
 // WATER_CHECK_MIN_RISE_PCT, wird die Auto-Bewässerung gesperrt (Sensor steckt
 // nicht in der Erde, Schlauch liegt daneben, Pumpe saugt Luft ...).
 // Aufheben: "refill", BOOT-Taste 3 s, oder die Bodenfeuchte steigt wieder.
+// Geprüft wird erst, wenn in der Sitzung mindestens WATER_CHECK_MIN_PUMP_S
+// Sekunden gepumpt wurde – bei kurzen Stößen (0,5 s) also nach ~10 Läufen.
 constexpr uint8_t WATER_CHECK_RUNS = 3;
+constexpr float WATER_CHECK_MIN_PUMP_S = 5.0f;
 constexpr float WATER_CHECK_MIN_RISE_PCT = 3.0f;
 
 // -----------------------------------------------------------------------------
@@ -87,7 +96,7 @@ constexpr float WATER_CHECK_MIN_RISE_PCT = 3.0f;
 // -----------------------------------------------------------------------------
 constexpr uint32_t SENSOR_PERIOD_MS = 2000;   // lokale Messung (LED-Bar, Auto-Bewässerung)
 constexpr uint32_t HTTP_TIMEOUT_MS = 4000;    // Verbindungs- und Antwort-Timeout
-constexpr uint32_t WIFI_RETRY_MS = 30000;     // neuer Verbindungsversuch, falls WLAN weg
+constexpr uint32_t WIFI_RETRY_MS = 15000;     // Pause nach einem gescheiterten Versuch bis zum nächsten
 constexpr uint32_t ALARM_REPEAT_MS = 600000;  // Summer wiederholt einen bestehenden Alarm höchstens alle 10 min
 constexpr uint32_t WATCHDOG_TIMEOUT_S = 20;   // hängt loop() länger, startet der ESP neu (Relais -> AUS)
 
@@ -107,7 +116,7 @@ struct Settings {
   float moisture_min_pct = 30;      // darunter startet eine Gieß-Sitzung
   float moisture_target_pct = 55;   // bis hierhin wird gegossen
   bool auto_water = true;           // automatische Bewässerung an/aus
-  float max_pump_s_per_run = 5;     // Länge eines Pumpenstoßes
+  float max_pump_s_per_run = 0.5f;  // Länge eines Pumpenstoßes (auch Demo und Dashboard-Knopf)
   uint32_t pump_cooldown_s = 300;   // Pause zwischen zwei Stößen (Wasser versickern lassen)
   float max_pump_s_per_day = 60;    // Tageslimit (höchstens HARD_MAX_PUMP_S_PER_DAY)
   bool buzzer_enabled = true;       // Summer bei Alarmen

@@ -14,7 +14,16 @@
 #include "secrets.h"
 #endif
 
-static uint32_t lastAttempt = 0;
+// WLAN-Verbindungsversuche (siehe netUpdate):
+// Ein neuer Versuch wird erst gestartet, wenn der vorige nachweislich beendet ist
+// (Ereignis "getrennt" vom ESP32-Core). So ruft die Firmware nie esp_wifi_connect()
+// auf, während noch ein Versuch läuft -> keine Meldungen
+// "wifi:sta is connecting, cannot set config / return error" mehr.
+static bool wifiEnabled = false;             // false = Platzhalter-Passwort -> WLAN bleibt aus
+static uint32_t lastAttempt = 0;             // Start des letzten Versuchs
+static volatile bool attemptDone = false;    // letzter Versuch beendet (Ereignis kam)
+static volatile uint32_t lastDiscMs = 0;     // Zeitpunkt des letzten "getrennt"-Ereignisses
+static volatile uint8_t lastReason = 0;      // Grund laut ESP-IDF (wifi_err_reason_t)
 static bool wasConnected = false;
 static uint32_t errorSince = 0;   // Zeitpunkt des letzten Sendefehlers
 static bool errorShown = false;   // Fehler-Blinken aktiv (Flag statt Zeitstempel 0 -> überlaufsicher)
@@ -24,10 +33,45 @@ void netMarkError() {
   errorShown = true;
 }
 
+// Läuft im WLAN-Task des Cores -> nur Variablen setzen, keine Ausgabe hier.
+static void onWifiDisconnected(arduino_event_id_t, arduino_event_info_t info) {
+  lastReason = info.wifi_sta_disconnected.reason;
+  lastDiscMs = millis();
+  attemptDone = true;
+}
+
+// Übersetzt den Trenngrund in einen verständlichen Hinweis
+static const char *reasonText(uint8_t r) {
+  switch (r) {
+    case WIFI_REASON_NO_AP_FOUND:
+      return "nicht gefunden (Pi-Hotspot aus oder zu weit weg)";
+    case WIFI_REASON_AUTH_FAIL:
+    case WIFI_REASON_4WAY_HANDSHAKE_TIMEOUT:
+    case WIFI_REASON_HANDSHAKE_TIMEOUT:
+    case WIFI_REASON_802_1X_AUTH_FAILED:
+    case WIFI_REASON_AUTH_EXPIRE:
+      return "gefunden, aber Anmeldung abgelehnt -> WLAN-Passwort prüfen (secrets.h bzw. oben im Sketch)";
+    case WIFI_REASON_BEACON_TIMEOUT:
+      return "Verbindung abgerissen (Signal zu schwach?)";
+    default:
+      return nullptr;  // anderer Grund -> Nummer ausgeben
+  }
+}
+
 void netBegin() {
-  WiFi.persistent(false);  // Zugangsdaten NICHT zusätzlich im WLAN-Flashbereich ablegen
+  // Mit dem Platzhalter-Passwort kann die Verbindung nie klappen. WLAN dann gar
+  // nicht erst starten: spart Strom und vermeidet Fehlermeldungen im Log.
+  if (strcmp(CFG_WIFI_PASSWORD, PLACEHOLDER_WIFI_PASSWORD) == 0) {
+    Serial.println("[WLAN] AUS: WLAN-Passwort ist noch der Platzhalter \"" PLACEHOLDER_WIFI_PASSWORD "\".");
+    Serial.println("[WLAN] Echtes Passwort in secrets.h (oder oben im Sketch) eintragen und neu hochladen.");
+    WiFi.mode(WIFI_OFF);
+    return;
+  }
+  wifiEnabled = true;
+  WiFi.persistent(false);       // Zugangsdaten NICHT zusätzlich im WLAN-Flashbereich ablegen
   WiFi.mode(WIFI_STA);
-  WiFi.setAutoReconnect(true);
+  WiFi.setAutoReconnect(false); // Neuverbindung macht netUpdate() selbst (kontrolliert, s. o.)
+  WiFi.onEvent(onWifiDisconnected, ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
   WiFi.begin(CFG_WIFI_SSID, CFG_WIFI_PASSWORD);
   lastAttempt = millis();
   Serial.printf("[WLAN] verbinde mit \"%s\" ...\n", CFG_WIFI_SSID);
@@ -50,23 +94,27 @@ void netUpdate() {
     if (errorShown && millis() - errorSince >= 5000) errorShown = false;
     statusLedSet(errorShown ? 3 : 1);
   }
-  // Kein WLAN: höchstens alle WIFI_RETRY_MS einen neuen Versuch anstoßen – aber nur,
-  // wenn der ESP gerade NICHT selbst verbindet. (Früher wurde jedes Mal WiFi.begin()
-  // aufgerufen; lief noch ein Versuch, meldete der Core
-  // "wifi:sta is connecting, cannot set config".)
-  if (!c && millis() - lastAttempt > WIFI_RETRY_MS) {
-    lastAttempt = millis();
-    wl_status_t st = WiFi.status();
-    static wl_status_t lastReported = WL_IDLE_STATUS;
-    if (st != lastReported) {  // Grund einmal verständlich melden
-      lastReported = st;
-      if (st == WL_NO_SSID_AVAIL)
-        Serial.printf("[WLAN] \"%s\" nicht gefunden (Pi-Hotspot aus oder zu weit weg)\n", CFG_WIFI_SSID);
-      else if (st == WL_CONNECT_FAILED)
-        Serial.println("[WLAN] Verbindung abgelehnt – WLAN-Passwort prüfen (oben im Sketch bzw. secrets.h)");
-    }
-    if (st == WL_NO_SSID_AVAIL || st == WL_CONNECT_FAILED || st == WL_CONNECTION_LOST || st == WL_DISCONNECTED)
-      WiFi.reconnect();  // nutzt die gespeicherten Daten aus netBegin(), kein neues "set config"
+  if (!wifiEnabled || c) return;
+
+  // Grund des letzten Fehlschlags einmal verständlich melden (nur bei Änderung)
+  static uint8_t reportedReason = 0;
+  uint8_t r = lastReason;
+  if (r && r != reportedReason && r != WIFI_REASON_ASSOC_LEAVE) {
+    reportedReason = r;
+    const char *txt = reasonText(r);
+    if (txt) Serial.printf("[WLAN] \"%s\" %s\n", CFG_WIFI_SSID, txt);
+    else Serial.printf("[WLAN] Verbindung fehlgeschlagen (Grund %u), neuer Versuch folgt\n", (unsigned)r);
+  }
+
+  // Neuer Versuch erst, wenn der vorige beendet ist und WIFI_RETRY_MS Ruhe war.
+  // Kommt nach 60 s kein Ereignis, gilt der Versuch als hängend und wird ersetzt.
+  uint32_t now = millis();
+  bool done = attemptDone && now - lastDiscMs >= WIFI_RETRY_MS;
+  bool hung = !attemptDone && now - lastAttempt >= 60000;
+  if (done || hung) {
+    attemptDone = false;
+    lastAttempt = now;
+    WiFi.reconnect();  // nutzt die Daten aus netBegin(), kein neues "set config"
   }
 }
 

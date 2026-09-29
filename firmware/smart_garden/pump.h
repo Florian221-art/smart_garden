@@ -6,6 +6,7 @@
 //    1. Tank laut Schätzung nicht leer        (Trockenlaufschutz)
 //    2. Mindestpause HARD_MIN_COOLDOWN_S      (immer) bzw. pump_cooldown_s (Auto)
 //    3. Laufzeit <= max_pump_s_per_run <= HARD_MAX_PUMP_S_PER_RUN
+//       (seriell per USB nur <= HARD_MAX_PUMP_S_PER_RUN, z. B. zum Durchfluss messen)
 //    4. Tageslimit max_pump_s_per_day <= HARD_MAX_PUMP_S_PER_DAY
 //  Ausgeschaltet wird in pumpUpdate() über millis() – ohne delay(). Hängt die
 //  Firmware trotzdem, startet der Watchdog den ESP neu und pumpBegin() schaltet
@@ -17,8 +18,10 @@
 void pumpBegin();                    // Relais sicher AUS – als ALLERERSTES in setup() aufrufen
 // Startet die Pumpe für höchstens `seconds` Sekunden.
 // respectCooldown = true: die (längere) Pause aus den Settings gilt (Auto-Bewässerung).
+// limitToSetting = false: nur die harte Grenze gilt, nicht max_pump_s_per_run
+//   (nur für den seriellen Befehl – dafür braucht man das USB-Kabel).
 // Gibt false zurück, wenn eine Sicherheitsgrenze greift (Grund steht im seriellen Log).
-bool pumpStart(float seconds, const char *reason, bool respectCooldown);
+bool pumpStart(float seconds, const char *reason, bool respectCooldown, bool limitToSetting = true);
 void pumpStop();                     // sofort aus
 void pumpUpdate();                   // in JEDEM loop()-Durchlauf aufrufen
 bool pumpRunning();

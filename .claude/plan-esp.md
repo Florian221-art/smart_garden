@@ -47,6 +47,8 @@ Pinout + Verkabelung: **`docs/hardware/verkabelung.md`** · Firmware-Anleitung: 
 | 0.3.4 | Versionsnummer zusätzlich ganz oben im Sketch |
 | 0.3.5 | `leddiag` (8 Übertragungsvarianten), LED-Optionen oben im Sketch; **LED-Bar läuft mit den Standardwerten (von Florian bestätigt)** |
 | 0.3.6 | WLAN-Neuverbindung alle 30 s per `WiFi.reconnect()` statt `disconnect()+begin()` alle 10 s → keine Meldung „sta is connecting, cannot set config“ mehr; klare Hinweise „SSID nicht gefunden“ / „Passwort prüfen“ |
+| 0.3.7 | WLAN komplett ereignisgesteuert: `setAutoReconnect(false)`, neuer Versuch erst nach dem Ereignis „getrennt“ + 15 s (Hänger-Schutz 60 s) → auch „sta is connecting, return error“ weg; Trenngrund im Klartext; mit Platzhalter-Passwort bleibt das WLAN aus |
+| 0.3.8 | Pumpenstoß Standard 0,5 s (Auto, Demo, Dashboard) statt 5 s; `SETTINGS_VERSION` 2 verwirft alte Settings im Flash (Kalibrierung bleibt); serielles `pump` nur hart auf 15 s begrenzt (Durchfluss messen); Plausibilitätsprüfung erst ab 5 s Pumpzeit in der Sitzung |
 
 Hinweise für spätere Änderungen:
 
@@ -67,17 +69,21 @@ Erledigt:
 - [x] Kalibrierung Boden (trocken 3248 / nass 1102)
 - [x] Code-Review 29.09. (ESP selbst, Server/Web per Subagent read-only) → Befunde Server als Issue `an-web`
 - [x] Root-README
+- [x] Gesamte Doku auf Englisch (Jury-Vorgabe, PR #33): Root-, Firmware-, tools-, hardware-, server-, web-, deploy-Doku; neue `server/README.md`. Code, Kommentare und serielle Meldungen bleiben deutsch (Florians Entscheidung). **Neue Doku ab jetzt auf Englisch schreiben.**
 
 Als Nächstes:
 
 - [x] LED-Bar funktioniert (0.3.5, bestätigt 29.09.)
-- [ ] Florian: 0.3.6 hochladen, Kurztest (`status`, `demo soil 12`, `demo tank 4` → danach wieder echter Tank, `pump 3` zweimal schnell → 2. blockiert)
+- [ ] Florian: 0.3.8 hochladen, Kurztest (`status`, `demo soil 12`, `demo tank 4` → danach wieder echter Tank, `pump 3` zweimal schnell → 2. blockiert)
 - [ ] Durchfluss messen (`pump 10` in Messbecher) → `pump_flow_ml_per_s`
 - [ ] Test gegen Nicos Server (WLAN-Passwort + API-Key in `secrets.h`)
 - [ ] HTTPS: Caddy-Root-Zertifikat als `SERVER_CA_CERT`
 - [ ] [CONTRACT]-Vorschlag: Fehlercode `watering_ineffective`, Demo-Tank als reine Anzeige im Vertrag beschreiben (noch kein PR; braucht Zustimmung beider)
+- [ ] Nico: Issue #34 (Finder-Duplikate, .env, 422-Format)
+- [ ] Nico (Issue #32): Server-Standard `max_pump_s_per_run` 0,5 und Dashboard-Knopf „Jetzt gießen“ `pump_run_s` 0,5 – sonst überschreibt der Server die 0,5 s mit 5 s
 - [ ] Fotos/Schaltplan, Präsentationsbeitrag ESP
 
 Blocker:
 
-- WLAN-Passwort des Pi-Hotspots + API-Key (kommt von Nico)
+- WLAN: ESP meldet abwechselnd „Anmeldung abgelehnt“ und „nicht gefunden“ → Passwort in `/opt/smart-garden/zugangsdaten.txt` auf dem Pi prüfen (wird bei Neuinstallation neu erzeugt), ESP näher an den Pi
+- DHT11 meldet FEHLER (Kabel an D4 prüfen)

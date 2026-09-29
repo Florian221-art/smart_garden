@@ -1,67 +1,139 @@
-# Smart Garden – intelligenter Pflanzkübel
+# Smart Garden – an intelligent planter
 
-Hackathon-Projekt (Euregio, 48 h, September 2026) von **Florian Schoenen** und **Nico Steins**.
-Die Aufgabe steht in [`docs/Intelligenter Gemüsegarten Pflanzkübel DE.pdf`](docs/Intelligenter%20Gemüsegarten%20Pflanzkübel%20DE.pdf).
+Hackathon project (Euregio hackathon, 48 hours, September 2026) by **Florian Schoenen** and **Nico Steins**.
+The original challenge description is in [`docs/Intelligenter Gemüsegarten Pflanzkübel DE.pdf`](docs/Intelligenter%20Gemüsegarten%20Pflanzkübel%20DE.pdf) (German).
 
-Der Pflanzkübel misst Bodenfeuchte, Licht, Temperatur und Luftfeuchte. Er gießt selbstständig und sparsam, zeigt den Zustand direkt am Kübel an und schickt alle Werte an einen Raspberry Pi. Dort speichert ein Server die Daten, ein Dashboard zeigt sie für alle verständlich an (NL/DE/EN), und ein KI-Modul erkennt Auffälligkeiten und schätzt den Wasserbedarf.
+## Overview
 
-## Aufbau
+### The problem
+
+A vegetable planter on a school campus needs regular, measured watering. Too little water and the plants dry out; too much wastes water. The people looking after it (students, teachers) need to see at a glance whether the plant is fine or whether something needs to be done – without any technical knowledge.
+
+### Our solution
+
+An ESP32 microcontroller in the planter measures soil moisture, light, air temperature and humidity. It waters the plant on its own, in small bursts and only as much as needed, shows the soil condition directly on the planter with an LED bar, and sounds a buzzer when there is a problem. All readings are sent over Wi-Fi to a Raspberry Pi, which stores them and serves a web dashboard that explains the plant's state in plain sentences. An AI module for anomaly detection and water-demand forecasting is designed but not yet implemented (see [Status and known limitations](#status-and-known-limitations)).
+
+The planter keeps working without the Pi: measuring, the LED bar, the buzzer and automatic watering all run locally on the ESP32; only sending data stops.
+
+### Features
+
+- **Sensing:** capacitive soil moisture, light (LDR), temperature and humidity (DHT11). Each analog value is the median of 5 samples; implausible values are reported as sensor errors.
+- **Water-saving automatic watering:** when soil moisture falls below a threshold (default 30 %), the pump runs in short bursts (default 0.5 s) with a pause in between (default 300 s) so the water can soak in, until a target moisture (default 55 %) is reached. A daily pump limit applies.
+- **Water tank estimate without a level sensor:** remaining water = capacity − pump run time × measured flow rate. The estimate is stored in flash and survives restarts. At a tank level of 5 % or less the pump does not run (dry-run protection).
+- **Plausibility check:** if watering has no measurable effect (sensor not in the soil, hose misplaced, pump sucking air), automatic watering is locked and an alarm is raised.
+- **On-site feedback:** a 10-segment LED bar (the drier the soil, the more LEDs light up – understandable without reading), a buzzer for new problems, and an onboard status LED for Wi-Fi.
+- **Dashboard (React):** a status card in full sentences, tiles with a plain-language rating instead of bare numbers, history charts (1 h / 24 h / 7 days) for moisture, tank, water use, temperature, humidity and light, light/dark theme, a mobile layout, and it can be installed as a home-screen app.
+- **Demo mode for presentations:** sensor values can be overridden and sensor failures forced, either from the dashboard or from the ESP32's serial console. The override happens on the ESP32, so the real hardware reacts (pump, LED bar, buzzer). Demo data is flagged and is not used for AI training.
+- **Security by design:** per-device API keys (stored as argon2 hashes), a dedicated WPA2 hotspot, hard pump limits compiled into the firmware, a watchdog, and no secrets in the repository (see [Security highlights](#security-highlights)).
+
+## Architecture
 
 ```
- Kübel                                   Raspberry Pi 5 (eigenes WLAN "SmartGarden", 10.42.0.1)
+ Planter                                 Raspberry Pi 5 (own Wi-Fi "SmartGarden", 10.42.0.1)
  ┌─────────────────────────────┐         ┌───────────────────────────────────────────────┐
- │ ESP32                       │  WLAN   │ FastAPI-Server ── SQLite                        │
- │  ├ Bodenfeuchte (kapazitiv) │ ──────► │   POST /api/v1/readings  (X-API-Key)            │
- │  ├ Licht (LDR)              │ ◄────── │   Antwort: config · commands · demo             │
- │  ├ Temp./Luftfeuchte (DHT11)│         │ KI-Modul (Python)                               │
- │  ├ LED-Bar (Feuchte-Anzeige)│         │ Dashboard (React + Tailwind) ◄── Handy/Laptop   │
- │  ├ Summer (Alarm)           │         └───────────────────────────────────────────────┘
- │  └ Relais → 12-V-Pumpe      │
+ │ ESP32                       │  Wi-Fi  │ FastAPI server ── SQLite                        │
+ │  ├ Soil moisture (capacit.) │ ──────► │   POST /api/v1/readings  (X-API-Key)            │
+ │  ├ Light (LDR)              │ ◄────── │   Response: config · commands · demo            │
+ │  ├ Temp./humidity (DHT11)   │         │ AI module (Python) – planned                    │
+ │  ├ LED bar (moisture)       │         │ Dashboard (React + Tailwind) ◄── phone/laptop   │
+ │  ├ Buzzer (alarm)           │         └───────────────────────────────────────────────┘
+ │  └ Relay → 12 V pump        │
  └─────────────────────────────┘
 ```
 
-Die Schnittstelle zwischen ESP und Server ist in [`.claude/api-contract.md`](.claude/api-contract.md) festgelegt (Version 1.2).
+1. **ESP32 (planter):** measures every 2 s, controls the pump locally and sends a reading every `interval_s` seconds via `POST /api/v1/readings` (firmware default 10 s; the value from the server's `config` takes precedence once connected). It only makes outgoing connections; there is no web server on the ESP32.
+2. **Wi-Fi hotspot:** the Raspberry Pi 5 runs its own NetworkManager hotspot "SmartGarden" (2.4 GHz, WPA2, Pi address `10.42.0.1`), independent of the venue Wi-Fi. The ESP32 and the viewers' phones and laptops connect to it.
+3. **FastAPI server + SQLite:** checks the device's API key, validates every field, stores the reading and answers with `config` (thresholds, pump and tank settings), one-time `commands` (e.g. water now, tank refilled, identify, beep) and optional `demo` overrides. The ESP32 applies these from the response.
+4. **Dashboard:** a React/Vite/Tailwind single-page app, built to static files and served by the same FastAPI service on port 8000. It reads the latest values and the history through the server's REST API.
+5. **AI module (planned):** Python (scikit-learn) for water-demand forecasting and anomaly detection, optionally a local chatbot via Ollama. The design is in [`.claude/plan-webserver.md`](.claude/plan-webserver.md); there is no `ai/` code in the repository yet.
 
-## Ordner
+The interface between the ESP32 and the server (JSON fields, commands, demo mode, error codes) is defined in [`.claude/api-contract.md`](.claude/api-contract.md) (version 1.2).
 
-| Ordner | Inhalt | Zuständig | Doku |
+## Hardware
+
+| Component | Purpose | ESP32 pin |
+|---|---|---|
+| ESP32 DevKit V1 (ESP-WROOM-32, 30 pins, CP2102 USB chip) | Controller | – |
+| Capacitive Soil Moisture Sensor v2.0 (HW-390) | Soil moisture | GPIO34 |
+| LDR light sensor module | Light | GPIO35 |
+| Grove Temperature & Humidity Sensor v1.2 (DHT11) | Air temperature and humidity | GPIO4 |
+| Grove LED Bar v2.0 | Moisture display | GPIO18 (DI, data), GPIO19 (DCKI, clock) |
+| Buzzer LF-PB30W35B | Alarm | GPIO26 |
+| Grove Relay + 12 V pump | Watering | GPIO27 |
+| Onboard BOOT button | Hold 3 s = tank refilled | GPIO0 |
+| Onboard LED | Wi-Fi status | GPIO2 |
+| Raspberry Pi 5 | Hotspot, server, database, dashboard | – |
+
+All modules run on 3.3 V; the 12 V pump circuit is switched only through the relay's screw terminal and never touches an ESP32 pin. Full wiring plan and commissioning order: [`docs/hardware/verkabelung.md`](docs/hardware/verkabelung.md).
+
+## Repository structure
+
+| Folder | Contents | Owner | Docs |
 |---|---|---|---|
-| `firmware/smart_garden/` | ESP32-Firmware (C++, Arduino IDE) | Florian | [README](firmware/smart_garden/README.md) |
-| `tools/` | `fake_esp.py`: ESP-Simulator zum Testen ohne Hardware | Florian | [README](tools/README.md) |
-| `docs/hardware/` | Pinout, Verkabelung, Sicherheitsanalyse ESP | Florian | [Verkabelung](docs/hardware/verkabelung.md) · [Sicherheit](docs/hardware/sicherheit-esp.md) |
-| `server/` | FastAPI-Backend, Datenbank | Nico | `docs/server/` |
-| `web/` | Dashboard (React, Vite, Tailwind) | Nico | `web/README.md` |
-| `ai/` | KI-Modul (Python) – in Arbeit | Nico | `.claude/plan-webserver.md` |
-| `deploy/` | Pi-Einrichtung: Hotspot, systemd-Dienst | Nico | [README](deploy/README.md) |
-| `.claude/` | Pläne, Regeln und API-Vertrag für die beiden Claude-Instanzen | beide | [Regeln](.claude/CLAUDE.md) |
+| `firmware/smart_garden/` | ESP32 firmware (C++, Arduino IDE) | Florian | [README](firmware/smart_garden/README.md) |
+| `tools/` | `fake_esp.py`: ESP32 simulator for testing without hardware | Florian | [README](tools/README.md) |
+| `docs/hardware/` | Pinout, wiring, ESP32 security analysis | Florian | [Wiring](docs/hardware/verkabelung.md) · [Security](docs/hardware/sicherheit-esp.md) |
+| `server/` | FastAPI backend, SQLite database | Nico | [`docs/server/`](docs/server/status.md) |
+| `web/` | Dashboard (React, Vite, Tailwind) | Nico | [`docs/server/`](docs/server/status.md) |
+| `ai/` | AI module (Python) – planned, not yet in the repository | Nico | [`.claude/plan-webserver.md`](.claude/plan-webserver.md) |
+| `deploy/` | Raspberry Pi setup: hotspot, systemd service, deploy script | Nico | [README](deploy/README.md) |
+| `.claude/` | Plans, rules and the API contract for the two Claude Code instances used during development | both | [Rules](.claude/CLAUDE.md) |
 
-## Schnellstart
+## Quick start
 
-1. **Pi einrichten**: Hotspot und Server nach [`deploy/README.md`](deploy/README.md). Dabei für den Kübel ein Gerät mit API-Key anlegen.
-2. **Kübel verkabeln** nach [`docs/hardware/verkabelung.md`](docs/hardware/verkabelung.md).
-3. **Firmware hochladen** nach [`firmware/smart_garden/README.md`](firmware/smart_garden/README.md). WLAN-Passwort und API-Key gehören in `secrets.h`, nicht ins Repo.
-4. **Kalibrieren**: `cal soil dry` und `cal soil wet` im seriellen Monitor, dann den Pumpen-Durchfluss messen.
-5. **Dashboard** im Hotspot-WLAN öffnen.
-6. **Ohne Hardware testen**: `python tools/fake_esp.py --url http://10.42.0.1:8000 --key <api-key>`
+1. **Set up the Pi:** from a laptop, run `./deploy/deploy_to_pi.sh <user>@<pi-address>` as described in [`deploy/README.md`](deploy/README.md). The script builds the dashboard, installs the server as a systemd service, creates the hotspot and a device with an API key, and writes a ready-made `firmware/smart_garden/secrets.h` on the laptop.
+2. **Wire the planter** according to [`docs/hardware/verkabelung.md`](docs/hardware/verkabelung.md).
+3. **Upload the firmware** following [`firmware/smart_garden/README.md`](firmware/smart_garden/README.md). The Wi-Fi password and API key belong in `secrets.h`, never in the repository.
+4. **Calibrate:** enter `cal soil dry` and `cal soil wet` in the serial monitor, then measure the pump flow rate.
+5. **Open the dashboard:** join the "SmartGarden" Wi-Fi and open `http://10.42.0.1:8000`.
+6. **Test without hardware:** `python tools/fake_esp.py --url http://10.42.0.1:8000 --key <api-key>`
 
-## Was die Lösung aus der Aufgabe abdeckt
+## How the solution covers the challenge
 
-| Anforderung | Umsetzung |
+| Requirement | Implementation |
 |---|---|
-| Sensordaten (Feuchte, Licht, Temperatur, Wasserstand) | 4 Sensoren am ESP32. Den Wasserstand schätzt die Firmware aus der Pumpenlaufzeit (kein Sensor vorhanden). |
-| Wasserverschwendung vermeiden | Gießen in Stößen mit Pause bis zu einer Zielfeuchte, Tageslimit. Die Plausibilitätsprüfung stoppt, wenn Gießen nicht wirkt. |
-| Warnungen | Summer und LED-Bar am Kübel, Statusmeldungen im Dashboard |
-| Zugänglich | LED-Bar ohne Lesen verständlich (je mehr LEDs, desto trockener), Dashboard mehrsprachig und barrierearm |
-| KI | geplant: Anomalie-Erkennung und Vorhersage des Wasserbedarfs (`ai/`, siehe `.claude/plan-webserver.md`) |
-| Sicherheit | API-Key pro Gerät, WPA2-Hotspot, harte Pumpengrenzen im ESP, Watchdog, keine Secrets im Repo, Bedrohungsmodell ([ESP-Teil](docs/hardware/sicherheit-esp.md)) |
-| Datenschutz | Keine Kamera, kein Mikrofon, keine personenbezogenen Daten am Kübel |
-| Demo | Demo-Modus: Sensorwerte überschreiben und Fehler auslösen, per Dashboard oder serieller Konsole |
+| Sensor data (moisture, light, temperature, water level) | 4 sensors on the ESP32. There is no level sensor; the firmware estimates the water level from the pump run time. |
+| Avoid wasting water | Watering in short bursts with pauses up to a target moisture, a daily limit, and a plausibility check that stops watering when it has no effect. |
+| Warnings | Buzzer and LED bar on the planter, status messages on the dashboard. |
+| Accessibility | The LED bar is understandable without reading (more LEDs = drier). The dashboard explains the state in full sentences, never relies on colour alone (always symbol + text) and uses touch targets of at least 44 px. The dashboard UI is currently in German; NL/DE/EN translations are planned. |
+| AI | Planned: anomaly detection and water-demand forecasting (`ai/`, see `.claude/plan-webserver.md`). |
+| Security | API key per device, WPA2 hotspot, hard pump limits in the ESP32, watchdog, no secrets in the repository, threat model ([ESP32 part](docs/hardware/sicherheit-esp.md)). |
+| Privacy | No camera, no microphone, no personal data at the planter. |
+| Demo | Demo mode: override sensor values and trigger faults, from the dashboard or the serial console. |
 
-## Regeln für Beiträge
+## Security highlights
 
-- **Nie direkt auf `main` pushen.** Immer über einen Branch und einen Pull Request.
-- **Keine Secrets committen.** WLAN-Passwort und API-Keys gehören in `secrets.h` bzw. `.env`, beide stehen in `.gitignore`.
-- Die API-Schnittstelle nur per `[CONTRACT]`-PR ändern, beide müssen zustimmen.
-- Weitere Regeln: [`.claude/CLAUDE.md`](.claude/CLAUDE.md)
+- **Device authentication:** every reading carries an `X-API-Key` header. The server stores only an argon2 hash of each key and rejects wrong or missing keys and unknown devices with HTTP 401. A per-device rate limit (at most 1 request per 2 s) answers with HTTP 429.
+- **Input validation on both sides:** the server validates all fields and value ranges (Pydantic); the firmware clamps every setting it receives from the server to safe ranges.
+- **Hard limits in the firmware** that the server cannot change: at most 15 s per pump run, a daily limit of at most 300 s, at least 10 s pause before every start (including dashboard and demo commands), no pumping at a tank level of 5 % or less, and demo overrides expire after at most 600 s.
+- **Fail-safe behaviour:** a 20 s watchdog restarts the ESP32 if the main loop hangs, switching the relay off first. The relay pin is LOW at boot, so the pump cannot start on power-up. No data is sent while the pump runs, so a slow server cannot delay switching it off.
+- **Secrets stay out of the repository:** the Wi-Fi password and API keys live in `secrets.h` (firmware) or `.env`, both listed in `.gitignore`. The deploy script generates the credentials on the Pi. The firmware never prints the password or key.
+- **Isolated network:** the Pi's own WPA2 hotspot; if `ufw` is installed, only the required ports are opened.
 
-Lizenz: siehe [LICENSE](LICENSE).
+The full threat model of the ESP32 part (STRIDE, OWASP IoT Top 10) is in [`docs/hardware/sicherheit-esp.md`](docs/hardware/sicherheit-esp.md).
+
+## Status and known limitations
+
+- **No login yet:** anyone connected to the hotspot can use the dashboard, including the demo controls and device commands. Login with admin/reader roles is planned.
+- **HTTP for now:** over HTTP the API key can be read by others on the Wi-Fi. HTTPS via Caddy (`tls internal`) is prepared in the firmware (`SERVER_CA_CERT`) but not yet deployed.
+- **AI module:** designed, not yet implemented.
+- **Dashboard language:** German only so far; NL/DE/EN via translation keys is planned.
+- **No level sensor and no clock:** the tank estimate is only correct if the flow rate was measured and `refill` is triggered after every refill. The daily pump limit applies per 24 h of uptime and restarts after a reboot.
+
+## Team
+
+| Name | Responsibility |
+|---|---|
+| **Florian Schoenen** | ESP32 firmware, hardware and wiring, test tools, ESP32 security analysis |
+| **Nico Steins** | Server/API, database, dashboard, AI module, Raspberry Pi deployment including the Wi-Fi hotspot |
+
+During development each of us worked with a separate Claude Code instance; their shared rules, plans and the API contract are in `.claude/`.
+
+## Contribution rules
+
+- **Never push directly to `main`.** Always use a branch and a pull request.
+- **Never commit secrets.** The Wi-Fi password and API keys belong in `secrets.h` or `.env`; both are in `.gitignore`.
+- Change the API only through a `[CONTRACT]` pull request; both team members must approve.
+- More rules: [`.claude/CLAUDE.md`](.claude/CLAUDE.md)
+
+License: GNU GPL v3, see [LICENSE](LICENSE).

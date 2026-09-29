@@ -1,5 +1,5 @@
 // ############################################################################
-//  FIRMWARE-VERSION 0.3.6  (Stand 29.09.2026)
+//  FIRMWARE-VERSION 0.3.8  (Stand 29.09.2026)
 //  Muss mit FW_VERSION in garden_config.h übereinstimmen und steht beim Start
 //  im seriellen Monitor. So siehst du sofort, ob du die aktuelle Datei hast.
 // ############################################################################
@@ -113,6 +113,7 @@ static bool wateringSession = false;
 static float sessionStartSoil = 0;        // Bodenfeuchte beim Start der Sitzung
 static uint32_t sessionStartMs = 0;
 static uint8_t sessionRuns = 0;           // Pumpenläufe in dieser Sitzung
+static float sessionPumpS = 0;            // gepumpte Sekunden in dieser Sitzung
 static bool sessionDemo = false;          // Sitzung mit Demo-Bodenwert gestartet?
 static bool wateringBlocked = false;      // Gießen wirkt nicht -> Auto-Gießen gesperrt
 
@@ -197,6 +198,7 @@ static void autoWater() {
     sessionStartSoil = soil;
     sessionStartMs = millis();
     sessionRuns = 0;
+    sessionPumpS = 0;
     sessionDemo = current.demo_soil;
   }
   if (soil >= settings.moisture_target_pct) wateringSession = false;
@@ -211,10 +213,11 @@ static void autoWater() {
     return;
   }
 
-  // Plausibilität: nach mehreren Läufen (und mind. 3 min) muss die Feuchte gestiegen
-  // sein. Im Demo-Modus ist der Wert fest vorgegeben -> Prüfung aussetzen.
-  if (!current.demo_soil && sessionRuns >= WATER_CHECK_RUNS && millis() - sessionStartMs >= 180000 &&
-      soil < sessionStartSoil + WATER_CHECK_MIN_RISE_PCT) {
+  // Plausibilität: nach mehreren Läufen mit zusammen genug Wasser (und mind. 3 min)
+  // muss die Feuchte gestiegen sein. Im Demo-Modus ist der Wert fest vorgegeben
+  // -> Prüfung aussetzen.
+  if (!current.demo_soil && sessionRuns >= WATER_CHECK_RUNS && sessionPumpS >= WATER_CHECK_MIN_PUMP_S &&
+      millis() - sessionStartMs >= 180000 && soil < sessionStartSoil + WATER_CHECK_MIN_RISE_PCT) {
     wateringBlocked = true;
     wateringSession = false;
     Serial.printf("[PUMPE] %u Läufe ohne Wirkung (Boden %.1f %% -> %.1f %%): Auto-Gießen gesperrt.\n",
@@ -224,7 +227,10 @@ static void autoWater() {
 
   if (pumpStart(settings.max_pump_s_per_run, "auto", true)) {
     autoWateredSinceLast = true;
-    if (!current.demo_soil) sessionRuns++;
+    if (!current.demo_soil) {
+      sessionRuns++;
+      sessionPumpS += settings.max_pump_s_per_run;
+    }
   } else {
     wateringSession = false;  // Tank leer / Tageslimit -> Sitzung beenden
   }
@@ -362,7 +368,7 @@ static void printHelp() {
       "  demo soil|light|temp|hum|tank <wert> [sekunden]   Wert überschreiben (Standard 120 s, max 600 s)\n"
       "  demo error dht|soil|light [sekunden]               Sensorausfall simulieren\n"
       "  demo off               Demo beenden\n"
-      "  pump <sekunden>        Pumpe manuell (Sicherheitsgrenzen gelten)\n"
+      "  pump <sekunden>        Pumpe manuell, z. B. pump 0.5 (max. 15 s, Pausen/Tank gelten)\n"
       "  stop                   Pumpe sofort aus\n"
       "  refill                 Tank als aufgefüllt markieren (hebt auch die Gieß-Sperre auf)\n"
       "  cal soil dry|wet       aktuellen Rohwert als trocken/nass speichern\n"
@@ -421,7 +427,7 @@ static void handleSerialCommand(String line) {
     demoSetValue(parts[1], parts[2].toFloat(), n >= 4 ? parts[3].toInt() : 120);
     measureAndAct();  // sofort anwenden (LED-Bar, Demo-Gießen)
   }
-  else if (c == "pump" && n >= 2) pumpStart(parts[1].toFloat(), "manuell (seriell)", false);
+  else if (c == "pump" && n >= 2) pumpStart(parts[1].toFloat(), "manuell (seriell)", false, false);
   else if (c == "stop") pumpStop();
   else if (c == "refill") {
     tankRefill("seriell");

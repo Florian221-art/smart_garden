@@ -41,7 +41,7 @@ uint32_t pumpCooldownLeftS() {
   return settings.pump_cooldown_s - sinceLastStopMs() / 1000UL;
 }
 
-bool pumpStart(float seconds, const char *reason, bool respectCooldown) {
+bool pumpStart(float seconds, const char *reason, bool respectCooldown, bool limitToSetting) {
   if (running) return false;
   if (!(seconds > 0) || isinf(seconds)) return false;  // 0, negativ, NaN, unendlich
   if (tankIsEmpty()) {
@@ -56,7 +56,7 @@ bool pumpStart(float seconds, const char *reason, bool respectCooldown) {
   }
   if (respectCooldown && pumpCooldownActive()) return false;
 
-  seconds = min(seconds, settings.max_pump_s_per_run);
+  if (limitToSetting) seconds = min(seconds, settings.max_pump_s_per_run);
   seconds = min(seconds, HARD_MAX_PUMP_S_PER_RUN);
   float dayLimit = min(settings.max_pump_s_per_day, HARD_MAX_PUMP_S_PER_DAY);
   float left = dayLimit - todaySeconds;
