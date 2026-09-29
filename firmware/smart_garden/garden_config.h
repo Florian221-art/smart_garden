@@ -17,7 +17,7 @@
 #pragma once
 #include <Arduino.h>
 
-#define FW_VERSION "0.3.4"  // bei jeder Änderung erhöhen UND ganz oben in smart_garden.ino eintragen
+#define FW_VERSION "0.3.5"  // bei jeder Änderung erhöhen UND ganz oben in smart_garden.ino eintragen
 
 // -----------------------------------------------------------------------------
 // 1. Zugangsdaten + Schalter – definiert ganz oben in smart_garden.ino.
@@ -33,6 +33,9 @@ extern const char *CFG_API_KEY;
 extern const char *CFG_DEVICE_ID;
 extern bool CFG_LEDBAR_REVERSE;
 extern bool CFG_LEDBAR_SWAP_PINS;
+extern int CFG_LEDBAR_BRIGHTNESS;
+extern bool CFG_LEDBAR_SLOW;
+extern bool CFG_LEDBAR_LATCH_CLOCK;
 extern int CFG_LEDBAR_MODE;
 extern bool CFG_BUZZER_ENABLED;
 
