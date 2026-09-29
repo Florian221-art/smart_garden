@@ -75,19 +75,30 @@ void configBegin() {
 
   // Nur übernehmen, wenn die gespeicherte Größe exakt zur aktuellen Struktur passt
   prefs.begin("garden", true);
-  if (prefs.isKey("settings") && prefs.getBytesLength("settings") == sizeof(Settings)) {
+  // Gespeicherte Settings nur übernehmen, wenn Größe UND Settings-Version passen.
+  // Sonst gelten die neuen Standardwerte (bis der Server etwas anderes schickt).
+  bool resetSettings = false;
+  if (prefs.isKey("settings") && prefs.getBytesLength("settings") == sizeof(Settings) &&
+      prefs.getUChar("set_ver", 0) == SETTINGS_VERSION) {
     prefs.getBytes("settings", &settings, sizeof(Settings));
+  } else if (prefs.isKey("settings")) {
+    resetSettings = true;
   }
   if (prefs.isKey("calib") && prefs.getBytesLength("calib") == sizeof(Calibration)) {
     prefs.getBytes("calib", &calib, sizeof(Calibration));
   }
   prefs.end();
   configClampSettings(settings);
+  if (resetSettings) {  // einmalig: neue Standardwerte mit aktueller Version speichern
+    configSaveSettings();
+    Serial.println("[CFG] neue Standard-Einstellungen dieser Firmware übernommen (alte verworfen)");
+  }
 }
 
 void configSaveSettings() {
   prefs.begin("garden", false);
   prefs.putBytes("settings", &settings, sizeof(Settings));
+  prefs.putUChar("set_ver", SETTINGS_VERSION);
   prefs.end();
 }
 

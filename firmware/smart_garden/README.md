@@ -72,7 +72,7 @@ Der ESP versucht es danach alle 15 s erneut, aber erst, wenn der vorige Versuch 
 3. Auf **Hochladen** klicken.
 4. *Werkzeuge → Serieller Monitor* öffnen, **115200 Baud**, Zeilenende **„Neue Zeile“**.
 
-Beim Start steht im Monitor die Firmware-Version (aktuell `Firmware 0.3.7`). Sie muss mit `FIRMWARE-VERSION` ganz oben in `smart_garden.ino` übereinstimmen. Die LED-Bar füllt sich einmal von Grün über Orange bis Rot, und der Summer piept kurz. Leuchtet dabei zuerst Rot, oben `CFG_LEDBAR_REVERSE = true` setzen (zum Ausprobieren ohne Hochladen: `ledflip`).
+Beim Start steht im Monitor die Firmware-Version (aktuell `Firmware 0.3.8`). Sie muss mit `FIRMWARE-VERSION` ganz oben in `smart_garden.ino` übereinstimmen. Die LED-Bar füllt sich einmal von Grün über Orange bis Rot, und der Summer piept kurz. Leuchtet dabei zuerst Rot, oben `CFG_LEDBAR_REVERSE = true` setzen (zum Ausprobieren ohne Hochladen: `ledflip`).
 
 **Wenn der Upload klemmt** (`Connecting…` hängt oder `Wrong boot mode detected`):
 
@@ -93,7 +93,7 @@ Die Werte bleiben im ESP gespeichert, auch nach Neustart und neuem Hochladen. Ko
 
 Beim Bodensensor muss der Rohwert „trocken“ mindestens **300** über „nass“ liegen, sonst wird nicht gespeichert (typisch: trocken ~3200, nass ~1100). Ist die Kalibrierung ungültig, meldet der Sensor einen Fehler und es wird nicht gegossen. So verhindert die Firmware, dass eine Fehlkalibrierung als „0 % Feuchte“ gelesen wird und Dauergießen auslöst.
 
-**Pumpen-Durchfluss messen:** Schlauch in einen Messbecher halten, `pump 10` eingeben und die Menge durch 10 teilen. Das Ergebnis ist der Durchfluss in ml/s, der im Dashboard unter „Durchfluss“ eingetragen wird. Nur mit diesem Wert stimmt die Tank-Schätzung.
+**Pumpen-Durchfluss messen:** Schlauch in einen Messbecher halten, `pump 10` eingeben und die Menge durch 10 teilen (seriell sind bis zu 15 s erlaubt, unabhängig von der Stoßlänge). Das Ergebnis ist der Durchfluss in ml/s, der im Dashboard unter „Durchfluss“ eingetragen wird. Nur mit diesem Wert stimmt die Tank-Schätzung.
 
 ## 5. Befehle im seriellen Monitor
 
@@ -101,12 +101,12 @@ Beim Bodensensor muss der Rohwert „trocken“ mindestens **300** über „nass
 |---|---|
 | `help` | Übersicht |
 | `status` | aktuelle Werte, Einstellungen, Kalibrierung, Demo-Status (ohne Passwort/Key) |
-| `demo soil 12` | Bodenfeuchte 12 % vortäuschen: LED-Bar voll, Pumpe startet. Gilt 120 s, optional die Sekunden als 3. Wert, maximal 600 s |
+| `demo soil 12` | Bodenfeuchte 12 % vortäuschen: LED-Bar voll, Pumpe startet einmal für einen Stoß (0,5 s). Gilt 120 s, optional die Sekunden als 3. Wert, maximal 600 s |
 | `demo temp 38` / `demo hum 25` / `demo light 2` | Temperatur / Luftfeuchte / Licht vortäuschen |
 | `demo tank 4` | Tank fast leer vortäuschen: Summer, keine Bewässerung. Die echte Tank-Schätzung bleibt unverändert |
 | `demo error dht` | Sensorausfall DHT11 simulieren (auch `soil`, `light`) |
 | `demo off` | zurück zu echten Werten |
-| `pump 3` | Pumpe 3 s laufen lassen (Sicherheitsgrenzen gelten) |
+| `pump 0.5` | Pumpe 0,5 s laufen lassen (Punkt statt Komma; bis 15 s, Pausen/Tank/Tageslimit gelten) |
 | `stop` | Pumpe sofort aus |
 | `refill` | Tank als aufgefüllt markieren (oder BOOT-Taste 3 s halten). Hebt auch die Gieß-Sperre auf |
 | `cal soil dry\|wet`, `cal light dark\|bright` | Kalibrieren (Abschnitt 4) |
@@ -146,7 +146,8 @@ Den Demo-Modus kann man auch im Dashboard per Knopf auslösen. Demo-Werte meldet
 ### Gießen
 
 - Nach dem Einschalten wartet das Auto-Gießen erst einmal `pump_cooldown_s` (Standard 5 min). Das ist ein Schutz, falls der ESP immer wieder neu startet. Demo und manuelle Befehle gehen nach 10 s.
-- Liegt die Feuchte unter `moisture_min_pct` (Standard 30 %), beginnt eine Gieß-Sitzung. Die Pumpe läuft stoßweise, je `max_pump_s_per_run` (5 s), mit `pump_cooldown_s` (300 s) Pause dazwischen, damit das Wasser versickert. Das geht so weiter, bis `moisture_target_pct` (55 %) erreicht ist.
+- Liegt die Feuchte unter `moisture_min_pct` (Standard 30 %), beginnt eine Gieß-Sitzung. Die Pumpe läuft stoßweise, je `max_pump_s_per_run` (Standard **0,5 s**, gilt auch für Demo und den Dashboard-Knopf „Jetzt gießen“), mit `pump_cooldown_s` (300 s) Pause dazwischen, damit das Wasser versickert. Das geht so weiter, bis `moisture_target_pct` (55 %) erreicht ist.
+- Der Server kann `max_pump_s_per_run` per `config` ändern (0,5–15 s). Seine Einstellung hat Vorrang, sobald der ESP verbunden ist.
 - **Tank-Schätzung** ohne Sensor: Restmenge = Kapazität − Laufzeit × Durchfluss. Sie liegt im Flash und bleibt bei Neustart erhalten. Nach dem Auffüllen `refill` eingeben, die BOOT-Taste 3 s halten oder im Dashboard „Tank aufgefüllt“ drücken.
 
 ### Sicherheit
@@ -156,7 +157,7 @@ Den Demo-Modus kann man auch im Dashboard per Knopf auslösen. Demo-Werte meldet
   - Tageslimit höchstens 300 s
   - mindestens 10 s Pause vor jedem Start, auch bei Dashboard- und Demo-Befehlen
   - kein Pumpen bei Tank ≤ 5 %
-- **Plausibilitätsprüfung**: Steigt die Feuchte nach 3 Läufen (und mindestens 3 min) um weniger als 3 Prozentpunkte, sperrt die Firmware das Auto-Gießen und gibt Alarm. Mögliche Ursachen: Sensor nicht in der Erde, Schlauch daneben, Pumpe saugt Luft. Aufgehoben wird die Sperre durch `refill`, die BOOT-Taste oder wenn die Feuchte wieder steigt.
+- **Plausibilitätsprüfung**: Steigt die Feuchte nach mindestens 3 Läufen mit zusammen mindestens 5 s Pumpzeit (und mindestens 3 min) um weniger als 3 Prozentpunkte, sperrt die Firmware das Auto-Gießen und gibt Alarm. Mögliche Ursachen: Sensor nicht in der Erde, Schlauch daneben, Pumpe saugt Luft. Aufgehoben wird die Sperre durch `refill`, die BOOT-Taste oder wenn die Feuchte wieder steigt.
 - **Watchdog**: Hängt `loop()` länger als 20 s, startet der ESP neu. Das Relais geht dabei als Erstes aus. Beim Start steht der Grund des letzten Neustarts im Monitor (`[BOOT] ...`).
 - Während die Pumpe läuft, wird nicht gesendet. Ein langsamer Server kann das Ausschalten also nicht verzögern.
 
