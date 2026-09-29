@@ -1,163 +1,178 @@
-# Claude-Web – Fortschritt & Architektur (Stand: siehe Datum unten)
+# Backend, Dashboard and Deployment – Progress and Architecture
 
-Diese Datei dokumentiert für Menschen (Nico, Florian), was im Bereich
-Backend/Dashboard/Deployment bisher gebaut und getestet wurde. Der laufend
-gepflegte Kurzstatus (fertig/als Nächstes/Blocker) steht wie vereinbart in
-`.claude/plan-webserver.md`; hier steht die ausführlichere Erklärung dazu.
+This document explains to the team (Nico, Florian) and to anyone reviewing the
+project what has been built and tested so far for the backend, the dashboard
+and the deployment. The short running status (done / next / blockers) is kept
+in `.claude/plan-webserver.md`, as agreed; this file provides the more detailed
+explanation behind it.
 
-Letzte Aktualisierung: 2026-09-28
+Last updated: 2026-09-28
 
-## Was schon läuft (Phase 1)
+## What is already working (Phase 1)
 
-### 1. WLAN-Hotspot (`deploy/`)
+### 1. Wi-Fi hotspot (`deploy/`)
 
-- `deploy/setup_hotspot.sh`: Richtet per `nmcli` einen NetworkManager-Hotspot
-  "SmartGarden" (WPA2) auf `wlan0` ein, Pi-IP `10.42.0.1`, startet automatisch
-  beim Boot, setzt ufw-Regeln für 22/80/443/8000.
-- `deploy/smart-garden-api.service`: systemd-Unit, die den FastAPI-Server
-  über uvicorn als Dienst `smartgarden` laufen lässt.
-- `deploy/README.md`: Schritt-für-Schritt-Anleitung fürs erste Deployment.
-- **Ungetestet auf echter Pi-Hardware** – es stand in dieser Umgebung kein
-  Pi zur Verfügung. Bitte auf dem Pi gegenprüfen, sobald er da ist.
+- `deploy/setup_hotspot.sh`: uses `nmcli` to create a NetworkManager hotspot
+  named "SmartGarden" (WPA2) on `wlan0`. The Pi gets the IP `10.42.0.1`, the
+  hotspot starts automatically at boot, and ufw rules are added for ports
+  22/80/443/8000.
+- `deploy/smart-garden-api.service`: systemd unit that runs the FastAPI server
+  via uvicorn as the service `smart-garden-api` under the system user
+  `smartgarden`.
+- `deploy/README.md`: step-by-step guide for the first deployment.
+- **Not yet tested on real Pi hardware** – no Pi was available in the
+  development environment. This must be verified on the Pi once it is
+  available.
 
 ### 2. Backend (`server/`)
 
-Tech: FastAPI + Pydantic + SQLAlchemy (SQLite, WAL-Modus), argon2 für
-API-Key-Hashing.
+Tech stack: FastAPI + Pydantic + SQLAlchemy (SQLite in WAL mode), argon2 for
+hashing API keys. See also `server/README.md`.
 
-- `POST /api/v1/readings` – exakt nach `.claude/api-contract.md` v1.2:
-  - Pydantic validiert Body-Felder inkl. Wertebereiche (z. B.
-    `soil_moisture_pct` 0–100 oder `null`)
-  - `X-API-Key`-Header wird gegen den gehashten Key des Geräts geprüft
-    (argon2, dadurch zeitkonstant) → 401 bei falsch/fehlend/unbekanntem
-    Gerät
-  - Rate-Limit: max. 1 Request/2 s pro Gerät (In-Memory) → 429
-  - Antwort enthält `commands` (aktuell immer leer/0/false – Admin-Endpunkt
-    zum Setzen kommt in Phase 3), `config` (Default-Werte aus dem Vertrag)
-    und `demo` (aktuell immer `null` – Demo-Modus-Endpunkte kommen Phase 2)
-  - `received_at` wird serverseitig gesetzt (UTC), wie im Vertrag gefordert
-- `GET /api/v1/devices/{id}/latest` – letzter Messwert eines Geräts, für
-  das Dashboard. Noch **ohne Authentifizierung** (Login/Rollen sind
-  Phase 2) – bewusst so, damit das Dashboard schon funktioniert.
-- `GET /healthz` – einfacher Liveness-Check.
-- `python -m app.cli create-device <id> [--label ...]` – legt ein Gerät an
-  und gibt den API-Key **einmalig im Klartext** aus (danach nur Hash in
-  der DB).
-- Tabellen: `devices`, `readings` (alle Vertragsfelder inkl. Rohwerte,
-  RSSI, Uptime, Fehler, `demo_overrides`), `device_config` (Config pro
-  Gerät, aktuell nur Defaults), `pending_commands` (Ein-mal-Befehle,
-  aktuell nur Struktur, noch kein Admin-Endpunkt zum Setzen).
+- `POST /api/v1/readings` – implemented exactly according to
+  `.claude/api-contract.md` v1.2:
+  - Pydantic validates all body fields, including value ranges (e.g.
+    `soil_moisture_pct` must be 0–100 or `null`).
+  - The `X-API-Key` header is checked against the device's hashed key
+    (argon2, which compares in constant time) → 401 if the key is wrong or
+    missing, or the device is unknown.
+  - Rate limit: at most 1 request per 2 s per device (in memory) → 429.
+  - The response contains `commands`, `config` (default values from the
+    contract) and `demo`. In Phase 1, `commands` was always empty/0/false and
+    `demo` was always `null`; both are now filled by the demo mode and the
+    device commands described further below.
+  - `received_at` is set on the server (UTC), as required by the contract.
+- `GET /api/v1/devices/{id}/latest` – the most recent reading of a device,
+  used by the dashboard. Still **without authentication** (login/roles are
+  planned for Phase 2) – intentionally, so that the dashboard already works.
+- `GET /healthz` – simple liveness check.
+- `python -m app.cli create-device <id> [--label ...]` – creates a device and
+  prints its API key **once in plain text** (afterwards only the hash is
+  stored in the database).
+- Tables: `devices`, `readings` (all contract fields, including raw values,
+  RSSI, uptime, errors, `demo_overrides`), `device_config` (configuration per
+  device, currently only defaults) and `pending_commands` (one-time commands
+  for the ESP32). A `demo_state` table was added later for the demo mode.
 
 ### 3. Dashboard (`web/`)
 
-Tech: React 19 + Vite + TypeScript + Tailwind v4.
+Tech stack: React 19 + Vite + TypeScript + Tailwind v4.
 
-- `Dashboard`-Komponente pollt `GET /api/v1/devices/{id}/latest` alle 5 s
-  (Vite-Dev-Proxy `/api` → `localhost:8000`) und zeigt alle aktuellen
-  Sensordaten: Bodenfeuchte (inkl. Rohwert), Licht (inkl. Rohwert),
-  Temperatur, Luftfeuchte, Tank (mit Hinweis "Schätzung"), Pumpe,
-  Gerätestatus (RSSI/Uptime/Firmware-Version), Fehler.
-- Fehlercodes werden in verständlichen deutschen Text übersetzt (siehe
-  Abschnitt "Neu seit dem ESP-Merge" unten) statt nur den rohen Code
-  anzuzeigen.
-- Farbskala Bodenfeuchte Rot→Grün wie die LED-Bar auf dem ESP, aber Farbe
-  ist **nie die einzige Information** (Zahl/Text steht immer dabei) –
-  WCAG-Vorgabe aus dem Plan.
-- Banner für DEMO-Modus ist vorbereitet (`demo_overrides`-Feld), zeigt
-  sich sobald der Server im Demo-Modus Werte überschreibt (Phase 2).
-- Geräte-ID ist noch fest auf `esp32-kuebel-01` verdrahtet –
-  Geräteauswahl kommt mit Login/Rollen in Phase 2.
+- The `Dashboard` component polls `GET /api/v1/devices/{id}/latest` every 5 s
+  (Vite dev proxy `/api` → `localhost:8000`) and shows all current sensor
+  data: soil moisture (including raw value), light (including raw value),
+  temperature, air humidity, water tank, pump, device status
+  (RSSI/uptime/firmware version) and errors.
+- Error codes are translated into understandable German text (see the section
+  "New since the ESP firmware merge" below) instead of only showing the raw
+  code.
+- The original red→green colour scale for soil moisture (matching the LED bar
+  on the ESP32) has since been replaced by the monochrome design described
+  below. The accessibility rule from the plan still applies: colour is
+  **never the only carrier of information** – a number or text is always
+  shown as well (WCAG requirement).
+- The device ID is still hard-coded to `esp32-kuebel-01`; device selection
+  will come with login/roles in Phase 2.
 
-## Getestet
+## Tested
 
-Da kein Pi/ESP zur Verfügung stand, lief der komplette Test lokal gegen
-`tools/fake_esp.py` (von Florians Branch, mittlerweile auf `main`):
+Since no Pi or ESP32 was available, the complete test ran locally against
+`tools/fake_esp.py` (originally from Florian's branch, now on `main`):
 
-- Gültiger Request → 200, `commands`/`config`/`demo` wie im Vertrag
-- Falscher/fehlender API-Key, unbekanntes Gerät → 401
-- Zu schnelle Requests (< 2 s Abstand) → 429
-- `GET .../latest` liefert exakt das zurück, was zuletzt gesendet wurde
-- Frontend + Backend zusammen über den Vite-Dev-Proxy durchgespielt
+- Valid request → 200, `commands`/`config`/`demo` as specified in the contract
+- Wrong/missing API key, unknown device → 401
+- Requests sent too fast (< 2 s apart) → 429
+- `GET .../latest` returns exactly what was last sent
+- Frontend and backend exercised together through the Vite dev proxy
 
-Dabei einen Bug gefunden und behoben: Beim allerersten Request eines neu
-angelegten Geräts warf der Server einen 500er, weil die
-SQLAlchemy-Objektdefaults für `pending_commands` erst beim DB-Flush
-gesetzt werden, nicht beim Erzeugen des Python-Objekts. Fix: Defaults
-jetzt explizit beim Anlegen gesetzt (`server/app/routers/readings.py`).
+A bug was found and fixed during testing: on the very first request of a
+newly created device, the server returned a 500 error because SQLAlchemy only
+applies the column defaults for `pending_commands` when the session is
+flushed to the database, not when the Python object is created. Fix: the
+defaults are now set explicitly when the object is created
+(`server/app/routers/readings.py`).
 
-## Neu seit dem ESP-Firmware-Merge (PR #5, #3)
+## New since the ESP firmware merge (PR #5, #3)
 
-Mit der fertigen ESP32-Firmware und dem aktualisierten
-`docs/hardware/verkabelung.md` kamen dazu:
+With the finished ESP32 firmware and the updated
+`docs/hardware/verkabelung.md`, the following changes came in:
 
-- **Bodensensor gewechselt** auf kapazitiv (HW-390) – ändert nur die
-  Hardware, nicht den API-Vertrag (`soil_moisture_pct`/`soil_moisture_raw`
-  bleiben gleich). Keine Backend-/Frontend-Änderung nötig.
-- **LED-Bar-Richtung bestätigt**: Rot = trocken, Grün = feucht – passt zu
-  der Farbskala, die das Dashboard schon hatte.
-- **Konkrete Fehlercodes aus der Firmware** (`smart_garden.ino`):
-  `soil_out_of_range`, `light_read_failed`, `dht_read_failed`,
-  `tank_empty`. Das Dashboard übersetzt diese jetzt in verständlichen
-  Text (z. B. "Bodensensor außerhalb des Messbereichs" statt
-  `soil_out_of_range`), mit dem Rohcode als Tooltip für unbekannte/neue
-  Codes.
-- `tools/fake_esp.py` ist jetzt auf `main` – kein manuelles Auschecken
-  aus einem Feature-Branch mehr nötig zum Testen.
+- **Soil sensor switched** to a capacitive sensor (HW-390) – this only changes
+  the hardware, not the API contract (`soil_moisture_pct`/`soil_moisture_raw`
+  stay the same). No backend or frontend change was needed.
+- **LED bar direction confirmed**: red = dry, green = moist.
+- **Concrete error codes from the firmware** (`smart_garden.ino`):
+  `soil_out_of_range`, `light_read_failed`, `dht_read_failed`, `tank_empty`.
+  The dashboard translates these into understandable German text (e.g.
+  "Bodensensor außerhalb des Messbereichs" – "soil sensor out of measuring
+  range" – instead of `soil_out_of_range`). Unknown or new codes are shown
+  as the raw code.
+- `tools/fake_esp.py` is now on `main` – it no longer has to be checked out
+  manually from a feature branch for testing.
 
-Der API-Vertrag selbst (`.claude/api-contract.md`) wurde **nicht**
-geändert, daher war keine Vertragsanpassung nötig.
+The API contract itself (`.claude/api-contract.md`) was **not** changed, so
+no contract update was necessary.
 
-## Diagramme im Dashboard (Phase 2, Teil 1)
+## Charts in the dashboard (Phase 2, part 1)
 
-Unter den Kacheln gibt es jetzt den Bereich **Verlauf**:
+Below the tiles there is now a **"Verlauf"** (history) section:
 
-- Zeitraum umschaltbar: 1 Stunde, 24 Stunden, 7 Tage (Aktualisierung alle 30 s).
-- Kennzahlen für den Zeitraum: Wasserverbrauch (geschätzt aus Pumpenlaufzeit ×
-  Durchfluss), wie oft automatisch gegossen wurde, Ø Bodenfeuchte.
-- **Bodenfeuchte** mit Gießschwelle und Zielwert (gestrichelt) und orangen
-  Punkten dort, wo der ESP selbst gegossen hat – man sieht den Sägezahn aus
-  Austrocknen und Gießen.
-- **Wassertank** (Schätzung) mit Warnschwelle.
-- **Wasserverbrauch** als Balken pro 5 Minuten / Stunde / Tag.
-- **Temperatur, Luftfeuchte, Licht** (Tag-Nacht-Verlauf).
-- Demo-Zeiträume sind in allen Diagrammen hinterlegt und mit „DEMO“ beschriftet;
-  fällt ein Sensor aus, hat die Linie eine Lücke, der Tooltip nennt den Fehler.
-- Jede Grafik lässt sich als Tabelle aufklappen; Farben sind für Farbenblindheit
-  und hell/dunkel geprüft.
+- Selectable time range: 1 hour, 24 hours, 7 days (refreshed every 30 s).
+- Key figures for the selected range: water consumption (estimated from pump
+  run time × flow rate), how often the device watered automatically, and the
+  average soil moisture.
+- **Soil moisture** chart with the watering threshold and the target value
+  (dashed) and orange dots where the ESP32 watered on its own – the sawtooth
+  pattern of drying out and watering is clearly visible.
+- **Water tank** (estimate) with the warning threshold.
+- **Water consumption** as bars per 5 minutes / hour / day.
+- **Temperature, air humidity, light** (day/night cycle).
+- Demo periods are shaded in all charts and labelled "DEMO". If a sensor
+  fails, the line has a gap and the tooltip names the error.
+- Every chart can be expanded into a table ("Als Tabelle anzeigen" – "show as
+  table"); the colours have been checked for colour blindness and for light
+  and dark mode.
 
-Backend dazu: `GET /api/v1/devices/{id}/readings?from=&to=&bucket=` (Mittelwerte
-pro Zeitabschnitt) und `GET /api/v1/devices/{id}/config`. Zum Ausprobieren ohne
-Hardware: `python -m app.dev_seed esp32-kuebel-01 --hours 48` füllt die
-**Entwicklungs**-Datenbank mit 48 h simuliertem Verlauf.
+Backend for this: `GET /api/v1/devices/{id}/readings?from=&to=&bucket=`
+(averages per time bucket) and `GET /api/v1/devices/{id}/config`. To try it
+out without hardware, `python -m app.dev_seed esp32-kuebel-01 --hours 48`
+fills the **development** database with 48 hours of simulated history.
 
-Behoben: Zeitstempel wurden ohne Zeitzone ausgeliefert, der Browser zeigte
-„Letzter Kontakt“ deshalb 2 h falsch an.
+Fixed: timestamps were returned without a time zone, so the browser displayed
+the time of the device's last report 2 hours off.
 
-## Demo-Modus für die Präsentation (Phase 2, Teil 2)
+## Demo mode for the presentation (Phase 2, part 2)
 
-Im Dashboard gibt es die **Demo-Steuerung** (unter den Kacheln, oben rechts
-ein-/ausblendbar). Sie überschreibt Messwerte **auf dem ESP** – so reagiert die
-echte Hardware (Pumpe, LED-Bar, Summer), wie im API-Vertrag Abschnitt 4
-vorgesehen. Die Sicherheitsgrenzen der Pumpe gelten weiter.
+The dashboard contains the **demo controls** (below the tiles, shown or hidden
+via the "Demo" button at the top right). They override sensor values **on the
+ESP32 itself** – so the real hardware (pump, LED bar, buzzer) reacts, as
+specified in section 4 of the API contract. The pump's safety limits still
+apply.
 
-- **Szenarien per Klick:** Trockene Erde (12 % → ESP gießt), Hitzewelle
-  (38 °C / 25 %), Tank fast leer (4 %), Sensorausfall (DHT11), Nacht (Licht 2 %).
-- **Eigene Werte:** Schieberegler für Bodenfeuchte, Licht, Temperatur,
-  Luftfeuchte, Tank und Checkboxen für Sensorausfälle.
-- **Dauer** 1/2/5/10 min mit Countdown; „Demo beenden“ schaltet sofort zurück.
-  Der ESP übernimmt Änderungen mit seiner nächsten Meldung (alle ~15 s) – die
-  Steuerung zeigt an, sobald das Gerät die Demo-Werte meldet.
-- **Gerät:** Jetzt gießen (5 s), Tank aufgefüllt, Gerät finden (LED blinkt),
-  Piepen – jeweils genau einmal an den ESP zugestellt.
-- Solange die Demo läuft, sehen **alle** oben einen violetten Banner; betroffene
-  Kacheln tragen „DEMO“, im Verlauf ist der Zeitraum hinterlegt.
+- **One-click scenarios** ("Situation vorspielen"): "Trockene Erde" (dry soil,
+  12 % → the ESP32 waters), "Hitzewelle" (heat wave, 38 °C / 25 %), "Tank fast
+  leer" (tank almost empty, 4 %), "Sensorausfall" (sensor failure, DHT11),
+  "Nacht" (night, light 2 %).
+- **Custom values** ("Eigene Werte einstellen"): sliders for soil moisture,
+  light, temperature, air humidity and tank level, plus checkboxes for sensor
+  failures.
+- **Duration** ("Dauer") 1/2/5/10 min with a countdown; "Demo beenden" (end
+  demo) switches back immediately. The ESP32 applies changes with its next
+  report (every ~15 s) – the controls indicate as soon as the device reports
+  the demo values.
+- **Device** ("Gerät steuern"): "Gießen (5 s)" (water now for 5 s), "Tank
+  aufgefüllt" (tank refilled), "Gerät finden" (find device – the LED
+  flashes), "Piepen" (beep) – each delivered to the ESP32 exactly once.
+- While a demo is running, **everyone** sees a banner at the top ("Demo
+  läuft" – demo running); affected tiles are marked "DEMO", and the period is
+  shaded in the history charts.
 
-**Tipp für die Präsentation:** Nach „Tank fast leer“ merkt sich der ESP die
-Tank-Schätzung von 4 % – danach „Tank aufgefüllt“ drücken.
+**Tip for the presentation:** after "Tank fast leer", the ESP32 keeps its tank
+estimate of 4 % – press "Tank aufgefüllt" afterwards.
 
-**Noch offen:** Laut Plan dürfen das nur Admins. Login/Rollen gibt es noch
-nicht, bis dahin kann jeder im Hotspot-WLAN die Demo auslösen. Jede Änderung
-wird im Server-Terminal protokolliert.
+**Still open:** according to the plan, only admins should be allowed to do
+this. There is no login/roles yet, so until then anyone on the hotspot Wi-Fi
+can trigger the demo. Every change is logged in the server terminal.
 
 Backend: `GET/PUT/DELETE /api/v1/devices/{id}/demo`,
 `GET/POST /api/v1/devices/{id}/commands`.
