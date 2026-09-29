@@ -50,11 +50,23 @@ void netUpdate() {
     if (errorShown && millis() - errorSince >= 5000) errorShown = false;
     statusLedSet(errorShown ? 3 : 1);
   }
-  // Zusätzlich zum Auto-Reconnect: alle 10 s neu anstoßen (hilft, wenn der Pi neu startet)
+  // Kein WLAN: höchstens alle WIFI_RETRY_MS einen neuen Versuch anstoßen – aber nur,
+  // wenn der ESP gerade NICHT selbst verbindet. (Früher wurde jedes Mal WiFi.begin()
+  // aufgerufen; lief noch ein Versuch, meldete der Core
+  // "wifi:sta is connecting, cannot set config".)
   if (!c && millis() - lastAttempt > WIFI_RETRY_MS) {
     lastAttempt = millis();
-    WiFi.disconnect();
-    WiFi.begin(CFG_WIFI_SSID, CFG_WIFI_PASSWORD);
+    wl_status_t st = WiFi.status();
+    static wl_status_t lastReported = WL_IDLE_STATUS;
+    if (st != lastReported) {  // Grund einmal verständlich melden
+      lastReported = st;
+      if (st == WL_NO_SSID_AVAIL)
+        Serial.printf("[WLAN] \"%s\" nicht gefunden (Pi-Hotspot aus oder zu weit weg)\n", CFG_WIFI_SSID);
+      else if (st == WL_CONNECT_FAILED)
+        Serial.println("[WLAN] Verbindung abgelehnt – WLAN-Passwort prüfen (oben im Sketch bzw. secrets.h)");
+    }
+    if (st == WL_NO_SSID_AVAIL || st == WL_CONNECT_FAILED || st == WL_CONNECTION_LOST || st == WL_DISCONNECTED)
+      WiFi.reconnect();  // nutzt die gespeicherten Daten aus netBegin(), kein neues "set config"
   }
 }
 
