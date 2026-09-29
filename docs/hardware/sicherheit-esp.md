@@ -59,7 +59,7 @@ Vertrauensgrenzen:
 | I6 Unzureichender Datenschutz | Es werden nur Umweltdaten erhoben, keine personenbezogenen Daten. |
 | I7 Unsichere Übertragung/Speicherung | Übertragung per WPA2, HTTPS ist vorbereitet. Im Flash stehen nur Einstellungen, Kalibrierung und der Tankstand, keine Zugangsdaten im WLAN-Speicher. |
 | I8 Fehlende Geräteverwaltung | Geräte-ID und Firmware-Version stehen in jeder Nachricht. Der Server sieht `uptime_s`, `rssi_dbm` und Fehlercodes. |
-| I9 Unsichere Standardeinstellungen | Die Standardwerte sind konservativ: 5 s pro Lauf, 300 s Pause, 60 s pro Tag. |
+| I9 Unsichere Standardeinstellungen | Die Standardwerte sind konservativ: 0,5 s pro Lauf, 300 s Pause, 60 s pro Tag. |
 | I10 Fehlende physische Härtung | Siehe T12. Die Elektronik muss vor Spritzwasser geschützt werden (verkabelung.md). |
 
 ## 5. Empfehlungen an Server/Dashboard (aus dem Review)

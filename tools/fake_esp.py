@@ -38,7 +38,7 @@ DEFAULT_CONFIG = {
     "moisture_min_pct": 30,
     "moisture_target_pct": 55,
     "auto_water": True,
-    "max_pump_s_per_run": 5,
+    "max_pump_s_per_run": 0.5,
     "pump_cooldown_s": 300,
     "max_pump_s_per_day": 60,
     "buzzer_enabled": True,
