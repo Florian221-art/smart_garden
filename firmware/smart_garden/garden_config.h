@@ -17,7 +17,7 @@
 #pragma once
 #include <Arduino.h>
 
-#define FW_VERSION "0.3.3"
+#define FW_VERSION "0.3.4"  // bei jeder Änderung erhöhen UND ganz oben in smart_garden.ino eintragen
 
 // -----------------------------------------------------------------------------
 // 1. Zugangsdaten + Schalter – definiert ganz oben in smart_garden.ino.
