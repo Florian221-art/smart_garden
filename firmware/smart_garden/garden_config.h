@@ -17,7 +17,7 @@
 #pragma once
 #include <Arduino.h>
 
-#define FW_VERSION "0.3.8"  // bei jeder Änderung erhöhen UND ganz oben in smart_garden.ino eintragen
+#define FW_VERSION "0.3.9"  // bei jeder Änderung erhöhen UND ganz oben in smart_garden.ino eintragen
 
 // -----------------------------------------------------------------------------
 // 1. Zugangsdaten + Schalter – definiert ganz oben in smart_garden.ino.
@@ -72,7 +72,12 @@ constexpr uint8_t PIN_STATUS_LED = 2;   // Onboard-LED (WLAN-Status)
 //    Sie begrenzen den Schaden, falls Server, Netzwerk oder Einstellungen
 //    fehlerhaft oder manipuliert sind (siehe docs/hardware/sicherheit-esp.md).
 // -----------------------------------------------------------------------------
-constexpr float HARD_MAX_PUMP_S_PER_RUN = 15.0f;  // längster einzelner Pumpenlauf
+constexpr float HARD_MAX_PUMP_S_PER_RUN = 15.0f;  // längster einzelner Pumpenlauf (nur seriell per USB erreichbar)
+// Automatik, Demo und Dashboard geben nur einen kleinen Spritzer ab – egal, was
+// der Server als max_pump_s_per_run schickt (Server-Standard ist noch 5 s).
+constexpr float PUMP_BURST_MIN_S = 0.3f;          // kürzester sinnvoller Stoß (Pumpe muss anlaufen)
+constexpr float PUMP_BURST_MAX_S = 1.0f;          // längster Stoß für Automatik/Dashboard
+constexpr float DEMO_PUMP_S = 0.5f;               // Demo-Gießen ("demo soil 12"): fest 0,5 s
 constexpr float HARD_MAX_PUMP_S_PER_DAY = 300.0f; // Obergrenze für das Tageslimit
 constexpr uint32_t HARD_MIN_COOLDOWN_S = 10;      // Mindestpause zwischen zwei Läufen – gilt für ALLE Starts
 constexpr uint32_t HARD_MAX_COOLDOWN_S = 86400;   // Obergrenze der Pause (verhindert Überlauf bei s * 1000)

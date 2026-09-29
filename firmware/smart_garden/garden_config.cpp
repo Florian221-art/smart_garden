@@ -24,7 +24,7 @@ void configClampSettings(Settings &s) {
   s.interval_s = constrain(s.interval_s, (uint32_t)5, (uint32_t)600);
   s.moisture_min_pct = constrain(s.moisture_min_pct, 0.0f, 100.0f);
   s.moisture_target_pct = constrain(s.moisture_target_pct, s.moisture_min_pct, 100.0f);
-  s.max_pump_s_per_run = constrain(s.max_pump_s_per_run, 0.5f, HARD_MAX_PUMP_S_PER_RUN);
+  s.max_pump_s_per_run = constrain(s.max_pump_s_per_run, PUMP_BURST_MIN_S, PUMP_BURST_MAX_S);
   s.pump_cooldown_s = constrain(s.pump_cooldown_s, HARD_MIN_COOLDOWN_S, HARD_MAX_COOLDOWN_S);
   s.max_pump_s_per_day = constrain(s.max_pump_s_per_day, 0.0f, HARD_MAX_PUMP_S_PER_DAY);
   s.tank_capacity_ml = constrain(s.tank_capacity_ml, 50.0f, 50000.0f);
