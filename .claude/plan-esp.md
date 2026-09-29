@@ -50,6 +50,7 @@ Pinout + Verkabelung: **`docs/hardware/verkabelung.md`** · Firmware-Anleitung: 
 | 0.3.7 | WLAN komplett ereignisgesteuert: `setAutoReconnect(false)`, neuer Versuch erst nach dem Ereignis „getrennt“ + 15 s (Hänger-Schutz 60 s) → auch „sta is connecting, return error“ weg; Trenngrund im Klartext; mit Platzhalter-Passwort bleibt das WLAN aus |
 | 0.3.8 | Pumpenstoß Standard 0,5 s (Auto, Demo, Dashboard) statt 5 s; `SETTINGS_VERSION` 2 verwirft alte Settings im Flash (Kalibrierung bleibt); serielles `pump` nur hart auf 15 s begrenzt (Durchfluss messen); Plausibilitätsprüfung erst ab 5 s Pumpzeit in der Sitzung |
 | 0.3.9 | Vor dem Pitch: Server schickte `max_pump_s_per_run` 5 → Demo pumpte 5 s. Jetzt Stoß hart auf 0,3–1 s begrenzt (egal was der Server schickt), Demo fest 0,5 s. Zugangsdaten in lokaler `secrets.h` bei Florian (nicht im Repo) |
+| 0.3.10 | WLAN stabiler: `setSleep(false)`, Neuversuch nach 5 s, nach 3 Fehlschlägen kompletter WLAN-Neustart (`disconnect`+`begin`), Hänger-Schutz 30 s, Grundnummer im Log; Meldung „Passwort prüfen ODER Signal schwach“ |
 
 Hinweise für spätere Änderungen:
 
@@ -75,7 +76,7 @@ Erledigt:
 Als Nächstes:
 
 - [x] LED-Bar funktioniert (0.3.5, bestätigt 29.09.)
-- [ ] Florian: 0.3.9 hochladen, Kurztest (`status`, `demo soil 12`, `demo tank 4` → danach wieder echter Tank, `pump 3` zweimal schnell → 2. blockiert)
+- [ ] Florian: 0.3.10 hochladen, Kurztest (`status`, `demo soil 12`, `demo tank 4` → danach wieder echter Tank, `pump 3` zweimal schnell → 2. blockiert)
 - [ ] Durchfluss messen (`pump 10` in Messbecher) → `pump_flow_ml_per_s`
 - [ ] Test gegen Nicos Server (WLAN-Passwort + API-Key in `secrets.h`)
 - [ ] HTTPS: Caddy-Root-Zertifikat als `SERVER_CA_CERT`

@@ -24,6 +24,7 @@ static uint32_t lastAttempt = 0;             // Start des letzten Versuchs
 static volatile bool attemptDone = false;    // letzter Versuch beendet (Ereignis kam)
 static volatile uint32_t lastDiscMs = 0;     // Zeitpunkt des letzten "getrennt"-Ereignisses
 static volatile uint8_t lastReason = 0;      // Grund laut ESP-IDF (wifi_err_reason_t)
+static uint8_t failedAttempts = 0;           // gescheiterte Versuche in Folge
 static bool wasConnected = false;
 static uint32_t errorSince = 0;   // Zeitpunkt des letzten Sendefehlers
 static bool errorShown = false;   // Fehler-Blinken aktiv (Flag statt Zeitstempel 0 -> überlaufsicher)
@@ -35,6 +36,8 @@ void netMarkError() {
 
 // Läuft im WLAN-Task des Cores -> nur Variablen setzen, keine Ausgabe hier.
 static void onWifiDisconnected(arduino_event_id_t, arduino_event_info_t info) {
+  // Eigenes Trennen (WLAN-Neustart) ist kein beendeter Versuch -> ignorieren
+  if (info.wifi_sta_disconnected.reason == WIFI_REASON_ASSOC_LEAVE) return;
   lastReason = info.wifi_sta_disconnected.reason;
   lastDiscMs = millis();
   attemptDone = true;
@@ -50,7 +53,7 @@ static const char *reasonText(uint8_t r) {
     case WIFI_REASON_HANDSHAKE_TIMEOUT:
     case WIFI_REASON_802_1X_AUTH_FAILED:
     case WIFI_REASON_AUTH_EXPIRE:
-      return "gefunden, aber Anmeldung abgelehnt -> WLAN-Passwort prüfen (secrets.h bzw. oben im Sketch)";
+      return "gefunden, Anmeldung gescheitert -> Passwort prüfen ODER Signal schwach (ESP näher an den Pi)";
     case WIFI_REASON_BEACON_TIMEOUT:
       return "Verbindung abgerissen (Signal zu schwach?)";
     default:
@@ -71,6 +74,7 @@ void netBegin() {
   WiFi.persistent(false);       // Zugangsdaten NICHT zusätzlich im WLAN-Flashbereich ablegen
   WiFi.mode(WIFI_STA);
   WiFi.setAutoReconnect(false); // Neuverbindung macht netUpdate() selbst (kontrolliert, s. o.)
+  WiFi.setSleep(false);         // kein Modem-Sleep: stabilerer Handshake mit dem Pi-Hotspot
   WiFi.onEvent(onWifiDisconnected, ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
   WiFi.begin(CFG_WIFI_SSID, CFG_WIFI_PASSWORD);
   lastAttempt = millis();
@@ -94,6 +98,7 @@ void netUpdate() {
     if (errorShown && millis() - errorSince >= 5000) errorShown = false;
     statusLedSet(errorShown ? 3 : 1);
   }
+  if (c) failedAttempts = 0;
   if (!wifiEnabled || c) return;
 
   // Grund des letzten Fehlschlags einmal verständlich melden (nur bei Änderung)
@@ -102,19 +107,28 @@ void netUpdate() {
   if (r && r != reportedReason && r != WIFI_REASON_ASSOC_LEAVE) {
     reportedReason = r;
     const char *txt = reasonText(r);
-    if (txt) Serial.printf("[WLAN] \"%s\" %s\n", CFG_WIFI_SSID, txt);
+    if (txt) Serial.printf("[WLAN] \"%s\" %s (Grund %u)\n", CFG_WIFI_SSID, txt, (unsigned)r);
     else Serial.printf("[WLAN] Verbindung fehlgeschlagen (Grund %u), neuer Versuch folgt\n", (unsigned)r);
   }
 
   // Neuer Versuch erst, wenn der vorige beendet ist und WIFI_RETRY_MS Ruhe war.
-  // Kommt nach 60 s kein Ereignis, gilt der Versuch als hängend und wird ersetzt.
+  // Kommt nach 30 s kein Ereignis, gilt der Versuch als hängend und wird ersetzt.
   uint32_t now = millis();
   bool done = attemptDone && now - lastDiscMs >= WIFI_RETRY_MS;
-  bool hung = !attemptDone && now - lastAttempt >= 60000;
+  bool hung = !attemptDone && now - lastAttempt >= 30000;
   if (done || hung) {
     attemptDone = false;
     lastAttempt = now;
-    WiFi.reconnect();  // nutzt die Daten aus netBegin(), kein neues "set config"
+    failedAttempts++;
+    if (failedAttempts % 3 == 0) {
+      // Nach 3 Fehlschlägen WLAN komplett neu aufsetzen (frischer Scan + Handshake).
+      // Sicher, weil der vorige Versuch beendet ist -> kein "sta is connecting".
+      Serial.printf("[WLAN] %u Versuche gescheitert -> WLAN wird neu gestartet\n", (unsigned)failedAttempts);
+      WiFi.disconnect(false, false);
+      WiFi.begin(CFG_WIFI_SSID, CFG_WIFI_PASSWORD);
+    } else {
+      WiFi.reconnect();  // nutzt die Daten aus netBegin(), kein neues "set config"
+    }
   }
 }
 
