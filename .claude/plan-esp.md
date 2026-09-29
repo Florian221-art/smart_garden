@@ -47,6 +47,7 @@ Pinout + Verkabelung: **`docs/hardware/verkabelung.md`** · Firmware-Anleitung: 
 | 0.3.4 | Versionsnummer zusätzlich ganz oben im Sketch |
 | 0.3.5 | `leddiag` (8 Übertragungsvarianten), LED-Optionen oben im Sketch; **LED-Bar läuft mit den Standardwerten (von Florian bestätigt)** |
 | 0.3.6 | WLAN-Neuverbindung alle 30 s per `WiFi.reconnect()` statt `disconnect()+begin()` alle 10 s → keine Meldung „sta is connecting, cannot set config“ mehr; klare Hinweise „SSID nicht gefunden“ / „Passwort prüfen“ |
+| 0.3.7 | WLAN komplett ereignisgesteuert: `setAutoReconnect(false)`, neuer Versuch erst nach dem Ereignis „getrennt“ + 15 s (Hänger-Schutz 60 s) → auch „sta is connecting, return error“ weg; Trenngrund im Klartext; mit Platzhalter-Passwort bleibt das WLAN aus |
 
 Hinweise für spätere Änderungen:
 
@@ -71,7 +72,7 @@ Erledigt:
 Als Nächstes:
 
 - [x] LED-Bar funktioniert (0.3.5, bestätigt 29.09.)
-- [ ] Florian: 0.3.6 hochladen, Kurztest (`status`, `demo soil 12`, `demo tank 4` → danach wieder echter Tank, `pump 3` zweimal schnell → 2. blockiert)
+- [ ] Florian: 0.3.7 hochladen, Kurztest (`status`, `demo soil 12`, `demo tank 4` → danach wieder echter Tank, `pump 3` zweimal schnell → 2. blockiert)
 - [ ] Durchfluss messen (`pump 10` in Messbecher) → `pump_flow_ml_per_s`
 - [ ] Test gegen Nicos Server (WLAN-Passwort + API-Key in `secrets.h`)
 - [ ] HTTPS: Caddy-Root-Zertifikat als `SERVER_CA_CERT`
