@@ -266,6 +266,19 @@ _(von Claude-Web gepflegt)_
       Uplink ueber wlan0, kompletter Lauf von `deploy_to_pi.sh` inkl. Build und secrets.h
 - [ ] Auf echtem Pi pruefen (Nico): Hotspot sichtbar, ESP verbindet sich
 
+### Phase 2 – Teil 4: Neues Design (Branch `feature/web-design`)
+
+- [x] Design-System in `web/src/index.css`: ein Akzent (Gruen) + warme Grautoene, alle Farben als Rollen-Tokens
+      (`bg-surface`, `text-fg`, `text-muted`, `bg-accent` ...), keine direkten Tailwind-Farben mehr in Komponenten
+- [x] Hell/Dunkel/System-Umschalter im Header (`src/theme.ts`, `public/theme-init.js` gegen Aufblitzen,
+      Wahl im Browser gemerkt, `theme-color` passt sich an)
+- [x] Icons mit `lucide-react` (wird mitgebaut, kein CDN)
+- [x] Statuskarte oben in ganzen Saetzen ("Deiner Pflanze geht es gut" / was zu tun ist), Online/Offline
+      (> 90 s ohne Meldung), Kacheln mit Einordnung ("Gut feucht", "Fast leer") + Balken, Technik unten in "Geraet"
+- [x] Diagramme einfarbig (Akzent), Grenzlinien grau gestrichelt/gepunktet, Giessen als dunkler Punkt
+- [x] Demo-Steuerung standardmaessig eingeklappt (Knopf "Demo"), Szenarien mit Icons, verstaendlichere Texte
+- [x] Kontraste geprueft (Text >= 4,5:1), Screenshots Desktop/Handy hell/dunkel, Demo-Ablauf per Playwright
+
 ### Als Naechstes
 
 - Login + Rollen (Admin/Leser) und damit Demo/Befehle absichern, Zugriffsprotokoll

@@ -30,17 +30,17 @@ export default function WaterBarChart({ data }: { data: WaterBar[] }) {
             if (!active || !payload || payload.length === 0) return null
             const b = payload[0].payload as WaterBar
             return (
-              <div className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs shadow-md dark:border-slate-600 dark:bg-slate-800">
-                <div className="text-slate-500 dark:text-slate-400">{b.longLabel}</div>
-                <div className="text-sm font-semibold text-slate-900 dark:text-slate-50">{Math.round(b.water_ml)} ml</div>
+              <div className="rounded-xl border border-line bg-surface px-3 py-2 text-xs shadow-lg">
+                <div className="text-muted">{b.longLabel}</div>
+                <div className="text-sm font-semibold text-fg">{Math.round(b.water_ml)} ml</div>
                 {b.waterings > 0 && (
-                  <div className="text-slate-700 dark:text-slate-200">{b.waterings}× automatisch gegossen</div>
+                  <div className="text-fg-2">{b.waterings}× automatisch gegossen</div>
                 )}
               </div>
             )
           }}
         />
-        <Bar dataKey="water_ml" fill="var(--series-1)" radius={[4, 4, 0, 0]} isAnimationActive={false} />
+        <Bar dataKey="water_ml" fill="var(--viz-series)" radius={[4, 4, 0, 0]} isAnimationActive={false} />
       </BarChart>
     </ResponsiveContainer>
   )

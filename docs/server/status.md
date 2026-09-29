@@ -198,6 +198,23 @@ Dashboard), Gerät + API-Key und den WLAN-Hotspot „SmartGarden“ ein.
 - Getestet in einer Linux-Umgebung mit Python 3.11 (wie Raspberry Pi OS Bookworm);
   WLAN/systemd waren dort nur simuliert – der echte Hotspot muss auf dem Pi geprüft werden.
 
+## Neues Design (einfarbig, hell/dunkel)
+
+Das Dashboard soll von allen verstanden werden, nicht nur vom Team:
+
+- **Oben eine Statuskarte in ganzen Sätzen**: „Deiner Pflanze geht es gut“ oder
+  konkret, was zu tun ist („Wassertank: Fast leer – bald auffüllen“), dazu
+  Online/Offline und wann sich der Kübel zuletzt gemeldet hat.
+- **Kacheln mit Einordnung** statt nur Zahlen („Gut feucht“, „Genug Wasser“,
+  „Angenehm“), Balken für Bodenfeuchte und Tank. Technische Angaben (WLAN-Signal,
+  Firmware, Rohwerte) stehen unten unter „Gerät“.
+- **Einfarbig**: ein Grünton als Akzent, sonst Grautöne. Zustände immer als
+  Symbol + Text, nie nur über Farbe.
+- **Hell / Dunkel / wie das Gerät** über den Umschalter oben rechts; die Wahl
+  merkt sich der Browser.
+- **Icons** aus `lucide-react` (werden mitgebaut – kein Internet nötig).
+- Die **Demo-Steuerung** ist erst nach Klick auf „Demo“ sichtbar.
+
 ## Bekannte Lücken / Als Nächstes
 
 - Deployment + Hotspot auf echtem Pi verifizieren

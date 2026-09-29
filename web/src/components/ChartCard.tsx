@@ -1,13 +1,17 @@
 import type { ReactNode } from 'react'
+import type { LucideIcon } from 'lucide-react'
+import { ChevronDown, Table2 } from 'lucide-react'
+import { Card } from './ui'
 
 export interface LegendItem {
   label: string
-  kind: 'line' | 'dot' | 'dash' | 'area'
+  kind: 'line' | 'dot' | 'dash' | 'dots' | 'area'
   color: string
 }
 
 interface ChartCardProps {
   title: string
+  icon?: LucideIcon
   summary?: string
   /** Kurzbeschreibung fuer Screenreader (Diagramm ist role="img") */
   ariaLabel: string
@@ -19,23 +23,28 @@ interface ChartCardProps {
 
 function Swatch({ kind, color }: { kind: LegendItem['kind']; color: string }) {
   if (kind === 'dot')
-    return <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: color }} />
+    return <span className="inline-block size-2.5 rounded-full" style={{ background: color }} />
   if (kind === 'dash')
     return <span className="inline-block w-4 border-t-2 border-dashed" style={{ borderColor: color }} />
+  if (kind === 'dots')
+    return <span className="inline-block w-4 border-t-2 border-dotted" style={{ borderColor: color }} />
   if (kind === 'area')
-    return <span className="inline-block h-2.5 w-4 rounded-sm" style={{ background: color }} />
+    return <span className="inline-block h-2.5 w-4 rounded-sm border border-line" style={{ background: color }} />
   return <span className="inline-block h-0.5 w-4 rounded" style={{ background: color }} />
 }
 
-export default function ChartCard({ title, summary, ariaLabel, legend, children, table }: ChartCardProps) {
+export default function ChartCard({ title, icon: Icon, summary, ariaLabel, legend, children, table }: ChartCardProps) {
   return (
-    <section className="min-w-0 rounded-xl border border-slate-300/60 bg-white p-3 shadow-sm sm:p-4 dark:border-slate-700 dark:bg-slate-900">
-      <div className="mb-2 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-50">{title}</h3>
-        {summary && <span className="text-sm text-slate-600 dark:text-slate-300">{summary}</span>}
+    <Card as="section" className="min-w-0 p-4 sm:p-5">
+      <div className="mb-3 flex flex-wrap items-start justify-between gap-x-4 gap-y-1">
+        <h3 className="flex items-center gap-2 text-sm font-semibold text-fg">
+          {Icon && <Icon aria-hidden="true" className="size-4 text-muted" />}
+          {title}
+        </h3>
+        {summary && <span className="text-sm tabular-nums text-fg-2">{summary}</span>}
       </div>
       {legend && legend.length > 0 && (
-        <ul className="mb-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600 dark:text-slate-300">
+        <ul className="mb-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-fg-2">
           {legend.map((l) => (
             <li key={l.label} className="flex items-center gap-1.5">
               <Swatch kind={l.kind} color={l.color} />
@@ -44,20 +53,22 @@ export default function ChartCard({ title, summary, ariaLabel, legend, children,
           ))}
         </ul>
       )}
-      <div role="img" aria-label={ariaLabel} className="h-56 w-full">
+      <div role="img" aria-label={ariaLabel} className="h-52 w-full sm:h-56">
         {children}
       </div>
       {table && table.rows.length > 0 && (
-        <details className="mt-2 text-xs text-slate-600 dark:text-slate-300">
-          <summary className="flex min-h-11 cursor-pointer select-none items-center rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600">
+        <details className="group mt-2 text-xs text-fg-2">
+          <summary className="inline-flex min-h-11 cursor-pointer select-none list-none items-center gap-1.5 rounded-lg font-medium text-muted hover:text-fg [&::-webkit-details-marker]:hidden">
+            <Table2 aria-hidden="true" className="size-4" />
             Als Tabelle anzeigen
+            <ChevronDown aria-hidden="true" className="size-4 transition-transform group-open:rotate-180" />
           </summary>
-          <div className="mt-2 max-h-60 overflow-auto">
+          <div className="mt-1 max-h-60 overflow-auto rounded-lg border border-line">
             <table className="w-full text-left tabular-nums">
-              <thead className="sticky top-0 bg-white dark:bg-slate-900">
+              <thead className="sticky top-0 bg-surface-2">
                 <tr>
                   {table.head.map((h) => (
-                    <th key={h} className="py-1 pr-3 font-medium">
+                    <th key={h} className="px-3 py-2 font-medium text-fg">
                       {h}
                     </th>
                   ))}
@@ -65,9 +76,9 @@ export default function ChartCard({ title, summary, ariaLabel, legend, children,
               </thead>
               <tbody>
                 {table.rows.map((r, i) => (
-                  <tr key={i} className="border-t border-slate-200 dark:border-slate-800">
+                  <tr key={i} className="border-t border-line">
                     {r.map((c, j) => (
-                      <td key={j} className="py-1 pr-3">
+                      <td key={j} className="px-3 py-1.5">
                         {c}
                       </td>
                     ))}
@@ -78,6 +89,6 @@ export default function ChartCard({ title, summary, ariaLabel, legend, children,
           </div>
         </details>
       )}
-    </section>
+    </Card>
   )
 }
