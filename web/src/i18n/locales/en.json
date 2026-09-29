@@ -1,10 +1,17 @@
 {
-  "app": { "name": "Smart Garden", "pot": "Planter 1" },
+  "app": {
+    "name": "Smart Garden",
+    "pot": "Planter 1"
+  },
   "header": {
     "demoButton": "Demo",
     "demoAriaLabel": "Demo controls",
     "themeLabel": "Color scheme",
-    "theme": { "light": "Light", "system": "Match device", "dark": "Dark" },
+    "theme": {
+      "light": "Light",
+      "system": "Match device",
+      "dark": "Dark"
+    },
     "languageLabel": "Language"
   },
   "demoBar": {
@@ -18,7 +25,9 @@
     "serverError": "The server reported an error ({{status}}). Please try again later.",
     "networkError": "Can't reach the server. Are you connected to the “SmartGarden” Wi-Fi?"
   },
-  "values": { "sectionTitle": "Current readings" },
+  "values": {
+    "sectionTitle": "Current readings"
+  },
   "tiles": {
     "soilMoisture": "Soil moisture",
     "waterTank": "Water tank",
@@ -116,7 +125,14 @@
   "history": {
     "title": "History",
     "rangeAriaLabel": "Time range",
-    "range": { "1h": "1 hour", "1hShort": "1 hr", "24h": "24 hours", "24hShort": "24 hr", "7d": "7 days", "7dShort": "7 days" },
+    "range": {
+      "1h": "1 hour",
+      "1hShort": "1 hr",
+      "24h": "24 hours",
+      "24hShort": "24 hr",
+      "7d": "7 days",
+      "7dShort": "7 days"
+    },
     "loadError": "Couldn't load the history.",
     "noData": "No readings in the last {{range}}.",
     "kpiWater": "Water used ({{range}})",
@@ -164,7 +180,11 @@
         "summary": "0 % = dark"
       }
     },
-    "groupLabel": { "min5": "per 5 minutes", "hour": "per hour", "day": "per day" },
+    "groupLabel": {
+      "min5": "per 5 minutes",
+      "hour": "per hour",
+      "day": "per day"
+    },
     "table": {
       "time": "Time",
       "valueUnit": "Value ({{unit}})",
@@ -187,7 +207,12 @@
     "title": "Demo controls",
     "description": "Plays out situations without putting the plant at risk: the device reacts for real (pump, light bar, buzzer), and the pump's safety limits still apply.",
     "durationLabel": "Duration",
-    "duration": { "60": "1 min", "120": "2 min", "300": "5 min", "600": "10 min" },
+    "duration": {
+      "60": "1 min",
+      "120": "2 min",
+      "300": "5 min",
+      "600": "10 min"
+    },
     "statusRunning": "Running – {{time}} left",
     "statusRunningNamed": "Running: {{scenario}} – {{time}} left",
     "confirmed": "Device is showing the demo values",
@@ -196,16 +221,30 @@
     "stop": "Stop demo",
     "scenariosTitle": "Play out a situation",
     "scenario": {
-      "dry": { "title": "Dry soil", "effect": "Soil at 12 % → light bar turns red, the device waters automatically" },
-      "heat": { "title": "Heat wave", "effect": "38 °C and 25 % air humidity" },
+      "dry": {
+        "title": "Dry soil",
+        "effect": "Soil at 12 % → light bar turns red, the device waters automatically"
+      },
+      "heat": {
+        "title": "Heat wave",
+        "effect": "38 °C and 25 % air humidity"
+      },
       "tankLow": {
         "title": "Tank almost empty",
         "effect": "Tank at 4 % → buzzer beeps, automatic watering stops",
         "hint": "Then press “Tank refilled” – the device remembers the fill level."
       },
-      "sensorFail": { "title": "Sensor failure", "effect": "Temperature and humidity sensor stop responding" },
-      "night": { "title": "Night", "effect": "Light at 2 % – as if it were dark" },
-      "custom": { "title": "Custom values" }
+      "sensorFail": {
+        "title": "Sensor failure",
+        "effect": "Temperature and humidity sensor stop responding"
+      },
+      "night": {
+        "title": "Night",
+        "effect": "Light at 2 % – as if it were dark"
+      },
+      "custom": {
+        "title": "Custom values"
+      }
     },
     "activeSuffix": " (active)",
     "customValuesTitle": "Set custom values",
@@ -219,7 +258,7 @@
     "forceErrorsLegend": "Simulate sensor failure",
     "sendCustom": "Send custom values",
     "deviceControlTitle": "Control the device",
-    "water": "Water (5 s)",
+    "water": "Water ({{s}} s)",
     "waterCommandLabel": "Water now",
     "refill": "Tank refilled",
     "identify": "Find device",
@@ -240,5 +279,38 @@
     "light_read_failed": "Couldn't read the light sensor",
     "dht_read_failed": "Couldn't read the temperature/humidity sensor (DHT11)",
     "tank_empty": "Water tank empty – automatic watering stopped"
+  },
+  "api": {
+    "unreachable": "Server not reachable.",
+    "httpError": "Error {{status}}"
+  },
+  "water": {
+    "title": "Watering",
+    "needsWaterTitle": "Your plant needs water",
+    "soilDry": "The soil is dry ({{pct}} %). You can water it right now.",
+    "soilOk": "The soil is nicely moist ({{pct}} %). No watering needed right now.",
+    "soilWet": "The soil is already very wet ({{pct}} %). Only water if you are sure.",
+    "soilUnknown": "Soil moisture is unknown right now. You can still water.",
+    "amountHint": "One press = one short burst of water ({{s}} s, approx. {{ml}} ml).",
+    "amountHintNoMl": "One press = one short burst of water ({{s}} s).",
+    "autoHint": "Below {{pct}} % the device also waters automatically.",
+    "button": "Water now",
+    "buttonAgain": "Water again",
+    "buttonSending": "Sending …",
+    "buttonBusy": "Watering …",
+    "blockedNoData": "Waiting for the first readings from the planter.",
+    "blockedOffline": "The planter is offline. Watering will work again once it is connected.",
+    "blockedTankEmpty": "The water tank is empty. Please refill it and then press “Tank refilled”.",
+    "sending": "Sending the command to the server …",
+    "queued": "Command is on its way. The planter picks it up with its next report (every ~{{s}} s).",
+    "queuedLong": "The planter has not reported yet. The command is waiting and will run as soon as it reports.",
+    "delivered": "The planter received the command and is watering. Waiting for confirmation …",
+    "done": "Watered! Check in a few minutes whether the soil got moister.",
+    "doneAmount": "Watered: {{s}} s, approx. {{ml}} ml. Check in a few minutes whether the soil got moister.",
+    "notRun": "The planter did not water. Possible reasons: tank estimated empty, daily limit reached, or it just watered (short pause). Try again in a moment.",
+    "error": "Could not send the command: {{msg}}",
+    "refillButton": "Tank refilled",
+    "refillSent": "Reported. The planter takes over the full tank with its next report (every ~{{s}} s).",
+    "refillError": "Could not be sent. Please try again."
   }
 }

@@ -23,7 +23,7 @@ import {
   X,
 } from 'lucide-react'
 import { Button, Card, Segmented } from './components/ui'
-import { decimalSeparator } from './format'
+import { decimalSeparator, fmtNumber } from './format'
 
 interface Scenario {
   id: string
@@ -85,9 +85,11 @@ interface Props {
   remaining: number
   onChange: (d: DemoState) => void
   reading: LatestReading | null
+  /** Laenge eines Pumpenstosses (max_pump_s_per_run aus der Geraete-Config) */
+  pumpS: number
 }
 
-export default function DemoPanel({ deviceId, demo, remaining, onChange, reading }: Props) {
+export default function DemoPanel({ deviceId, demo, remaining, onChange, reading, pumpS }: Props) {
   const { t, i18n } = useTranslation()
   const base = `/api/v1/devices/${deviceId}`
   const [duration, setDuration] = useState(120)
@@ -171,7 +173,7 @@ export default function DemoPanel({ deviceId, demo, remaining, onChange, reading
   const sep = decimalSeparator(i18n.language)
   const pendingList = pending
     ? [
-        pending.pump_run_s > 0 && t('demo.pending.watering', { s: pending.pump_run_s }),
+        pending.pump_run_s > 0 && t('demo.pending.watering', { s: fmtNumber(i18n.language, pending.pump_run_s, 1) }),
         pending.tank_refilled && t('demo.pending.refilled'),
         pending.identify && t('demo.pending.identify'),
         pending.buzzer && t('demo.pending.buzz'),
@@ -357,8 +359,8 @@ export default function DemoPanel({ deviceId, demo, remaining, onChange, reading
       {/* Geraetebefehle */}
       <h3 className="mb-2 mt-5 text-sm font-semibold text-fg">{t('demo.deviceControlTitle')}</h3>
       <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
-        <Button icon={ShowerHead} disabled={busy} onClick={() => command({ pump_run_s: 5 }, t('demo.waterCommandLabel'))}>
-          {t('demo.water')}
+        <Button icon={ShowerHead} disabled={busy} onClick={() => command({ pump_run_s: pumpS }, t('demo.waterCommandLabel'))}>
+          {t('demo.water', { s: fmtNumber(i18n.language, pumpS, 1) })}
         </Button>
         <Button icon={RefreshCw} disabled={busy} onClick={() => command({ tank_refilled: true }, t('demo.refill'))}>
           {t('demo.refill')}

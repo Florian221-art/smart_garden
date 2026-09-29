@@ -68,7 +68,7 @@ COPYFILE_DISABLE=1 tar -czf - \
 
 echo "==> Installation auf dem Pi starten (sudo fragt evtl. nach dem Passwort des Pi-Benutzers)..."
 set +e
-ssh "${SSH_OPTS[@]}" -t "${TARGET}" "sudo ${FORCE_WLAN:+FORCE_WLAN=1 }bash ~/smart-garden-upload/deploy/install_pi.sh"
+ssh "${SSH_OPTS[@]}" -t "${TARGET}" "sudo SSH_CLIENT=\"\$SSH_CLIENT\" ${FORCE_WLAN:+FORCE_WLAN=1 }bash ~/smart-garden-upload/deploy/install_pi.sh"
 RC=$?
 set -e
 if [[ ${RC} -ne 0 ]]; then

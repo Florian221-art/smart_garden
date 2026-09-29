@@ -297,3 +297,16 @@ _(von Claude-Web gepflegt)_
 - Zahlen/Datum passend zur Sprache über `web/src/format.ts` (de-DE, en-GB, nl-NL; überall 24-h-Uhrzeit).
 - `<html lang>` wechselt mit, damit Screenreader richtig vorlesen.
 - Neue Texte: immer in allen drei JSON-Dateien ergänzen, nie fest in Komponenten schreiben.
+
+## Phase 2 – Teil 6: "Jetzt gießen"-Knopf (Branch `feature/web-giessen`, erledigt Issue #32)
+
+- [x] Neue Karte direkt unter der Statuskarte: `web/src/components/WaterNowCard.tsx` + `web/src/useWatering.ts`.
+      Knopf ist immer bedienbar (auch bei feuchter Erde), gesperrt nur bei offline / noch keine Daten / Tank leer
+      (dann Knopf "Tank aufgefüllt" daneben).
+- [x] Verfolgt den Befehl bis zur Bestätigung: gesendet → vom ESP abgeholt (`/commands` leer) →
+      nächste Meldung mit `pump_on_s_since_last > 0` = gegossen, sonst Hinweis "nicht gegossen" (ESP-Sicherheitsgrenze).
+- [x] Pumpenstoß = `max_pump_s_per_run` aus `GET /config` (kein fester Wert mehr, auch nicht im Demo-Panel).
+- [x] Issue #32: `DEFAULT_DEVICE_CONFIG["max_pump_s_per_run"]` 5 → 0,5. Einmalige Migration beim Serverstart
+      (`db._migrate`, SQLite `user_version`): gespeicherte 5 → 0,5, bewusst andere Werte bleiben.
+- [x] Letzte feste deutsche Texte in `web/src/api.ts` übersetzt; neue Schlüssel `water.*`, `api.*` in DE/EN/NL (224 Schlüssel).
+- [x] Getestet mit `tools/fake_esp.py` + Playwright: Klick → "Gegossen: 0,5 s, ca. 10 ml" nach ~12 s; Tank leer → gesperrt.
