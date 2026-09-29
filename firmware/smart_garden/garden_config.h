@@ -17,7 +17,7 @@
 #pragma once
 #include <Arduino.h>
 
-#define FW_VERSION "0.3.0"
+#define FW_VERSION "0.3.1"
 
 // -----------------------------------------------------------------------------
 // 1. Zugangsdaten + Schalter – definiert ganz oben in smart_garden.ino.
@@ -98,7 +98,7 @@ constexpr uint8_t ALARM_WATERING_INEFFECTIVE = 8;
 //    configClampSettings() begrenzt alle Werte auf sichere Bereiche.
 // -----------------------------------------------------------------------------
 struct Settings {
-  uint32_t interval_s = 15;         // Sendeintervall an den Server
+  uint32_t interval_s = 10;         // Sende-/Anzeigeintervall in s (Server-Config hat Vorrang)
   float moisture_min_pct = 30;      // darunter startet eine Gieß-Sitzung
   float moisture_target_pct = 55;   // bis hierhin wird gegossen
   bool auto_water = true;           // automatische Bewässerung an/aus

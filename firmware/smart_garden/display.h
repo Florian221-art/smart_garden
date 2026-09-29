@@ -8,7 +8,7 @@
 //  LED-Bar: Segment 1 = rot, Segment 2 = orange, Segmente 3-10 = grün.
 //  Anzeige je nach CFG_LEDBAR_MODE (oben im Sketch):
 //    2 = Trockenheitsbalken ab Grün (Standard): je trockener, desto mehr LEDs –
-//        erst die grünen, unter 20 % zusätzlich orange, unter 10 % auch rot (blinkt)
+//        100 % = 1 grüne ... 30 % = 8 grüne, 20 % + orange, unter 10 % + rot
 //    0 = Zeiger: 2 LEDs an der Position des Werts
 //    1 = Füllbalken ab Rot: Segmente 1 bis Position
 //  Sonderanzeigen: Sensorfehler = Segment 1 und 10 abwechselnd,
