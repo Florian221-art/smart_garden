@@ -45,6 +45,8 @@ Pinout + Verkabelung: **`docs/hardware/verkabelung.md`** · Firmware-Anleitung: 
 | 0.3.2 | LED-Helligkeit 25 %, 1-µs-Pausen beim Bit-Banging, Test endet nicht auf „alle an“ (Versionsnummer vergessen) |
 | 0.3.3 | LED-Pins korrigiert: gelb = DI D18, weiß = DCKI D19; Seeed-Latch wieder wie Original |
 | 0.3.4 | Versionsnummer zusätzlich ganz oben im Sketch |
+| 0.3.5 | `leddiag` (8 Übertragungsvarianten), LED-Optionen oben im Sketch; **LED-Bar läuft mit den Standardwerten (von Florian bestätigt)** |
+| 0.3.6 | WLAN-Neuverbindung alle 30 s per `WiFi.reconnect()` statt `disconnect()+begin()` alle 10 s → keine Meldung „sta is connecting, cannot set config“ mehr; klare Hinweise „SSID nicht gefunden“ / „Passwort prüfen“ |
 
 Hinweise für spätere Änderungen:
 
@@ -68,7 +70,8 @@ Erledigt:
 
 Als Nächstes:
 
-- [ ] Florian: 0.3.4 hochladen, LED-Bar prüfen (7 grün bei 40 %, `ledseg 0` = aus), Kurztest (`status`, `demo soil 12`, `demo tank 4` → danach wieder echter Tank, `pump 3` zweimal schnell → 2. blockiert)
+- [x] LED-Bar funktioniert (0.3.5, bestätigt 29.09.)
+- [ ] Florian: 0.3.6 hochladen, Kurztest (`status`, `demo soil 12`, `demo tank 4` → danach wieder echter Tank, `pump 3` zweimal schnell → 2. blockiert)
 - [ ] Durchfluss messen (`pump 10` in Messbecher) → `pump_flow_ml_per_s`
 - [ ] Test gegen Nicos Server (WLAN-Passwort + API-Key in `secrets.h`)
 - [ ] HTTPS: Caddy-Root-Zertifikat als `SERVER_CA_CERT`

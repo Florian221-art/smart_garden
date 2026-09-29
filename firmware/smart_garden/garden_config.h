@@ -17,7 +17,7 @@
 #pragma once
 #include <Arduino.h>
 
-#define FW_VERSION "0.3.5"  // bei jeder Änderung erhöhen UND ganz oben in smart_garden.ino eintragen
+#define FW_VERSION "0.3.6"  // bei jeder Änderung erhöhen UND ganz oben in smart_garden.ino eintragen
 
 // -----------------------------------------------------------------------------
 // 1. Zugangsdaten + Schalter – definiert ganz oben in smart_garden.ino.
@@ -87,7 +87,7 @@ constexpr float WATER_CHECK_MIN_RISE_PCT = 3.0f;
 // -----------------------------------------------------------------------------
 constexpr uint32_t SENSOR_PERIOD_MS = 2000;   // lokale Messung (LED-Bar, Auto-Bewässerung)
 constexpr uint32_t HTTP_TIMEOUT_MS = 4000;    // Verbindungs- und Antwort-Timeout
-constexpr uint32_t WIFI_RETRY_MS = 10000;     // neuer Verbindungsversuch, falls WLAN weg
+constexpr uint32_t WIFI_RETRY_MS = 30000;     // neuer Verbindungsversuch, falls WLAN weg
 constexpr uint32_t ALARM_REPEAT_MS = 600000;  // Summer wiederholt einen bestehenden Alarm höchstens alle 10 min
 constexpr uint32_t WATCHDOG_TIMEOUT_S = 20;   // hängt loop() länger, startet der ESP neu (Relais -> AUS)
 
