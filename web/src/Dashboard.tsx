@@ -19,6 +19,7 @@ import StatTile from './components/StatTile'
 import StatusHero from './components/StatusHero'
 import DeviceCard from './components/DeviceCard'
 import WaterNowCard from './components/WaterNowCard'
+import { MAX_PUMP_S } from './useWatering'
 import { Button, Segmented } from './components/ui'
 import HistoryCharts from './HistoryCharts'
 import DemoPanel from './DemoPanel'
@@ -248,7 +249,7 @@ export default function Dashboard() {
               remaining={remaining}
               onChange={setDemo}
               reading={reading}
-              pumpS={config?.max_pump_s_per_run ?? 0.5}
+              pumpS={Math.min(config?.max_pump_s_per_run ?? MAX_PUMP_S, MAX_PUMP_S)}
             />
           </div>
         )}

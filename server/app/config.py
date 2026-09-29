@@ -23,6 +23,11 @@ WEB_DIST = Path(os.environ.get("SMART_GARDEN_WEB_DIST", BASE_DIR.parent / "web" 
 # Rate-Limit laut api-contract.md Abschnitt 2: max. 1 Request / 2s pro Geraet
 RATE_LIMIT_SECONDS = float(os.environ.get("SMART_GARDEN_RATE_LIMIT_S", "2.0"))
 
+# Hoechstens so lange darf EIN Pumpenstoss dauern (Sekunden) - egal ob Auto-Giessen, Demo
+# oder Knopf "Jetzt giessen". Die Pumpe ist stark: laengere Stoesse setzen alles unter Wasser.
+# Wird bei jeder Config an den ESP und bei jedem Giess-Befehl hart erzwungen.
+MAX_PUMP_S_PER_RUN = 0.5
+
 # Default-Config, die dem ESP bei jeder Antwort mitgeschickt wird
 # (Werte 1:1 aus api-contract.md Abschnitt 2 / Beispielantwort).
 DEFAULT_DEVICE_CONFIG: dict = {
@@ -31,7 +36,7 @@ DEFAULT_DEVICE_CONFIG: dict = {
     "moisture_target_pct": 55,
     "auto_water": True,
     # 0,5 s statt 5 s: die Pumpe ist stark, kurze Stoesse reichen (Issue #32, Firmware 0.3.8)
-    "max_pump_s_per_run": 0.5,
+    "max_pump_s_per_run": MAX_PUMP_S_PER_RUN,
     "pump_cooldown_s": 300,
     "max_pump_s_per_day": 60,
     "buzzer_enabled": True,

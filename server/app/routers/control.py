@@ -17,7 +17,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from .. import models
-from ..config import DEFAULT_DEVICE_CONFIG
+from ..config import DEFAULT_DEVICE_CONFIG, MAX_PUMP_S_PER_RUN
 from ..db import get_db
 from ..demo import get_active, remaining_s
 from ..schemas import CommandIn, CommandsOut, DemoIn, DemoOut
@@ -122,8 +122,9 @@ def queue_command(device_id: str, body: CommandIn, request: Request, db: Session
     cfg = device.config.as_dict() if device.config is not None else DEFAULT_DEVICE_CONFIG
     pending = _pending(db, device_id)
     if body.pump_run_s:
-        # Server begrenzt schon auf max_pump_s_per_run; der ESP begrenzt zusaetzlich hart
-        pending.pump_run_s = min(float(body.pump_run_s), float(cfg["max_pump_s_per_run"]))
+        # Hoechstens ein Stoss von MAX_PUMP_S_PER_RUN (0,5 s) - mehrfaches Druecken addiert nichts.
+        # Der ESP begrenzt zusaetzlich selbst (Laufzeit, Mindestpause 10 s, Tageslimit, Tank).
+        pending.pump_run_s = min(float(body.pump_run_s), float(cfg["max_pump_s_per_run"]), MAX_PUMP_S_PER_RUN)
     pending.tank_refilled = pending.tank_refilled or body.tank_refilled
     pending.identify = pending.identify or body.identify
     pending.buzzer = pending.buzzer or body.buzzer
