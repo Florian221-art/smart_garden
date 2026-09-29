@@ -24,7 +24,7 @@ Pinout + Verkabelung: **`docs/hardware/verkabelung.md`** · Firmware-Anleitung: 
 | Bodenfeuchte | Capacitive Soil Moisture Sensor v2.0 (HW-390) | AOUT → GPIO34 |
 | Licht | LDR-Modul | AO → GPIO35 |
 | Temp./Luftfeuchte | Grove v1.2 (DHT11) | SIG → GPIO4 |
-| Anzeige | Grove LED Bar v2.0 (MY9221) | DCKI/Takt (gelb) → GPIO18, DI/Daten (weiß) → GPIO19 |
+| Anzeige | Grove LED Bar v2.0 (MY9221) | DI/Daten (gelb) → GPIO18, DCKI/Takt (weiß) → GPIO19 (Platinenaufdruck, bestätigt 29.09.) |
 | Summer | aktiv, LF-PB30W35B | GPIO26 |
 | Pumpen-Relais | Grove Relay | SIG → GPIO27 |
 | Pumpe | 12 V DC | über Relais-Schraubklemme |
@@ -38,12 +38,17 @@ Pinout + Verkabelung: **`docs/hardware/verkabelung.md`** · Firmware-Anleitung: 
 | 0.1.0 | komplette Firmware (Sensoren, LED-Bar, Summer, Demo, Pumpe, Tank, POST) |
 | 0.2.0 | WLAN-Variablen ganz oben, klarere Logs, eigener LED-Treiber |
 | 0.2.1 | DHT11 stabil (5 s, 30 s Hold), Alarm-Hysterese, Demo-Gießen ohne Cooldown |
-| 0.2.2/0.2.3 | LED-Bar-Pins tauschbar, korrigiert (gelb = Takt D18, weiß = Daten D19) |
+| 0.2.2/0.2.3 | LED-Bar-Pins tauschbar; 0.2.3 hat sie FALSCH getauscht (erst in 0.3.3 behoben) |
 | 0.2.4 | LED-Modus 2 „Trockenheitsbalken ab Grün“ als Standard |
 | **0.3.0** | **Review:** Demo-Tank nur Anzeige (min(echt, Demo)), harte 10-s-Mindestpause für alle Starts, Kalibrier-Prüfung, Plausibilitätsprüfung Gießen (Sperre + Alarm), Task-Watchdog 20 s, Relais-Sicherheitsnetz, nicht blockierender LED-Test, Wertebereiche Demo, `putNumber()` (kein `nan` im JSON), `WiFi.persistent(false)`, optionale `secrets.h`, Code und Doku vollständig kommentiert |
+| 0.3.1 | LED-Tabelle nach Florian (100 % = 1 grün … 30 % = 8 grün, 11–20 % + orange, ≤ 10 % + rot), Intervall 10 s |
+| 0.3.2 | LED-Helligkeit 25 %, 1-µs-Pausen beim Bit-Banging, Test endet nicht auf „alle an“ (Versionsnummer vergessen) |
+| 0.3.3 | LED-Pins korrigiert: gelb = DI D18, weiß = DCKI D19; Seeed-Latch wieder wie Original |
+| 0.3.4 | Versionsnummer zusätzlich ganz oben im Sketch |
 
 Hinweise für spätere Änderungen:
 
+- **Versionsnummer bei JEDER Firmware-Änderung erhöhen** (Florians Wunsch, 29.09.): `FW_VERSION` in `garden_config.h` UND der Kopfblock ganz oben in `smart_garden.ino` („FIRMWARE-VERSION x.y.z (Stand …)“). Beide müssen gleich sein. In der Antwort an Florian die neue Version nennen.
 - Dateinamen `garden_net.*` / `garden_config.*` bewusst so gewählt (Kollision mit ESP32-Core unter Windows).
 - Vorwärtsdeklarationen oben im `.ino` beibehalten und für jede neue Funktion ergänzen (exuberant ctags der IDE erzeugt sonst falsche Prototypen).
 - Kompiliertest in der Cloud: `/tmp/bin/arduino-cli compile --fqbn espressif:esp32:esp32 --warnings all .` (Core manuell unter `/root/Arduino/hardware/espressif/esp32`, Libs per `git clone`). Muss ohne Warnungen durchlaufen.
@@ -63,11 +68,11 @@ Erledigt:
 
 Als Nächstes:
 
-- [ ] Florian: 0.3.0 hochladen, Kurztest (`status`, `demo soil 12`, `demo tank 4` → danach wieder echter Tank, `pump 3` zweimal schnell → 2. blockiert)
+- [ ] Florian: 0.3.4 hochladen, LED-Bar prüfen (7 grün bei 40 %, `ledseg 0` = aus), Kurztest (`status`, `demo soil 12`, `demo tank 4` → danach wieder echter Tank, `pump 3` zweimal schnell → 2. blockiert)
 - [ ] Durchfluss messen (`pump 10` in Messbecher) → `pump_flow_ml_per_s`
 - [ ] Test gegen Nicos Server (WLAN-Passwort + API-Key in `secrets.h`)
 - [ ] HTTPS: Caddy-Root-Zertifikat als `SERVER_CA_CERT`
-- [ ] [CONTRACT]-Vorschlag: Fehlercode `watering_ineffective`, Demo-Tank als reine Anzeige im Vertrag beschreiben (PR offen, braucht Zustimmung beider)
+- [ ] [CONTRACT]-Vorschlag: Fehlercode `watering_ineffective`, Demo-Tank als reine Anzeige im Vertrag beschreiben (noch kein PR; braucht Zustimmung beider)
 - [ ] Fotos/Schaltplan, Präsentationsbeitrag ESP
 
 Blocker:
