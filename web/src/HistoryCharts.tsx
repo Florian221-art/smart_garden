@@ -1,15 +1,26 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { HistoryResponse } from './types'
 import ChartCard from './components/ChartCard'
-import StatTile from './components/StatTile'
+import { Card, Segmented, SectionTitle } from './components/ui'
+import {
+  ChartLine,
+  CloudDrizzle,
+  Droplets,
+  GlassWater,
+  Gauge,
+  ShowerHead,
+  Sun,
+  Thermometer,
+} from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import TimeSeriesChart, { type ChartPoint, type NumericKey } from './components/TimeSeriesChart'
 import WaterBarChart, { type WaterBar } from './components/WaterBarChart'
 
 type RangeKey = '1h' | '24h' | '7d'
-const RANGES: { key: RangeKey; label: string; ms: number; group: 'min5' | 'hour' | 'day'; groupLabel: string }[] = [
-  { key: '1h', label: '1 Stunde', ms: 3600_000, group: 'min5', groupLabel: 'pro 5 Minuten' },
-  { key: '24h', label: '24 Stunden', ms: 24 * 3600_000, group: 'hour', groupLabel: 'pro Stunde' },
-  { key: '7d', label: '7 Tage', ms: 7 * 24 * 3600_000, group: 'day', groupLabel: 'pro Tag' },
+const RANGES: { key: RangeKey; short: string; label: string; ms: number; group: 'min5' | 'hour' | 'day'; groupLabel: string }[] = [
+  { key: '1h', short: '1 Std.', label: '1 Stunde', ms: 3600_000, group: 'min5', groupLabel: 'pro 5 Minuten' },
+  { key: '24h', short: '24 Std.', label: '24 Stunden', ms: 24 * 3600_000, group: 'hour', groupLabel: 'pro Stunde' },
+  { key: '7d', short: '7 Tage', label: '7 Tage', ms: 7 * 24 * 3600_000, group: 'day', groupLabel: 'pro Tag' },
 ]
 const REFRESH_MS = 30_000
 
@@ -80,6 +91,21 @@ function avg(points: ChartPoint[], key: NumericKey): number | null {
 function minMax(points: ChartPoint[], key: NumericKey): [number, number] | null {
   const vals = points.map((p) => p[key]).filter((v): v is number => v !== null)
   return vals.length ? [Math.min(...vals), Math.max(...vals)] : null
+}
+
+function Kpi({ icon: Icon, label, value, hint }: { icon: LucideIcon; label: string; value: string; hint: string }) {
+  return (
+    <Card className="flex items-start gap-3 p-4">
+      <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-surface-2 text-fg-2">
+        <Icon aria-hidden="true" className="size-[18px]" />
+      </span>
+      <div className="min-w-0">
+        <p className="text-sm text-fg-2">{label}</p>
+        <p className="text-xl font-semibold tracking-tight text-fg">{value}</p>
+        <p className="mt-0.5 text-xs text-muted">{hint}</p>
+      </div>
+    </Card>
+  )
 }
 
 export default function HistoryCharts({ deviceId }: { deviceId: string }) {
@@ -157,75 +183,69 @@ export default function HistoryCharts({ deviceId }: { deviceId: string }) {
   const rangeLabel = RANGES.find((r) => r.key === range)!.label
 
   return (
-    <section aria-labelledby="verlauf-titel" className="viz-root mt-8 sm:mt-10">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h2 id="verlauf-titel" className="text-lg font-bold text-slate-900 dark:text-slate-50">
-          Verlauf
-        </h2>
-        <div role="group" aria-label="Zeitraum" className="inline-flex rounded-lg border border-slate-300 p-0.5 dark:border-slate-700">
-          {RANGES.map((r) => (
-            <button
-              key={r.key}
-              type="button"
-              aria-pressed={range === r.key}
-              onClick={() => setRange(r.key)}
-              className={`min-h-9 rounded-md px-3 py-1 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 ${
-                range === r.key
-                  ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900'
-                  : 'text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
-              }`}
-            >
-              {r.label}
-            </button>
-          ))}
-        </div>
-      </div>
+    <section aria-labelledby="verlauf-titel" className="viz-root">
+      <SectionTitle
+        id="verlauf-titel"
+        icon={ChartLine}
+        right={
+          <Segmented
+            label="Zeitraum"
+            options={RANGES.map((r) => ({ value: r.key, label: r.short, title: r.label }))}
+            value={range}
+            onChange={setRange}
+          />
+        }
+      >
+        Verlauf
+      </SectionTitle>
 
       {error && (
-        <div role="alert" className="mb-4 rounded-lg border border-amber-500/50 bg-amber-50 p-3 text-sm text-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+        <p role="alert" className="mb-4 rounded-xl border border-line bg-surface px-4 py-3 text-sm text-fg-2">
           {error}
-        </div>
+        </p>
       )}
 
       {view && view.points.length === 0 && (
-        <p className="rounded-lg border border-slate-300/60 bg-white p-4 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
-          Keine Messwerte in den letzten {rangeLabel}.
-        </p>
+        <Card className="p-6 text-center text-sm text-fg-2">Keine Messwerte in den letzten {rangeLabel}.</Card>
       )}
 
       {view && view.points.length > 0 && (
         <>
-          <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <StatTile
+          <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
+            <Kpi
+              icon={GlassWater}
               label={`Wasserverbrauch (${rangeLabel})`}
               value={`${fmt(view.totalWater, 0)} ml`}
-              hint={`aus Pumpenlaufzeit × ${view.cfg.pump_flow_ml_per_s} ml/s (Schätzung)`}
+              hint="geschätzt aus der Pumpenlaufzeit"
             />
-            <StatTile
+            <Kpi
+              icon={ShowerHead}
               label="Automatisch gegossen"
               value={`${view.waterings}×`}
-              hint={view.cfg.auto_water ? 'Auto-Bewässerung ist an' : 'Auto-Bewässerung ist aus'}
+              hint={view.cfg.auto_water ? 'Automatisches Gießen ist an' : 'Automatisches Gießen ist aus'}
             />
-            <StatTile
+            <Kpi
+              icon={Gauge}
               label="Ø Bodenfeuchte"
               value={`${fmt(avg(view.points, 'soil_moisture_pct'))} %`}
-              hint={`Gießschwelle ${view.cfg.moisture_min_pct} %, Ziel ${view.cfg.moisture_target_pct} %`}
+              hint={`gegossen wird unter ${view.cfg.moisture_min_pct} %`}
             />
           </div>
 
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <ChartCard
               title="Bodenfeuchte"
+              icon={Droplets}
               summary={(() => {
                 const mm = minMax(view.points, 'soil_moisture_pct')
                 return mm ? `${fmt(mm[0])}–${fmt(mm[1])} %` : undefined
               })()}
               ariaLabel={`Bodenfeuchte der letzten ${rangeLabel} in Prozent, ${view.waterings} automatische Bewässerungen, Gießschwelle ${view.cfg.moisture_min_pct} Prozent.`}
               legend={[
-                { label: 'Bodenfeuchte', kind: 'line', color: 'var(--series-1)' },
-                { label: 'Automatisch gegossen', kind: 'dot', color: 'var(--series-2)' },
-                { label: `Gießschwelle ${view.cfg.moisture_min_pct} %`, kind: 'dash', color: 'var(--status-warning)' },
-                { label: `Ziel ${view.cfg.moisture_target_pct} %`, kind: 'dash', color: 'var(--viz-muted)' },
+                { label: 'Bodenfeuchte', kind: 'line', color: 'var(--viz-series)' },
+                { label: 'Automatisch gegossen', kind: 'dot', color: 'var(--viz-mark)' },
+                { label: `Gießschwelle ${view.cfg.moisture_min_pct} %`, kind: 'dash', color: 'var(--viz-ref)' },
+                { label: `Ziel ${view.cfg.moisture_target_pct} %`, kind: 'dots', color: 'var(--viz-ref)' },
                 ...view.demoLegend,
               ]}
               table={view.tableFor('soil_moisture_pct', '%')}
@@ -241,17 +261,18 @@ export default function HistoryCharts({ deviceId }: { deviceId: string }) {
                 demoRanges={view.demo}
                 markWatering
                 refLines={[
-                  { y: view.cfg.moisture_min_pct, label: `Gießschwelle ${view.cfg.moisture_min_pct} %`, color: 'var(--status-warning)' },
-                  { y: view.cfg.moisture_target_pct, label: `Ziel ${view.cfg.moisture_target_pct} %`, color: 'var(--viz-muted)' },
+                  { y: view.cfg.moisture_min_pct, label: `Gießschwelle ${view.cfg.moisture_min_pct} %`, color: 'var(--viz-ref)' },
+                  { y: view.cfg.moisture_target_pct, label: `Ziel ${view.cfg.moisture_target_pct} %`, color: 'var(--viz-ref)', dash: '1 4' },
                 ]}
               />
             </ChartCard>
 
             <ChartCard
               title="Wassertank (Schätzung)"
+              icon={GlassWater}
               summary={`aktuell ${fmt(view.points[view.points.length - 1].water_level_pct, 0)} %`}
               ariaLabel={`Geschätzter Tankfüllstand der letzten ${rangeLabel}, Warnschwelle ${view.cfg.tank_low_pct} Prozent.`}
-              legend={[{ label: `Warnung unter ${view.cfg.tank_low_pct} %`, kind: 'dash', color: 'var(--status-warning)' }, ...view.demoLegend]}
+              legend={[{ label: `Warnung unter ${view.cfg.tank_low_pct} %`, kind: 'dash', color: 'var(--viz-ref)' }, ...view.demoLegend]}
               table={view.tableFor('water_level_pct', '%', 0)}
             >
               <TimeSeriesChart
@@ -264,12 +285,13 @@ export default function HistoryCharts({ deviceId }: { deviceId: string }) {
                 yDomain={[0, 100]}
                 tickFormat={view.tickFormat}
                 demoRanges={view.demo}
-                refLines={[{ y: view.cfg.tank_low_pct, label: `Warnung unter ${view.cfg.tank_low_pct} %`, color: 'var(--status-warning)' }]}
+                refLines={[{ y: view.cfg.tank_low_pct, label: `Warnung unter ${view.cfg.tank_low_pct} %`, color: 'var(--viz-ref)' }]}
               />
             </ChartCard>
 
             <ChartCard
               title={`Wasserverbrauch ${view.barsLabel}`}
+              icon={ShowerHead}
               summary={`${fmt(view.totalWater, 0)} ml gesamt`}
               ariaLabel={`Gepumpte Wassermenge ${view.barsLabel}, insgesamt ${Math.round(view.totalWater)} Milliliter.`}
               table={{
@@ -281,7 +303,8 @@ export default function HistoryCharts({ deviceId }: { deviceId: string }) {
             </ChartCard>
 
             <ChartCard
-              title="Lufttemperatur"
+              title="Temperatur"
+              icon={Thermometer}
               summary={(() => {
                 const mm = minMax(view.points, 'air_temp_c')
                 return mm ? `${fmt(mm[0])}–${fmt(mm[1])} °C` : undefined
@@ -304,6 +327,7 @@ export default function HistoryCharts({ deviceId }: { deviceId: string }) {
 
             <ChartCard
               title="Luftfeuchte"
+              icon={CloudDrizzle}
               summary={`Ø ${fmt(avg(view.points, 'air_humidity_pct'), 0)} %`}
               ariaLabel={`Relative Luftfeuchte der letzten ${rangeLabel} in Prozent.`}
               legend={view.demoLegend}
@@ -324,6 +348,7 @@ export default function HistoryCharts({ deviceId }: { deviceId: string }) {
 
             <ChartCard
               title="Licht"
+              icon={Sun}
               summary="0 % = dunkel"
               ariaLabel={`Helligkeit der letzten ${rangeLabel} in Prozent, zeigt den Tag-Nacht-Verlauf.`}
               legend={view.demoLegend}
@@ -342,7 +367,7 @@ export default function HistoryCharts({ deviceId }: { deviceId: string }) {
               />
             </ChartCard>
           </div>
-          <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+          <p className="mt-3 text-xs text-muted">
             Werte sind Mittelwerte je {Math.round(view.bucketMs / 60000) || 1} min. Lücken in einer Linie = Sensor
             ausgefallen. Aktualisiert alle 30 s.
           </p>

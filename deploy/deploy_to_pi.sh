@@ -50,7 +50,8 @@ echo "==> Dashboard bauen (web/dist)..."
 command -v npm >/dev/null 2>&1 || { echo "FEHLER: npm/Node.js fehlt auf dem Laptop." >&2; exit 1; }
 (
   cd web
-  [[ -d node_modules ]] || npm install
+  # immer ausfuehren: holt neue Pakete (z. B. nach git pull), ist sonst nach Sekunden fertig
+  npm install --no-audit --no-fund
   npm run build
 )
 [[ -f web/dist/index.html ]] || { echo "FEHLER: Build hat kein web/dist/index.html erzeugt." >&2; exit 1; }

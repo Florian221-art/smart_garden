@@ -13,6 +13,7 @@ import {
 } from 'recharts'
 import type { HistoryPoint } from '../types'
 import { describeError } from '../errorMessages'
+import { CircleAlert, FlaskConical, ShowerHead } from 'lucide-react'
 
 export type ChartPoint = HistoryPoint & { ts: number }
 
@@ -27,6 +28,8 @@ export interface RefLine {
   y: number
   label: string
   color: string
+  /** Strichmuster, damit sich mehrere Grenzlinien ohne Farbe unterscheiden lassen */
+  dash?: string
 }
 
 interface Props {
@@ -105,20 +108,27 @@ export default function TimeSeriesChart({
           minute: '2-digit',
         })
         return (
-          <div className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs shadow-md dark:border-slate-600 dark:bg-slate-800">
-            <div className="text-slate-500 dark:text-slate-400">{time}</div>
-            <div className="text-sm font-semibold text-slate-900 dark:text-slate-50">
+          <div className="rounded-xl border border-line bg-surface px-3 py-2 text-xs shadow-lg">
+            <div className="text-muted">{time}</div>
+            <div className="text-sm font-semibold text-fg">
               {fmtNum(p[dataKey], digits)} {unit}
             </div>
             {p.auto_water_count > 0 && (
-              <div className="text-slate-700 dark:text-slate-200">
+              <div className="flex items-center gap-1 text-fg-2">
+                <ShowerHead aria-hidden="true" className="size-3.5" />
                 Automatisch gegossen ({p.auto_water_count}×, {fmtNum(p.water_ml, 0)} ml)
               </div>
             )}
-            {p.demo && <div className="font-medium" style={{ color: 'var(--viz-demo-text)' }}>DEMO-Werte</div>}
+            {p.demo && (
+              <div className="flex items-center gap-1 font-medium text-fg-2">
+                <FlaskConical aria-hidden="true" className="size-3.5" />
+                Demo-Werte
+              </div>
+            )}
             {p.errors.map((e) => (
-              <div key={e} className="text-red-700 dark:text-red-300">
-                ⚠ {describeError(e)}
+              <div key={e} className="flex items-center gap-1 text-danger">
+                <CircleAlert aria-hidden="true" className="size-3.5 shrink-0" />
+                {describeError(e)}
               </div>
             ))}
           </div>
@@ -143,7 +153,7 @@ export default function TimeSeriesChart({
       key={r.label}
       y={r.y}
       stroke={r.color}
-      strokeDasharray="4 4"
+      strokeDasharray={r.dash ?? '4 4'}
       strokeWidth={1.5}
       ifOverflow="extendDomain"
     />
@@ -159,7 +169,7 @@ export default function TimeSeriesChart({
         cx={cx}
         cy={cy}
         r={5}
-        fill="var(--series-2)"
+        fill="var(--viz-mark)"
         stroke="var(--viz-surface)"
         strokeWidth={2}
       />
@@ -179,10 +189,10 @@ export default function TimeSeriesChart({
         <Area
           type="monotone"
           dataKey={dataKey}
-          stroke="var(--series-1)"
+          stroke="var(--viz-series)"
           strokeWidth={2}
-          fill="var(--series-1)"
-          fillOpacity={0.12}
+          fill="var(--viz-series)"
+          fillOpacity={0.1}
           connectNulls={false}
           isAnimationActive={false}
           activeDot={{ r: 4, stroke: 'var(--viz-surface)', strokeWidth: 2 }}
@@ -201,7 +211,7 @@ export default function TimeSeriesChart({
         <Line
           type="monotone"
           dataKey={dataKey}
-          stroke="var(--series-1)"
+          stroke="var(--viz-series)"
           strokeWidth={2}
           dot={markWatering ? waterDot : false}
           connectNulls={false}
