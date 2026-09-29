@@ -26,6 +26,7 @@ void displayLedTest();                 // Testanimation Grün -> Rot (ca. 3 s, l
 void displayFlip();                    // Richtung der LED-Bar umdrehen (bis Neustart)
 void displayTestSegments(int n);       // genau n Segmente (ab Segment 1 = rot) 10 s lang anzeigen
 void displaySwapPins();                // Takt/Daten-Pin tauschen (bis Neustart) + Test
+void displayDiag();                    // "leddiag": 8 Übertragungsvarianten nacheinander (je 4 s)
 
 void buzzerBeep(uint8_t count);        // kurze Pieptöne (nicht, wenn stumm geschaltet)
 void buzzerBeepForced(uint8_t count);  // piept auch, wenn stumm geschaltet (Test "beep")

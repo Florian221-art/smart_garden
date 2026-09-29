@@ -13,3 +13,7 @@ void ledbarBegin(uint8_t pinClock, uint8_t pinData);  // Pins als Ausgang, beide
 // bits: Bit 0 = Segment 1 (rot) ... Bit 9 = Segment 10 (grün).
 // reverse = true spiegelt die Reihenfolge (falls die Bar andersherum eingebaut ist).
 void ledbarShow(uint16_t bits, bool reverse);
+// Übertragungsvarianten (für die Fehlersuche mit "leddiag"):
+//   brightness 1-255, slow = 1-µs-Pausen zwischen den Flanken,
+//   latchWithClock = Latch mit zusätzlichen Taktimpulsen (Seeed-Bibliothek v2)
+void ledbarSetOptions(uint8_t brightness, bool slow, bool latchWithClock);

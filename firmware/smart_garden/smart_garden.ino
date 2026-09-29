@@ -1,5 +1,5 @@
 // ############################################################################
-//  FIRMWARE-VERSION 0.3.4  (Stand 29.09.2026)
+//  FIRMWARE-VERSION 0.3.5  (Stand 29.09.2026)
 //  Muss mit FW_VERSION in garden_config.h übereinstimmen und steht beim Start
 //  im seriellen Monitor. So siehst du sofort, ob du die aktuelle Datei hast.
 // ############################################################################
@@ -27,6 +27,10 @@ int  CFG_LEDBAR_MODE    = 2;      // 2 = Trockenheitsbalken ab Grün (Standard):
                                   // 1 = Füllbalken ab Rot (trocken = nur rot, feucht = ganzer Balken)
 bool CFG_LEDBAR_REVERSE = false;  // true = Anzeige spiegeln, falls rot/grün vertauscht erscheint
 bool CFG_LEDBAR_SWAP_PINS = false; // true, wenn die Bar gar nicht reagiert (DI/DCKI = D18/D19 vertauscht)
+// Übertragung zur LED-Bar – per "leddiag" ermitteln und hier eintragen:
+int  CFG_LEDBAR_BRIGHTNESS  = 255;  // 1-255 (255 = voll, 64 = gedimmt)
+bool CFG_LEDBAR_SLOW        = false; // true = langsamer senden (lange Kabel)
+bool CFG_LEDBAR_LATCH_CLOCK = true;  // Latch-Variante (true = wie Seeed-Bibliothek v2)
 
 // --- Summer ----------------------------------------------------------------
 bool CFG_BUZZER_ENABLED = true;   // false = Summer komplett stumm
@@ -366,6 +370,7 @@ static void printHelp() {
       "  ledtest | ledflip      LED-Bar testen / Richtung umdrehen (bis Neustart)\n"
       "  ledseg <0-10>          genau so viele Segmente 10 s lang anzeigen (Test)\n"
       "  ledswap                Daten-/Taktpin der LED-Bar tauschen (wenn sie nicht reagiert)\n"
+      "  leddiag                LED-Bar: 8 Uebertragungsvarianten testen (je 4 s)\n"
       "  mute                   Summer an/aus (bis Neustart)\n"
       "  beep                   Summer testen\n"
       "  send                   sofort an Server senden"));
@@ -439,6 +444,7 @@ static void handleSerialCommand(String line) {
   else if (c == "ledflip") displayFlip();
   else if (c == "ledseg" && n >= 2) displayTestSegments(parts[1].toInt());
   else if (c == "ledswap") displaySwapPins();
+  else if (c == "leddiag") displayDiag();
   else if (c == "mute") {
     CFG_BUZZER_ENABLED = !CFG_BUZZER_ENABLED;
     Serial.printf("[SUMMER] %s\n", CFG_BUZZER_ENABLED ? "an" : "stumm");
