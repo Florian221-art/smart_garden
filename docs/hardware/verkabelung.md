@@ -110,7 +110,7 @@ Load side (green screw terminal J1 = normally open contact):
 12 V power supply (+) ─────── Terminal J1 (left)
                               [relay contact]
                              Terminal J1 (right) ──── Pump (+)
-12 V power supply (−) ─────────────────────────────────────────────── Pump (−)
+12 V power supply (−) ─────────────────────────────── Pump (−)
 
 optional flyback diode 1N4007 directly at the pump:
   cathode (ring) to pump (+), anode to pump (−)
