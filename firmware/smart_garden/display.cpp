@@ -1,40 +1,64 @@
+// =============================================================================
+//  display.cpp – LED-Bar, Summer, Status-LED (siehe display.h)
+// =============================================================================
 #include "display.h"
 #include "garden_config.h"
 #include "ledbar.h"
 
+// Bits: Bit 0 = Segment 1 (rot) ... Bit 9 = Segment 10 (grün)
+static const uint16_t ALL_SEGMENTS = 0x3FF;
+
+// --- LED-Bar -----------------------------------------------------------------
 static float soilPct = 0;
 static bool soilOk = true;
 static bool tankEmpty = false;
-static uint32_t identifyUntil = 0;
-static uint32_t lastFrame = 0;
-static uint32_t lastBits = 0xFFFFFFFF;
-static uint32_t testUntil = 0;
+static uint32_t identifyStart = 0;     // Lauflicht seit (millis)
+static bool identifyOn = false;
+static uint32_t lastFrame = 0;         // letzte Aktualisierung (alle 100 ms)
+static uint32_t lastBits = 0xFFFFFFFF; // zuletzt gesendetes Muster (nur bei Änderung senden)
+static uint32_t testStart = 0;         // "ledseg"-Test seit (millis)
+static bool testOn = false;
 static uint16_t testBits = 0;
+static uint32_t ledTestStart = 0;      // Start der Testanimation, 0 = keine
+static bool ledTestRunning = false;
 
-// Summer
+// --- Summer --------------------------------------------------------------------
 static uint8_t beepsLeft = 0;
 static bool buzzerOn = false;
 static uint32_t buzzerNext = 0;
 static uint32_t lastAlarm = 0;
-static uint8_t alarmed = 0;           // Probleme, für die schon gepiept wurde
-static uint32_t clearedSince[8] = {0};  // seit wann ein Problem weg ist
+static uint8_t alarmed = 0;             // Probleme, für die schon gepiept wurde
+static uint32_t clearedSince[8] = {0};  // seit wann ein Problem weg ist (0 = besteht)
 
-// Status-LED
+// --- Status-LED -----------------------------------------------------------------
 static uint8_t ledMode = 0;
 
+// Zeitfenster mit Flag + Startzeit statt "bis"-Zeitstempel: bleibt auch nach
+// dem Überlauf von millis() (49 Tage) korrekt. Liefert false und beendet das
+// Fenster, sobald `durationMs` vorbei ist.
+static bool within(bool &on, uint32_t start, uint32_t durationMs) {
+  if (on && millis() - start >= durationMs) on = false;
+  return on;
+}
+
 static void showBits(uint32_t bits) {
-  if (bits != lastBits) {
+  if (bits != lastBits) {  // MY9221 nur bei Änderung neu beschreiben
     ledbarShow(bits, CFG_LEDBAR_REVERSE);
     lastBits = bits;
   }
+}
+
+static void applyPins() {
+  if (CFG_LEDBAR_SWAP_PINS) ledbarBegin(PIN_LEDBAR_DI, PIN_LEDBAR_DCKI);
+  else ledbarBegin(PIN_LEDBAR_DCKI, PIN_LEDBAR_DI);
+  lastBits = 0xFFFFFFFF;
 }
 
 void displayBegin() {
   pinMode(PIN_BUZZER, OUTPUT);
   digitalWrite(PIN_BUZZER, LOW);
   pinMode(PIN_STATUS_LED, OUTPUT);
-  if (CFG_LEDBAR_SWAP_PINS) ledbarBegin(PIN_LEDBAR_DI, PIN_LEDBAR_DCKI);
-  else ledbarBegin(PIN_LEDBAR_DCKI, PIN_LEDBAR_DI);
+  applyPins();
   showBits(0);
 }
 
@@ -45,7 +69,10 @@ void displaySetSoil(float pct, bool ok) {
 
 void displaySetTankEmpty(bool empty) { tankEmpty = empty; }
 
-void displayIdentify() { identifyUntil = millis() + 5000; }
+void displayIdentify() {
+  identifyStart = millis();
+  identifyOn = true;
+}
 
 void displayFlip() {
   CFG_LEDBAR_REVERSE = !CFG_LEDBAR_REVERSE;
@@ -56,8 +83,7 @@ void displayFlip() {
 
 void displaySwapPins() {
   CFG_LEDBAR_SWAP_PINS = !CFG_LEDBAR_SWAP_PINS;
-  if (CFG_LEDBAR_SWAP_PINS) ledbarBegin(PIN_LEDBAR_DI, PIN_LEDBAR_DCKI);
-  else ledbarBegin(PIN_LEDBAR_DCKI, PIN_LEDBAR_DI);
+  applyPins();
   Serial.printf("[LED] Pins getauscht (swap=%d): Takt=GPIO%d, Daten=GPIO%d. Reagiert die Bar jetzt, oben CFG_LEDBAR_SWAP_PINS = %s setzen.\n",
                 CFG_LEDBAR_SWAP_PINS, CFG_LEDBAR_SWAP_PINS ? PIN_LEDBAR_DI : PIN_LEDBAR_DCKI,
                 CFG_LEDBAR_SWAP_PINS ? PIN_LEDBAR_DCKI : PIN_LEDBAR_DI, CFG_LEDBAR_SWAP_PINS ? "true" : "false");
@@ -67,61 +93,78 @@ void displaySwapPins() {
 void displayTestSegments(int n) {
   n = constrain(n, 0, 10);
   testBits = (1u << n) - 1;
-  testUntil = millis() + 10000;
-  Serial.printf("[LED] Test: %d Segment(e) an (ab Segment 1) fuer 10 s\n", n);
+  testStart = millis();
+  testOn = true;
+  Serial.printf("[LED] Test: %d Segment(e) an (ab Segment 1 = rot) fuer 10 s\n", n);
 }
 
 void displayLedTest() {
   Serial.println("[LED] Test: fuellt von GRUEN (Segment 10) ueber orange bis ROT (Segment 1).");
   Serial.println("[LED] Leuchtet zuerst ein ROTES Segment -> oben CFG_LEDBAR_REVERSE = true setzen.");
-  for (int i = 1; i <= 10; i++) {
-    ledbarShow((0x3FFu << (10 - i)) & 0x3FFu, CFG_LEDBAR_REVERSE);
-    delay(250);
+  ledTestStart = millis();
+  ledTestRunning = true;
+}
+
+// Berechnet das Muster für die Bodenfeuchte-Anzeige
+static uint32_t soilBits(bool blinkSlow) {
+  int pos = constrain((int)ceilf(soilPct / 10.0f), 1, 10);  // 0-10 % -> 1, ..., 90-100 % -> 10
+  uint32_t bits;
+  if (CFG_LEDBAR_MODE == 2) {
+    // Trockenheitsbalken: n = Trockenheit in Zehnteln, gefüllt vom grünen Ende her
+    int n = constrain((int)ceilf((100.0f - soilPct) / 10.0f), 1, 10);
+    bits = (ALL_SEGMENTS << (10 - n)) & ALL_SEGMENTS;  // Segmente (11-n) bis 10
+    if (soilPct < 10 && !blinkSlow) bits &= ~0x001UL;  // ganz trocken: Rot blinkt
+  } else {
+    if (CFG_LEDBAR_MODE == 1) {
+      bits = (1UL << pos) - 1;                   // Füllbalken: Segmente 1..pos
+    } else {
+      bits = 1UL << (pos - 1);                   // Zeiger: Segment pos ...
+      if (pos > 1) bits |= 1UL << (pos - 2);     // ... und das davor
+    }
+    if (soilPct < 10 && !blinkSlow) bits = 0;    // sehr trocken: blinkt
   }
-  delay(500);
-  lastBits = 0xFFFFFFFF;
+  return bits;
 }
 
 static void updateBar() {
   uint32_t now = millis();
-  if (now - lastFrame < 100) return;
+  if (now - lastFrame < 100) return;  // 10 Bilder pro Sekunde reichen
   lastFrame = now;
   bool blinkFast = (now / 250) % 2;
   bool blinkSlow = (now / 500) % 2;
 
-  if ((int32_t)(testUntil - now) > 0) {  // Test "ledseg"
+  // Priorität: Testanimation > ledseg-Test > Lauflicht > Sensorfehler > Bodenfeuchte
+  if (ledTestRunning) {
+    uint32_t step = (now - ledTestStart) / 250;  // alle 250 ms ein Segment mehr
+    if (step < 10) {
+      int n = step + 1;
+      showBits((ALL_SEGMENTS << (10 - n)) & ALL_SEGMENTS);
+      return;
+    }
+    if (step < 12) {  // kurz voll stehen lassen
+      showBits(ALL_SEGMENTS);
+      return;
+    }
+    ledTestRunning = false;
+  }
+  if (within(testOn, testStart, 10000)) {
     showBits(testBits);
     return;
   }
-  if ((int32_t)(identifyUntil - now) > 0) {  // Lauflicht
+  if (within(identifyOn, identifyStart, 5000)) {
     showBits(1UL << ((now / 100) % 10));
     return;
   }
-  if (!soilOk) {  // Sensorfehler: Segment 1 und 10 abwechselnd
+  if (!soilOk) {
     showBits(blinkSlow ? 0x001 : 0x200);
     return;
   }
-  // Bodenfeuchte -> Segmente (1 = rot = trocken, 10 = grün = nass)
-  int pos = (int)ceilf(soilPct / 10.0f);
-  pos = constrain(pos, 1, 10);
-  uint32_t bits;
-  if (CFG_LEDBAR_MODE == 2) {
-    // Trockenheitsbalken: Anzahl LEDs = Trockenheit, gefüllt vom grünen Ende (Segment 10) her.
-    // 100 % feucht -> 1 grüne LED, 20 % -> alle 8 grünen, 10-20 % -> + orange, < 10 % -> + rot
-    int n = (int)ceilf((100.0f - soilPct) / 10.0f);
-    n = constrain(n, 1, 10);
-    bits = (0x3FFUL << (10 - n)) & 0x3FFUL;       // Segmente (11-n)..10
-    if (soilPct < 10 && !blinkSlow) bits &= ~0x001UL;  // ganz trocken: rot blinkt
-  } else if (CFG_LEDBAR_MODE == 1) {
-    bits = (1UL << pos) - 1;                      // Füllbalken: Segmente 1..pos
-  } else {
-    bits = (1UL << (pos - 1));                    // Zeiger: Segment pos ...
-    if (pos > 1) bits |= (1UL << (pos - 2));      // ... und das davor
-  }
-  if (CFG_LEDBAR_MODE != 2 && soilPct < 10 && !blinkSlow) bits = 0;  // sehr trocken: rot blinkt
+  uint32_t bits = soilBits(blinkSlow);
   if (tankEmpty) bits = blinkFast ? (bits | 0x001) : (bits & ~0x001UL);  // Tank leer: Segment 1 blinkt schnell
   showBits(bits);
 }
+
+// --- Summer ------------------------------------------------------------------
 
 void buzzerBeepForced(uint8_t count) {
   beepsLeft = count;
@@ -135,7 +178,8 @@ void buzzerBeep(uint8_t count) {
 
 void buzzerAlarm(uint8_t problems) {
   uint32_t now = millis();
-  // Ein Problem gilt erst als erledigt, wenn es 5 min lang weg war -> kein Dauerpiepen bei Wackelkontakt
+  // Ein Problem gilt erst als erledigt, wenn es 5 min lang weg war.
+  // Sonst würde ein Wackelkontakt bei jedem Wiederauftreten neu piepen.
   for (int b = 0; b < 8; b++) {
     uint8_t m = 1 << b;
     if (problems & m) clearedSince[b] = 0;
@@ -149,11 +193,16 @@ void buzzerAlarm(uint8_t problems) {
   alarmed |= problems;
   if (!problems || !(isNew || repeat)) return;
   lastAlarm = now;
-  Serial.printf("[ALARM]%s%s%s\n", (problems & 1) ? " Tank leer (\"refill\" eingeben)" : "",
-                (problems & 2) ? " Bodensensor-Fehler" : "", (problems & 4) ? " DHT11 liefert seit >60 s keine Werte (Kabel D4/3V3/GND pruefen)" : "");
+  Serial.printf("[ALARM]%s%s%s%s\n", (problems & ALARM_TANK_EMPTY) ? " Tank leer (\"refill\" eingeben)" : "",
+                (problems & ALARM_SOIL_SENSOR) ? " Bodensensor-Fehler (Kabel D34 oder Kalibrierung pruefen)" : "",
+                (problems & ALARM_DHT) ? " DHT11 liefert seit >60 s keine Werte (Kabel D4/3V3/GND pruefen)" : "",
+                (problems & ALARM_WATERING_INEFFECTIVE)
+                    ? " Giessen wirkt nicht (Sensor in der Erde? Schlauch im Kuebel? Pumpe im Wasser?) -> Auto-Giessen gesperrt, \"refill\" hebt auf"
+                    : "");
   buzzerBeep(3);
 }
 
+// Erzeugt die Pieptöne: 150 ms an, 150 ms aus
 static void updateBuzzer() {
   uint32_t now = millis();
   if (!buzzerOn && beepsLeft == 0) return;
@@ -161,14 +210,16 @@ static void updateBuzzer() {
   if (buzzerOn) {
     digitalWrite(PIN_BUZZER, LOW);
     buzzerOn = false;
-    buzzerNext = now + 150;  // Pause
+    buzzerNext = now + 150;
   } else if (beepsLeft > 0) {
     digitalWrite(PIN_BUZZER, HIGH);
     buzzerOn = true;
     beepsLeft--;
-    buzzerNext = now + 150;  // Ton
+    buzzerNext = now + 150;
   }
 }
+
+// --- Status-LED ----------------------------------------------------------------
 
 void statusLedSet(uint8_t mode) { ledMode = mode; }
 
