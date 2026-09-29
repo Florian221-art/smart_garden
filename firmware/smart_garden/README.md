@@ -1,6 +1,6 @@
 # Smart Garden ESP32 firmware
 
-C++ on the Arduino framework (ESP32 core 3.x), uploaded with the Arduino IDE. Current version: **0.3.8**.
+C++ on the Arduino framework (ESP32 core 3.x), uploaded with the Arduino IDE. Current version: **0.3.10**.
 
 The firmware measures soil moisture, light, air temperature and humidity. It shows the soil moisture on the LED bar, waters the plant on its own through a relay and pump, and sends all readings to the server on the Raspberry Pi. Without Wi-Fi or server, everything except sending keeps working.
 
@@ -64,10 +64,10 @@ If the connection fails, the serial monitor states the reason once in plain text
 | Message | Meaning |
 |---|---|
 | `"SmartGarden" nicht gefunden` (not found) | Pi hotspot is off or too far away |
-| `gefunden, aber Anmeldung abgelehnt` (found, but login rejected) | Wrong Wi-Fi password |
+| `gefunden, Anmeldung gescheitert` (found, but login failed) | Wrong Wi-Fi password **or** weak signal – move the ESP32 closer to the Pi |
 | `Verbindung abgerissen` (connection dropped) | Signal too weak |
 
-The ESP32 then retries every 15 s, but only once the previous attempt has finished.
+The ESP32 then retries every 5 s, but only once the previous attempt has finished; after every 3 failed attempts it restarts Wi-Fi completely. Modem sleep is disabled for a more reliable handshake.
 
 ## 3. Uploading
 
@@ -76,7 +76,7 @@ The ESP32 then retries every 15 s, but only once the previous attempt has finish
 3. Click **Upload**.
 4. Open *Tools → Serial Monitor*, set **115200 baud** and line ending **"New Line"**.
 
-At startup the monitor shows the firmware version (currently `Firmware 0.3.9`). It must match `FIRMWARE-VERSION` at the very top of `smart_garden.ino` (and `FW_VERSION` in `garden_config.h`). The LED bar fills once from green through orange to red, and the buzzer beeps briefly. If red lights up first, set `CFG_LEDBAR_REVERSE = true` at the top (to try it without re-uploading: `ledflip`).
+At startup the monitor shows the firmware version (currently `Firmware 0.3.10`). It must match `FIRMWARE-VERSION` at the very top of `smart_garden.ino` (and `FW_VERSION` in `garden_config.h`). The LED bar fills once from green through orange to red, and the buzzer beeps briefly. If red lights up first, set `CFG_LEDBAR_REVERSE = true` at the top (to try it without re-uploading: `ledflip`).
 
 **If the upload gets stuck** (`Connecting…` hangs or `Wrong boot mode detected`):
 
