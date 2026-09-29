@@ -1,197 +1,204 @@
-# ESP32-Firmware Smart Garden
+# Smart Garden ESP32 firmware
 
-C++ mit dem Arduino-Framework (ESP32-Core 3.x). Hochgeladen wird mit der Arduino IDE.
+C++ on the Arduino framework (ESP32 core 3.x), uploaded with the Arduino IDE. Current version: **0.3.8**.
 
-Die Firmware misst Bodenfeuchte, Licht, Temperatur und Luftfeuchte. Sie zeigt die Bodenfeuchte auf der LED-Bar an, gießt selbstständig über Relais und Pumpe und schickt alle Werte an den Server auf dem Raspberry Pi. Ohne WLAN oder Server läuft alles außer dem Senden weiter.
+The firmware measures soil moisture, light, air temperature and humidity. It shows the soil moisture on the LED bar, waters the plant on its own through a relay and pump, and sends all readings to the server on the Raspberry Pi. Without Wi-Fi or server, everything except sending keeps working.
 
-| Weitere Doku | Inhalt |
+> **Note:** the firmware's serial monitor output and serial commands are in German. They are quoted verbatim below, with the English meaning next to them.
+
+| Further docs | Contents |
 |---|---|
-| [`docs/hardware/verkabelung.md`](../../docs/hardware/verkabelung.md) | Pinout, Verkabelung, Inbetriebnahme |
-| [`docs/hardware/sicherheit-esp.md`](../../docs/hardware/sicherheit-esp.md) | Bedrohungsmodell und Schutzmaßnahmen des ESP-Teils |
-| [`.claude/api-contract.md`](../../.claude/api-contract.md) | Schnittstelle zum Server (JSON-Felder, Demo-Modus) |
-| [`tools/`](../../tools/README.md) | `fake_esp.py`: simuliert diesen ESP, zum Testen des Servers ohne Hardware |
+| [`docs/hardware/verkabelung.md`](../../docs/hardware/verkabelung.md) | Pinout, wiring, commissioning |
+| [`docs/hardware/sicherheit-esp.md`](../../docs/hardware/sicherheit-esp.md) | Threat model and protective measures for the ESP32 part |
+| [`.claude/api-contract.md`](../../.claude/api-contract.md) | Interface to the server (JSON fields, demo mode) |
+| [`tools/`](../../tools/README.md) | `fake_esp.py`: simulates this ESP32, for testing the server without hardware |
 
 ---
 
-## 1. Einmalig: Arduino IDE einrichten
+## 1. One-time setup: Arduino IDE
 
-1. **Arduino IDE 2.x** installieren.
-2. Unter *Datei → Einstellungen → Zusätzliche Boardverwalter-URLs* eintragen:
+1. Install **Arduino IDE 2.x**.
+2. Under *File → Preferences → Additional boards manager URLs* add:
    `https://espressif.github.io/arduino-esp32/package_esp32_index.json`
-3. Unter *Werkzeuge → Board → Boardverwalter* **esp32 by Espressif Systems** installieren, Version **3.x** (getestet mit 3.3.12).
-4. Unter *Werkzeuge → Bibliotheken verwalten* installieren:
-   - **DHT sensor library** (Adafruit). Die Frage nach Abhängigkeiten mit „Alle installieren“ beantworten, das bringt Adafruit Unified Sensor mit.
-   - **ArduinoJson** von Benoit Blanchon, Version **7.x**
-   - Die Grove LED Bar braucht **keine** Bibliothek, der Treiber ist in `ledbar.cpp` eingebaut.
-5. Zeigt Windows keinen COM-Port an: Treiber für den USB-Chip **CP2102** (Silicon Labs) installieren.
+3. Under *Tools → Board → Boards Manager* install **esp32 by Espressif Systems**, version **3.x** (tested with 3.3.12).
+4. Under *Tools → Manage Libraries* install:
+   - **DHT sensor library** (Adafruit). When asked about dependencies, choose "Install all"; this also installs Adafruit Unified Sensor.
+   - **ArduinoJson** by Benoit Blanchon, version **7.x**
+   - The Grove LED Bar needs **no** library; the driver is built into `ledbar.cpp`.
+5. If Windows shows no COM port: install the driver for the **CP2102** USB chip (Silicon Labs).
 
-## 2. Einstellungen eintragen
+## 2. Configuration
 
-Die Einstellungen stehen ganz oben in **`smart_garden.ino`** im Block **„EINSTELLUNGEN – HIER ANPASSEN“**:
+The settings are at the very top of **`smart_garden.ino`**, in the block **"EINSTELLUNGEN – HIER ANPASSEN"** (settings – adjust here):
 
-| Variable | Bedeutung |
+| Variable | Meaning |
 |---|---|
-| `CFG_WIFI_SSID` | WLAN-Name, `SmartGarden` (Hotspot des Pi) |
-| `CFG_WIFI_PASSWORD` | WLAN-Passwort (von Nico) |
-| `CFG_SERVER_URL` | `http://10.42.0.1:8000`, später `https://10.42.0.1` |
-| `CFG_API_KEY` | wird auf dem Server beim Anlegen des Geräts erzeugt |
-| `CFG_DEVICE_ID` | `esp32-kuebel-01`, muss zum Gerät auf dem Server passen |
-| `CFG_LEDBAR_MODE` | `2` = Trockenheitsbalken ab Grün (Standard), `0` = Zeiger, `1` = Füllbalken ab Rot (Abschnitt 6) |
-| `CFG_LEDBAR_REVERSE` | `true`, falls die Anzeige gespiegelt erscheint |
-| `CFG_LEDBAR_SWAP_PINS` | `true`, falls die LED-Bar gar nicht reagiert (Takt/Daten vertauscht) |
-| `CFG_BUZZER_ENABLED` | `false` schaltet den Summer komplett stumm |
+| `CFG_WIFI_SSID` | Wi-Fi name, `SmartGarden` (the Pi's hotspot) |
+| `CFG_WIFI_PASSWORD` | Wi-Fi password (from Nico) |
+| `CFG_SERVER_URL` | `http://10.42.0.1:8000`, later `https://10.42.0.1` |
+| `CFG_API_KEY` | generated on the server when the device is created |
+| `CFG_DEVICE_ID` | `esp32-kuebel-01`, must match the device on the server |
+| `CFG_LEDBAR_MODE` | `2` = dryness bar starting from green (default), `0` = pointer, `1` = fill bar starting from red (section 6) |
+| `CFG_LEDBAR_REVERSE` | `true` if the display appears mirrored |
+| `CFG_LEDBAR_SWAP_PINS` | `true` if the LED bar does not react at all (clock/data swapped) |
+| `CFG_BUZZER_ENABLED` | `false` mutes the buzzer completely |
 
-### Sicherer: Zugangsdaten in `secrets.h`
+### Safer: credentials in `secrets.h`
 
-Das Repo ist **öffentlich**. Ein echtes Passwort oben im Sketch kann aus Versehen mitcommittet werden. So vermeidest du das:
+The repository is **public**. A real password at the top of the sketch can be committed by accident. To avoid this:
 
-1. `secrets.h.example` im selben Ordner kopieren und in **`secrets.h`** umbenennen.
-2. Passwort und API-Key dort eintragen.
-3. Die Arduino IDE neu öffnen und hochladen.
+1. Copy `secrets.h.example` in the same folder and rename the copy to **`secrets.h`**.
+2. Enter the password and API key there.
+3. Reopen the Arduino IDE and upload.
 
-`secrets.h` steht in `.gitignore` und wird deshalb nie hochgeladen. Ihre Werte haben Vorrang vor dem Sketch. Beim Start erscheint dann `[CFG] Zugangsdaten aus secrets.h übernommen`.
+`secrets.h` is listed in `.gitignore` and is therefore never pushed. Its values take precedence over the sketch. At startup the monitor then shows `[CFG] Zugangsdaten aus secrets.h übernommen` (credentials loaded from secrets.h).
 
-Wenn du doch direkt im Sketch arbeitest: vor jedem `git pull` erst `git stash` ausführen, danach `git stash pop`. Vor einem Commit mit `git diff` prüfen, dass kein Passwort drinsteht.
+The Pi deploy script (`deploy/deploy_to_pi.sh`) creates a ready-made `secrets.h` in this folder, see [`deploy/README.md`](../../deploy/README.md).
 
-Stehen noch die Platzhalter drin, meldet die Firmware beim Start `WARNUNG: ... Platzhalter`. Ist das WLAN-Passwort der Platzhalter, bleibt das WLAN ganz aus (`[WLAN] AUS: ...`). Sensoren, LED-Bar, Pumpe und Demo-Befehle funktionieren trotzdem, nur das Senden nicht.
+If you do edit the sketch directly: run `git stash` before every `git pull`, then `git stash pop`. Before committing, check with `git diff` that no password is included.
 
-Klappt die Verbindung nicht, nennt der serielle Monitor den Grund einmal im Klartext:
+If the placeholders are still in place, the firmware prints `WARNUNG: ... Platzhalter` (warning: ... placeholder) at startup. If the Wi-Fi password is the placeholder, Wi-Fi stays off entirely (`[WLAN] AUS: ...` – Wi-Fi off). Sensors, LED bar, pump and demo commands still work; only sending does not.
 
-| Meldung | Bedeutung |
+If the connection fails, the serial monitor states the reason once in plain text:
+
+| Message | Meaning |
 |---|---|
-| `"SmartGarden" nicht gefunden` | Pi-Hotspot aus oder zu weit weg |
-| `gefunden, aber Anmeldung abgelehnt` | WLAN-Passwort falsch |
-| `Verbindung abgerissen` | Signal zu schwach |
+| `"SmartGarden" nicht gefunden` (not found) | Pi hotspot is off or too far away |
+| `gefunden, aber Anmeldung abgelehnt` (found, but login rejected) | Wrong Wi-Fi password |
+| `Verbindung abgerissen` (connection dropped) | Signal too weak |
 
-Der ESP versucht es danach alle 15 s erneut, aber erst, wenn der vorige Versuch beendet ist.
+The ESP32 then retries every 15 s, but only once the previous attempt has finished.
 
-## 3. Hochladen
+## 3. Uploading
 
-1. `firmware/smart_garden/smart_garden.ino` öffnen. Alle anderen Dateien erscheinen als Tabs.
-2. Unter *Werkzeuge → Board* **ESP32 Dev Module** wählen, unter *Port* den COM-Port des ESP32.
-3. Auf **Hochladen** klicken.
-4. *Werkzeuge → Serieller Monitor* öffnen, **115200 Baud**, Zeilenende **„Neue Zeile“**.
+1. Open `firmware/smart_garden/smart_garden.ino`. All other files appear as tabs.
+2. Under *Tools → Board* select **ESP32 Dev Module**, and under *Port* the ESP32's COM port.
+3. Click **Upload**.
+4. Open *Tools → Serial Monitor*, set **115200 baud** and line ending **"New Line"**.
 
-Beim Start steht im Monitor die Firmware-Version (aktuell `Firmware 0.3.8`). Sie muss mit `FIRMWARE-VERSION` ganz oben in `smart_garden.ino` übereinstimmen. Die LED-Bar füllt sich einmal von Grün über Orange bis Rot, und der Summer piept kurz. Leuchtet dabei zuerst Rot, oben `CFG_LEDBAR_REVERSE = true` setzen (zum Ausprobieren ohne Hochladen: `ledflip`).
+At startup the monitor shows the firmware version (currently `Firmware 0.3.8`). It must match `FIRMWARE-VERSION` at the very top of `smart_garden.ino` (and `FW_VERSION` in `garden_config.h`). The LED bar fills once from green through orange to red, and the buzzer beeps briefly. If red lights up first, set `CFG_LEDBAR_REVERSE = true` at the top (to try it without re-uploading: `ledflip`).
 
-**Wenn der Upload klemmt** (`Connecting…` hängt oder `Wrong boot mode detected`):
+**If the upload gets stuck** (`Connecting…` hangs or `Wrong boot mode detected`):
 
-- **BOOT** gedrückt halten, bis der Upload startet, notfalls dabei kurz **EN** drücken.
-- Während des Uploads die 3V3-Schiene und das 12-V-Netzteil abziehen.
-- Unter *Werkzeuge → Upload Speed* **115200** einstellen.
+- Hold **BOOT** until the upload starts; if necessary, briefly press **EN** while doing so.
+- Disconnect the 3V3 rail and the 12 V power supply during the upload.
+- Set *Tools → Upload Speed* to **115200**.
 
-## 4. Kalibrieren (einmal, ca. 2 Minuten)
+## 4. Calibration (once, about 2 minutes)
 
-| Schritt | Befehl |
+| Step | Command |
 |---|---|
-| Bodensensor trocken an der Luft halten | `cal soil dry` |
-| Bodensensor bis zur weißen Linie in ein Glas Wasser stecken | `cal soil wet` |
-| Lichtsensor mit dem Finger abdecken | `cal light dark` |
-| Handy-Taschenlampe direkt auf den Lichtsensor halten | `cal light bright` |
+| Hold the soil sensor dry in the air | `cal soil dry` |
+| Put the soil sensor into a glass of water up to the white line | `cal soil wet` |
+| Cover the light sensor with a finger | `cal light dark` |
+| Shine a phone flashlight directly onto the light sensor | `cal light bright` |
 
-Die Werte bleiben im ESP gespeichert, auch nach Neustart und neuem Hochladen. Kontrolle mit `status`.
+The values stay stored on the ESP32, even after a restart or a new upload. Check them with `status`.
 
-Beim Bodensensor muss der Rohwert „trocken“ mindestens **300** über „nass“ liegen, sonst wird nicht gespeichert (typisch: trocken ~3200, nass ~1100). Ist die Kalibrierung ungültig, meldet der Sensor einen Fehler und es wird nicht gegossen. So verhindert die Firmware, dass eine Fehlkalibrierung als „0 % Feuchte“ gelesen wird und Dauergießen auslöst.
+For the soil sensor, the "dry" raw value must be at least **300** above "wet", otherwise nothing is saved (typical: dry ~3200, wet ~1100). If the calibration is invalid, the sensor reports an error and no watering takes place. This prevents a bad calibration from being read as "0 % moisture" and triggering continuous watering.
 
-**Pumpen-Durchfluss messen:** Schlauch in einen Messbecher halten, `pump 10` eingeben und die Menge durch 10 teilen (seriell sind bis zu 15 s erlaubt, unabhängig von der Stoßlänge). Das Ergebnis ist der Durchfluss in ml/s, der im Dashboard unter „Durchfluss“ eingetragen wird. Nur mit diesem Wert stimmt die Tank-Schätzung.
+**Measuring the pump flow rate:** hold the hose in a measuring cup, enter `pump 10` and divide the amount by 10 (via the serial console up to 15 s are allowed, regardless of the burst length). The result is the flow rate in ml/s, which is entered in the dashboard under "Durchfluss" (flow rate). The tank estimate is only correct with this value.
 
-## 5. Befehle im seriellen Monitor
+## 5. Serial monitor commands
 
-| Befehl | Wirkung |
+| Command | Effect |
 |---|---|
-| `help` | Übersicht |
-| `status` | aktuelle Werte, Einstellungen, Kalibrierung, Demo-Status (ohne Passwort/Key) |
-| `demo soil 12` | Bodenfeuchte 12 % vortäuschen: LED-Bar voll, Pumpe startet einmal für einen Stoß (0,5 s). Gilt 120 s, optional die Sekunden als 3. Wert, maximal 600 s |
-| `demo temp 38` / `demo hum 25` / `demo light 2` | Temperatur / Luftfeuchte / Licht vortäuschen |
-| `demo tank 4` | Tank fast leer vortäuschen: Summer, keine Bewässerung. Die echte Tank-Schätzung bleibt unverändert |
-| `demo error dht` | Sensorausfall DHT11 simulieren (auch `soil`, `light`) |
-| `demo off` | zurück zu echten Werten |
-| `pump 0.5` | Pumpe 0,5 s laufen lassen (Punkt statt Komma; bis 15 s, Pausen/Tank/Tageslimit gelten) |
-| `stop` | Pumpe sofort aus |
-| `refill` | Tank als aufgefüllt markieren (oder BOOT-Taste 3 s halten). Hebt auch die Gieß-Sperre auf |
-| `cal soil dry\|wet`, `cal light dark\|bright` | Kalibrieren (Abschnitt 4) |
-| `ledtest` / `ledflip` | LED-Bar testen / Richtung umdrehen (bis Neustart) |
-| `ledseg 3` | genau 3 Segmente (ab Segment 1 = rot) 10 s lang anzeigen |
-| `ledswap` | Takt- und Datenpin tauschen (bis Neustart), falls die Bar nicht reagiert |
-| `leddiag` | LED-Bar: 8 Übertragungsvarianten nacheinander (je 4 s), zur Fehlersuche |
-| `beep` | Summer testen (piept auch, wenn stumm geschaltet) |
-| `mute` | Summer an/aus (bis Neustart) |
-| `send` | sofort an den Server senden |
+| `help` | Overview |
+| `status` | Current values, settings, calibration, demo status (without password/key) |
+| `demo soil 12` | Fake a soil moisture of 12 %: LED bar full, the pump starts once for one burst (0.5 s). Lasts 120 s; optionally give the seconds as a 3rd value, at most 600 s |
+| `demo temp 38` / `demo hum 25` / `demo light 2` | Fake temperature / humidity / light |
+| `demo tank 4` | Fake an almost empty tank: buzzer, no watering. The real tank estimate stays unchanged |
+| `demo error dht` | Simulate a DHT11 sensor failure (also `soil`, `light`) |
+| `demo off` | Back to real values |
+| `pump 0.5` | Run the pump for 0.5 s (use a dot, not a comma; up to 15 s; pauses/tank/daily limit apply) |
+| `stop` | Pump off immediately |
+| `refill` | Mark the tank as refilled (or hold the BOOT button for 3 s). Also lifts the watering lock |
+| `cal soil dry\|wet`, `cal light dark\|bright` | Calibration (section 4) |
+| `ledtest` / `ledflip` | Test the LED bar / reverse its direction (until restart) |
+| `ledseg 3` | Show exactly 3 segments (starting at segment 1 = red) for 10 s |
+| `ledswap` | Swap clock and data pin (until restart) if the bar does not react |
+| `leddiag` | LED bar: 8 transmission variants one after another (4 s each), for troubleshooting |
+| `beep` | Test the buzzer (beeps even when muted) |
+| `mute` | Buzzer on/off (until restart) |
+| `send` | Send to the server immediately |
 
-Den Demo-Modus kann man auch im Dashboard per Knopf auslösen. Demo-Werte meldet die Firmware dem Server im Feld `demo_overrides`, damit sie im Dashboard markiert und nicht fürs KI-Training verwendet werden.
+Unknown input is answered with `Unbekannter Befehl – "help" eingeben` (unknown command – enter "help").
 
-## 6. Verhalten
+Demo mode can also be triggered with a button in the dashboard. The firmware reports demo values to the server in the `demo_overrides` field, so they are marked in the dashboard and not used for AI training.
 
-### Messen und Anzeigen
+## 6. Behaviour
 
-- Alle 2 s werden Bodenfeuchte (GPIO34), Licht (GPIO35) und Temperatur/Luftfeuchte (DHT11 an GPIO4, höchstens alle 5 s) gemessen. Für jeden Analogwert nimmt die Firmware den Median aus 5 Messungen.
-- **LED-Bar** im Standardmodus `2`: Je trockener die Erde, desto mehr LEDs leuchten.
+### Measuring and display
 
-  | Bodenfeuchte | LEDs |
+- Every 2 s the firmware measures soil moisture (GPIO34), light (GPIO35) and temperature/humidity (DHT11 on GPIO4, at most every 5 s). For each analog value it takes the median of 5 samples.
+- **LED bar** in the default mode `2`: the drier the soil, the more LEDs light up.
+
+  | Soil moisture | LEDs |
   |---|---|
-  | 100 % | 1 grüne |
-  | 90 % | 2 grüne |
-  | 80 % | 3 grüne |
-  | 70 % | 4 grüne |
-  | 60 % | 5 grüne |
-  | 50 % | 6 grüne |
-  | 40 % | 7 grüne |
-  | 30 % | 8 grüne |
-  | 11–20 % | 8 grüne + orange |
-  | 10 % und weniger | alle 10 (8 grüne + orange + rot) |
+  | 100 % | 1 green |
+  | 90 % | 2 green |
+  | 80 % | 3 green |
+  | 70 % | 4 green |
+  | 60 % | 5 green |
+  | 50 % | 6 green |
+  | 40 % | 7 green |
+  | 30 % | 8 green |
+  | 11–20 % | 8 green + orange |
+  | 10 % and less | all 10 (8 green + orange + red) |
 
-  Sonderanzeigen: Bei einem Sensorfehler leuchten Segment 1 und 10 abwechselnd. Bei leerem Tank blinkt Segment 1 schnell. Der Dashboard-Befehl „identify“ lässt 5 s lang ein Lauflicht laufen.
-- **Onboard-LED**: an = WLAN ok, langsam blinkend = verbindet, schnell blinkend = Senden fehlgeschlagen.
+  Special displays: on a sensor error, segments 1 and 10 light up alternately. When the tank is empty, segment 1 blinks rapidly. The dashboard command "identify" shows a running light for 5 s.
+- **Onboard LED**: on = Wi-Fi OK, slow blinking = connecting, fast blinking = sending failed.
 
-### Gießen
+### Watering
 
-- Nach dem Einschalten wartet das Auto-Gießen erst einmal `pump_cooldown_s` (Standard 5 min). Das ist ein Schutz, falls der ESP immer wieder neu startet. Demo und manuelle Befehle gehen nach 10 s.
-- Liegt die Feuchte unter `moisture_min_pct` (Standard 30 %), beginnt eine Gieß-Sitzung. Die Pumpe läuft stoßweise, je `max_pump_s_per_run` (Standard **0,5 s**, gilt auch für Demo und den Dashboard-Knopf „Jetzt gießen“), mit `pump_cooldown_s` (300 s) Pause dazwischen, damit das Wasser versickert. Das geht so weiter, bis `moisture_target_pct` (55 %) erreicht ist.
-- Der Server kann `max_pump_s_per_run` per `config` ändern (0,5–15 s). Seine Einstellung hat Vorrang, sobald der ESP verbunden ist.
-- **Tank-Schätzung** ohne Sensor: Restmenge = Kapazität − Laufzeit × Durchfluss. Sie liegt im Flash und bleibt bei Neustart erhalten. Nach dem Auffüllen `refill` eingeben, die BOOT-Taste 3 s halten oder im Dashboard „Tank aufgefüllt“ drücken.
+- After power-on, automatic watering first waits for `pump_cooldown_s` (default 5 min). This protects against a pump burst on every boot if the ESP32 keeps restarting. Demo and manual commands are possible after 10 s.
+- If moisture falls below `moisture_min_pct` (default 30 %), a watering session starts. The pump runs in bursts of `max_pump_s_per_run` each (default **0.5 s**, also used for demo and the dashboard button "Jetzt gießen" (water now)), with a pause of `pump_cooldown_s` (300 s) in between so the water can soak in. This continues until `moisture_target_pct` (55 %) is reached.
+- The server can change `max_pump_s_per_run` via `config` (0.5–15 s). Its setting takes precedence as soon as the ESP32 is connected.
+- **Tank estimate** without a sensor: remaining amount = capacity − run time × flow rate. It is stored in flash and survives restarts. After refilling, enter `refill`, hold the BOOT button for 3 s, or press "Tank aufgefüllt" (tank refilled) in the dashboard.
 
-### Sicherheit
+### Safety
 
-- **Sicherheitsgrenzen**, fest einkompiliert und vom Server nicht änderbar:
-  - höchstens 15 s pro Lauf
-  - Tageslimit höchstens 300 s
-  - mindestens 10 s Pause vor jedem Start, auch bei Dashboard- und Demo-Befehlen
-  - kein Pumpen bei Tank ≤ 5 %
-- **Plausibilitätsprüfung**: Steigt die Feuchte nach mindestens 3 Läufen mit zusammen mindestens 5 s Pumpzeit (und mindestens 3 min) um weniger als 3 Prozentpunkte, sperrt die Firmware das Auto-Gießen und gibt Alarm. Mögliche Ursachen: Sensor nicht in der Erde, Schlauch daneben, Pumpe saugt Luft. Aufgehoben wird die Sperre durch `refill`, die BOOT-Taste oder wenn die Feuchte wieder steigt.
-- **Watchdog**: Hängt `loop()` länger als 20 s, startet der ESP neu. Das Relais geht dabei als Erstes aus. Beim Start steht der Grund des letzten Neustarts im Monitor (`[BOOT] ...`).
-- Während die Pumpe läuft, wird nicht gesendet. Ein langsamer Server kann das Ausschalten also nicht verzögern.
+- **Safety limits**, compiled in and not changeable by the server:
+  - at most 15 s per run
+  - daily limit of at most 300 s
+  - at least 10 s pause before every start, including dashboard and demo commands
+  - no pumping at a tank level ≤ 5 %
+- **Plausibility check**: if moisture rises by less than 3 percentage points after at least 3 runs with a total of at least 5 s pump time (and at least 3 min), the firmware locks automatic watering and raises an alarm. Possible causes: sensor not in the soil, hose pointing elsewhere, pump sucking air. The lock is lifted by `refill`, the BOOT button, or when moisture rises again.
+- **Watchdog**: if `loop()` hangs for more than 20 s, the ESP32 restarts. The relay is switched off first. At startup the monitor shows the reason for the last restart (`[BOOT] ...`).
+- No data is sent while the pump is running, so a slow server cannot delay switching it off.
 
-### Alarm und Server
+### Alarm and server
 
-- **Summer**: piept nur, wenn ein Problem **neu** auftritt, danach höchstens alle 10 min. Probleme sind leerer Tank, Sensorfehler (erst nach 60 s) und wirkungsloses Gießen. Der Grund steht im Monitor als `[ALARM] …`.
-- **Server**: Die Firmware sendet alle `interval_s` Sekunden (Standard 10) an `POST /api/v1/readings` und übernimmt `config`, `commands` und `demo` aus der Antwort.
+- **Buzzer**: beeps only when a problem occurs **for the first time**, then at most every 10 min. Problems are an empty tank, a sensor error (only after 60 s) and ineffective watering. The reason is printed in the monitor as `[ALARM] …`.
+- **Server**: the firmware sends to `POST /api/v1/readings` every `interval_s` seconds (firmware default 10; the server's `config` value takes precedence once connected) and applies `config`, `commands` and `demo` from the response.
 
-## 7. Aufbau des Codes
+## 7. Code structure
 
-| Datei | Aufgabe |
+| File | Responsibility |
 |---|---|
-| `smart_garden.ino` | Einstellungen (oben), `setup()`/`loop()`, Messzyklus, Gieß-Logik mit Plausibilitätsprüfung, JSON bauen und senden, Serverantwort auswerten, serielle Konsole, Watchdog |
-| `garden_config.h/.cpp` | Pins, **harte Sicherheitsgrenzen**, Settings und Kalibrierung im Flash (NVS), Begrenzung aller Serverwerte, `secrets.h` einlesen |
-| `sensors.h/.cpp` | Bodenfeuchte (kapazitiv), LDR, DHT11; Median-Filter, Plausibilitätsprüfung, Kalibrierung anwenden |
-| `pump.h/.cpp` | Relais nicht blockierend; jede Prüfung vor dem Einschalten (Tank, Pause, Laufzeit, Tageslimit) |
-| `tank.h/.cpp` | Tank-Schätzung im Flash; Demo-Füllstand als reine Anzeige (kann den Tank nur leerer machen) |
-| `demo.h/.cpp` | Demo-Modus: Overrides mit Wertebereichen, erzwungene Fehler, Ablauf-Timer |
-| `display.h/.cpp` | LED-Bar-Anzeige und Testanimation, Summer mit Alarm-Logik, Status-LED; alles nicht blockierend |
-| `ledbar.h/.cpp` | eigener Treiber für den MY9221-Chip der Grove LED Bar |
-| `garden_net.h/.cpp` | WLAN mit Reconnect, HTTP(S)-POST, JSON-Antwort parsen, optional Zertifikatsprüfung |
-| `secrets.h.example` | Vorlage für die optionale `secrets.h` |
+| `smart_garden.ino` | Settings (top), `setup()`/`loop()`, measurement cycle, watering logic with plausibility check, building and sending JSON, processing the server response, serial console, watchdog |
+| `garden_config.h/.cpp` | Pins, **hard safety limits**, settings and calibration in flash (NVS), clamping of all server values, reading `secrets.h` |
+| `sensors.h/.cpp` | Soil moisture (capacitive), LDR, DHT11; median filter, plausibility check, applying the calibration |
+| `pump.h/.cpp` | Non-blocking relay control; every check before switching on (tank, pause, run time, daily limit) |
+| `tank.h/.cpp` | Tank estimate in flash; demo fill level as display only (can only make the tank emptier) |
+| `demo.h/.cpp` | Demo mode: overrides with value ranges, forced errors, expiry timer |
+| `display.h/.cpp` | LED bar display and test animation, buzzer with alarm logic, status LED; all non-blocking |
+| `ledbar.h/.cpp` | Custom driver for the MY9221 chip of the Grove LED Bar |
+| `garden_net.h/.cpp` | Wi-Fi with reconnect, HTTP(S) POST, parsing the JSON response, optional certificate validation |
+| `secrets.h.example` | Template for the optional `secrets.h` |
 
-**Hinweise für Änderungen:**
+**Notes for making changes:**
 
-- Die Dateinamen `garden_net.*` und `garden_config.*` sind bewusst so gewählt. `Network.h` und `config.h` kollidieren mit Dateien im ESP32-Core, und Windows unterscheidet keine Groß-/Kleinschreibung.
-- Die Vorwärtsdeklarationen oben im `.ino` müssen bleiben: Die automatische Prototyp-Erzeugung der Arduino IDE ist unzuverlässig. Jede neue `static`-Funktion im `.ino` dort eintragen.
-- Nichts Blockierendes in `loop()` einbauen, also kein `delay()` über wenige ms. Die Pumpe wird über `millis()` ausgeschaltet.
-- Neue Felder in `Settings` oder `Calibration` machen den gespeicherten Stand ungültig, der ESP startet dann mit den Standardwerten. Danach neu kalibrieren.
-- Kompiliertest ohne Hardware: `arduino-cli compile --fqbn espressif:esp32:esp32 --warnings all firmware/smart_garden`. Die Firmware muss ohne Warnungen kompilieren.
+- The file names `garden_net.*` and `garden_config.*` are deliberate. `Network.h` and `config.h` collide with files in the ESP32 core, and Windows does not distinguish upper and lower case.
+- The forward declarations at the top of the `.ino` must stay: the Arduino IDE's automatic prototype generation is unreliable. Add every new `static` function in the `.ino` there.
+- Do not add anything blocking to `loop()`, i.e. no `delay()` longer than a few ms. The pump is switched off via `millis()`.
+- New fields in `Settings` or `Calibration` invalidate the stored state; the ESP32 then starts with default values. Recalibrate afterwards.
+- When changing the version, update both `FW_VERSION` in `garden_config.h` and `FIRMWARE-VERSION` at the top of `smart_garden.ino`.
+- Compile test without hardware: `arduino-cli compile --fqbn espressif:esp32:esp32 --warnings all firmware/smart_garden`. The firmware must compile without warnings.
 
-## 8. Bekannte Einschränkungen
+## 8. Known limitations
 
-- **Kein Füllstandssensor**: Die Tank-Schätzung stimmt nur, wenn der Durchfluss gemessen und nach jedem Auffüllen `refill` ausgelöst wurde.
-- **Keine Uhr**: Das Tageslimit gilt für jeweils 24 h Laufzeit. Nach einem Neustart beginnt das Fenster neu.
-- **Sicherheit von HTTP**: Über HTTP ist der API-Key im WLAN mitlesbar. HTTPS mit `SERVER_CA_CERT` ist vorbereitet, sobald Caddy auf dem Pi läuft.
-- **Server-Befehle**: Der ESP kann nicht prüfen, *wer* im Dashboard einen Befehl ausgelöst hat. Das muss der Server absichern (Admin-Login). Die harten Grenzen oben begrenzen den möglichen Schaden.
+- **No level sensor**: the tank estimate is only correct if the flow rate was measured and `refill` was triggered after every refill.
+- **No clock**: the daily limit applies to each 24 h of uptime. After a restart the window starts over.
+- **HTTP security**: over HTTP the API key can be read by others on the Wi-Fi. HTTPS with `SERVER_CA_CERT` is prepared and can be used as soon as Caddy runs on the Pi.
+- **Server commands**: the ESP32 cannot check *who* triggered a command in the dashboard. The server has to secure this (admin login). The hard limits above cap the possible damage.
