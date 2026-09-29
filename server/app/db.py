@@ -43,3 +43,20 @@ def init_db() -> None:
     from . import models  # noqa: F401  (Modelle registrieren)
 
     Base.metadata.create_all(bind=engine)
+    _migrate()
+
+
+# Einfache Datenmigrationen ueber SQLites "user_version" (jede laeuft genau einmal).
+# Kein Migrationstool noetig, solange sich nur Werte und keine Spalten aendern.
+SCHEMA_VERSION = 1
+
+
+def _migrate() -> None:
+    with engine.begin() as conn:
+        version = conn.exec_driver_sql("PRAGMA user_version").scalar() or 0
+        if version < 1:
+            # Issue #32: Pumpenstoss 0,5 s statt 5 s. Nur den alten Standardwert ersetzen -
+            # bewusst anders eingestellte Werte bleiben unveraendert.
+            conn.exec_driver_sql("UPDATE device_config SET max_pump_s_per_run = 0.5 WHERE max_pump_s_per_run = 5")
+        if version < SCHEMA_VERSION:
+            conn.exec_driver_sql(f"PRAGMA user_version = {SCHEMA_VERSION}")

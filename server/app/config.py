@@ -30,7 +30,8 @@ DEFAULT_DEVICE_CONFIG: dict = {
     "moisture_min_pct": 30,
     "moisture_target_pct": 55,
     "auto_water": True,
-    "max_pump_s_per_run": 5,
+    # 0,5 s statt 5 s: die Pumpe ist stark, kurze Stoesse reichen (Issue #32, Firmware 0.3.8)
+    "max_pump_s_per_run": 0.5,
     "pump_cooldown_s": 300,
     "max_pump_s_per_day": 60,
     "buzzer_enabled": True,

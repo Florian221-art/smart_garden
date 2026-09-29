@@ -14,10 +14,11 @@ import {
   Thermometer,
   X,
 } from 'lucide-react'
-import type { DemoState, LatestReading } from './types'
+import type { DemoState, DeviceConfig, LatestReading } from './types'
 import StatTile from './components/StatTile'
 import StatusHero from './components/StatusHero'
 import DeviceCard from './components/DeviceCard'
+import WaterNowCard from './components/WaterNowCard'
 import { Button, Segmented } from './components/ui'
 import HistoryCharts from './HistoryCharts'
 import DemoPanel from './DemoPanel'
@@ -40,6 +41,7 @@ import {
 
 const DEVICE_ID = 'esp32-kuebel-01' // Phase 1: fest; Geraeteauswahl folgt in Phase 2
 const POLL_INTERVAL_MS = 5000 // laut plan-webserver.md Abschnitt 6
+const CONFIG_POLL_MS = 60000
 
 const LANG_LABEL: Record<Lang, string> = { de: 'DE', en: 'EN', nl: 'NL' }
 // Eigenname der Sprache (nicht uebersetzt - jede Sprache nennt sich selbst so)
@@ -50,6 +52,7 @@ export default function Dashboard() {
   const [reading, setReading] = useState<LatestReading | null>(null)
   const [error, setError] = useState<{ key: string; params?: Record<string, unknown> } | null>(null)
   const [now, setNow] = useState(() => Date.now())
+  const [config, setConfig] = useState<DeviceConfig | null>(null)
   const { demo, remaining, setDemo } = useDemo(DEVICE_ID)
   const { pref, setPref } = useTheme()
   const [showControls, setShowControls] = useState(() => {
@@ -104,6 +107,25 @@ export default function Dashboard() {
     } else if (e.startsWith('soil')) demoFields.add('soil_moisture_pct')
     else if (e.startsWith('light')) demoFields.add('light_pct')
   }
+
+  // Geraete-Config (Pumpenstoss, Durchfluss, Giessschwelle) fuer "Jetzt giessen"
+  useEffect(() => {
+    let cancelled = false
+    const load = async () => {
+      try {
+        const res = await fetch(`/api/v1/devices/${DEVICE_ID}/config`)
+        if (res.ok && !cancelled) setConfig(await res.json())
+      } catch {
+        /* naechster Versuch */
+      }
+    }
+    void load()
+    const id = setInterval(load, CONFIG_POLL_MS)
+    return () => {
+      cancelled = true
+      clearInterval(id)
+    }
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -216,9 +238,18 @@ export default function Dashboard() {
           error={error ? t(error.key, error.params) : null}
         />
 
+        <WaterNowCard deviceId={DEVICE_ID} reading={reading} offline={offline} config={config} now={now} />
+
         {showControls && (
           <div id="demo-steuerung">
-            <DemoPanel deviceId={DEVICE_ID} demo={demo} remaining={remaining} onChange={setDemo} reading={reading} />
+            <DemoPanel
+              deviceId={DEVICE_ID}
+              demo={demo}
+              remaining={remaining}
+              onChange={setDemo}
+              reading={reading}
+              pumpS={config?.max_pump_s_per_run ?? 0.5}
+            />
           </div>
         )}
 

@@ -214,6 +214,20 @@ SUMMARY
 }
 
 step "6/6 WLAN-Hotspot ${SSID}"
+# Hotspot laeuft schon und Passwort bleibt gleich? Dann NICHT neu aufsetzen - sonst fliegen
+# alle Geraete (ESP32 und dein Laptop, falls er gerade im SmartGarden-WLAN ist) kurz raus,
+# und wenn die SSH-Verbindung selbst ueber den Hotspot laeuft, bricht dieses Skript mittendrin ab.
+if [[ "${NEW_WIFI_PASSWORD:-0}" != "1" ]] && \
+   nmcli -t -f NAME connection show --active 2>/dev/null | grep -qx "SmartGardenHotspot"; then
+  echo "Hotspot ${SSID} laeuft bereits - bleibt unveraendert."
+  print_summary
+  exit 0
+fi
+# Kommt die SSH-Verbindung ueber den Hotspot (10.42.0.x)? Dann Hotspot im Hintergrund starten,
+# damit ein Verbindungsabbruch das Einrichten nicht mittendrin killt.
+if [[ "${SSH_CLIENT:-}" == 10.42.0.* ]]; then
+  WLAN_UPLINK=1
+fi
 if [[ "${WLAN_UPLINK}" -eq 1 ]]; then
   print_summary
   echo

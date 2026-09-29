@@ -1,10 +1,17 @@
 {
-  "app": { "name": "Smart Garden", "pot": "Kübel 1" },
+  "app": {
+    "name": "Smart Garden",
+    "pot": "Kübel 1"
+  },
   "header": {
     "demoButton": "Demo",
     "demoAriaLabel": "Demo-Steuerung",
     "themeLabel": "Farbschema",
-    "theme": { "light": "Hell", "system": "Wie das Gerät", "dark": "Dunkel" },
+    "theme": {
+      "light": "Hell",
+      "system": "Wie das Gerät",
+      "dark": "Dunkel"
+    },
     "languageLabel": "Sprache"
   },
   "demoBar": {
@@ -18,7 +25,9 @@
     "serverError": "Der Server meldet einen Fehler ({{status}}). Bitte später erneut versuchen.",
     "networkError": "Der Server ist nicht erreichbar. Bist du im WLAN „SmartGarden“?"
   },
-  "values": { "sectionTitle": "Aktuelle Werte" },
+  "values": {
+    "sectionTitle": "Aktuelle Werte"
+  },
   "tiles": {
     "soilMoisture": "Bodenfeuchte",
     "waterTank": "Wassertank",
@@ -116,7 +125,14 @@
   "history": {
     "title": "Verlauf",
     "rangeAriaLabel": "Zeitraum",
-    "range": { "1h": "1 Stunde", "1hShort": "1 Std.", "24h": "24 Stunden", "24hShort": "24 Std.", "7d": "7 Tage", "7dShort": "7 Tage" },
+    "range": {
+      "1h": "1 Stunde",
+      "1hShort": "1 Std.",
+      "24h": "24 Stunden",
+      "24hShort": "24 Std.",
+      "7d": "7 Tage",
+      "7dShort": "7 Tage"
+    },
     "loadError": "Verlauf konnte nicht geladen werden.",
     "noData": "Keine Messwerte in den letzten {{range}}.",
     "kpiWater": "Wasserverbrauch ({{range}})",
@@ -164,7 +180,11 @@
         "summary": "0 % = dunkel"
       }
     },
-    "groupLabel": { "min5": "pro 5 Minuten", "hour": "pro Stunde", "day": "pro Tag" },
+    "groupLabel": {
+      "min5": "pro 5 Minuten",
+      "hour": "pro Stunde",
+      "day": "pro Tag"
+    },
     "table": {
       "time": "Zeit",
       "valueUnit": "Wert ({{unit}})",
@@ -187,7 +207,12 @@
     "title": "Demo-Steuerung",
     "description": "Spielt Situationen vor, ohne die Pflanze zu gefährden: Das Gerät reagiert wie echt (Pumpe, Licht-Leiste, Summer), die Sicherheitsgrenzen der Pumpe gelten weiter.",
     "durationLabel": "Dauer",
-    "duration": { "60": "1 min", "120": "2 min", "300": "5 min", "600": "10 min" },
+    "duration": {
+      "60": "1 min",
+      "120": "2 min",
+      "300": "5 min",
+      "600": "10 min"
+    },
     "statusRunning": "Läuft – noch {{time}}",
     "statusRunningNamed": "Läuft: {{scenario}} – noch {{time}}",
     "confirmed": "Gerät zeigt die Demo-Werte",
@@ -196,16 +221,30 @@
     "stop": "Demo beenden",
     "scenariosTitle": "Situation vorspielen",
     "scenario": {
-      "dry": { "title": "Trockene Erde", "effect": "Erde auf 12 % → Licht-Leiste rot, das Gerät gießt automatisch" },
-      "heat": { "title": "Hitzewelle", "effect": "38 °C und 25 % Luftfeuchte" },
+      "dry": {
+        "title": "Trockene Erde",
+        "effect": "Erde auf 12 % → Licht-Leiste rot, das Gerät gießt automatisch"
+      },
+      "heat": {
+        "title": "Hitzewelle",
+        "effect": "38 °C und 25 % Luftfeuchte"
+      },
       "tankLow": {
         "title": "Tank fast leer",
         "effect": "Tank auf 4 % → Summer piept, automatisches Gießen stoppt",
         "hint": "Danach „Tank aufgefüllt“ drücken – das Gerät merkt sich den Füllstand."
       },
-      "sensorFail": { "title": "Sensorausfall", "effect": "Temperatur- und Luftfeuchtesensor liefern nichts" },
-      "night": { "title": "Nacht", "effect": "Licht auf 2 % – wie bei Dunkelheit" },
-      "custom": { "title": "Eigene Werte" }
+      "sensorFail": {
+        "title": "Sensorausfall",
+        "effect": "Temperatur- und Luftfeuchtesensor liefern nichts"
+      },
+      "night": {
+        "title": "Nacht",
+        "effect": "Licht auf 2 % – wie bei Dunkelheit"
+      },
+      "custom": {
+        "title": "Eigene Werte"
+      }
     },
     "activeSuffix": " (aktiv)",
     "customValuesTitle": "Eigene Werte einstellen",
@@ -219,7 +258,7 @@
     "forceErrorsLegend": "Sensorausfall vorspielen",
     "sendCustom": "Eigene Werte senden",
     "deviceControlTitle": "Gerät steuern",
-    "water": "Gießen (5 s)",
+    "water": "Gießen ({{s}} s)",
     "waterCommandLabel": "Jetzt gießen",
     "refill": "Tank aufgefüllt",
     "identify": "Gerät finden",
@@ -240,5 +279,38 @@
     "light_read_failed": "Lichtsensor konnte nicht gelesen werden",
     "dht_read_failed": "Temperatur-/Luftfeuchtesensor (DHT11) konnte nicht gelesen werden",
     "tank_empty": "Wassertank leer – automatische Bewässerung gestoppt"
+  },
+  "api": {
+    "unreachable": "Server nicht erreichbar.",
+    "httpError": "Fehler {{status}}"
+  },
+  "water": {
+    "title": "Gießen",
+    "needsWaterTitle": "Deine Pflanze braucht Wasser",
+    "soilDry": "Die Erde ist trocken ({{pct}} %). Du kannst jetzt direkt gießen.",
+    "soilOk": "Die Erde ist gut feucht ({{pct}} %). Gießen ist gerade nicht nötig.",
+    "soilWet": "Die Erde ist schon sehr nass ({{pct}} %). Bitte nur gießen, wenn du dir sicher bist.",
+    "soilUnknown": "Die Bodenfeuchte ist gerade unbekannt. Du kannst trotzdem gießen.",
+    "amountHint": "Ein Druck = ein kurzer Wasserstoß ({{s}} s, ca. {{ml}} ml).",
+    "amountHintNoMl": "Ein Druck = ein kurzer Wasserstoß ({{s}} s).",
+    "autoHint": "Unter {{pct}} % gießt das Gerät außerdem automatisch.",
+    "button": "Jetzt gießen",
+    "buttonAgain": "Nochmal gießen",
+    "buttonSending": "Wird gesendet …",
+    "buttonBusy": "Wird gegossen …",
+    "blockedNoData": "Warte auf die ersten Messwerte vom Pflanzkübel.",
+    "blockedOffline": "Der Pflanzkübel ist offline. Gießen geht wieder, sobald er verbunden ist.",
+    "blockedTankEmpty": "Der Wassertank ist leer. Bitte auffüllen und danach „Tank aufgefüllt“ drücken.",
+    "sending": "Befehl wird an den Server geschickt …",
+    "queued": "Befehl ist unterwegs. Der Pflanzkübel holt ihn mit seiner nächsten Meldung ab (alle ~{{s}} s).",
+    "queuedLong": "Der Pflanzkübel hat sich noch nicht gemeldet. Der Befehl wartet und wird ausgeführt, sobald er sich meldet.",
+    "delivered": "Der Pflanzkübel hat den Befehl bekommen und gießt. Warte auf die Bestätigung …",
+    "done": "Gegossen! Schau in ein paar Minuten, ob die Erde feuchter geworden ist.",
+    "doneAmount": "Gegossen: {{s}} s, ca. {{ml}} ml. Schau in ein paar Minuten, ob die Erde feuchter geworden ist.",
+    "notRun": "Der Pflanzkübel hat nicht gegossen. Mögliche Gründe: Tank laut Schätzung leer, Tageslimit erreicht oder gerade erst gegossen (kurze Pause). Versuch es gleich noch einmal.",
+    "error": "Befehl konnte nicht gesendet werden: {{msg}}",
+    "refillButton": "Tank aufgefüllt",
+    "refillSent": "Gemeldet. Der Pflanzkübel übernimmt den vollen Tank mit seiner nächsten Meldung (alle ~{{s}} s).",
+    "refillError": "Konnte nicht gesendet werden. Bitte noch einmal versuchen."
   }
 }

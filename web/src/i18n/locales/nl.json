@@ -1,10 +1,17 @@
 {
-  "app": { "name": "Smart Garden", "pot": "Bak 1" },
+  "app": {
+    "name": "Smart Garden",
+    "pot": "Bak 1"
+  },
   "header": {
     "demoButton": "Demo",
     "demoAriaLabel": "Demobediening",
     "themeLabel": "Kleurenschema",
-    "theme": { "light": "Licht", "system": "Zoals apparaat", "dark": "Donker" },
+    "theme": {
+      "light": "Licht",
+      "system": "Zoals apparaat",
+      "dark": "Donker"
+    },
     "languageLabel": "Taal"
   },
   "demoBar": {
@@ -18,7 +25,9 @@
     "serverError": "De server meldt een fout ({{status}}). Probeer het later opnieuw.",
     "networkError": "De server is niet bereikbaar. Ben je verbonden met de wifi „SmartGarden”?"
   },
-  "values": { "sectionTitle": "Actuele waarden" },
+  "values": {
+    "sectionTitle": "Actuele waarden"
+  },
   "tiles": {
     "soilMoisture": "Bodemvocht",
     "waterTank": "Watertank",
@@ -116,7 +125,14 @@
   "history": {
     "title": "Verloop",
     "rangeAriaLabel": "Periode",
-    "range": { "1h": "1 uur", "1hShort": "1 u", "24h": "24 uur", "24hShort": "24 u", "7d": "7 dagen", "7dShort": "7 dagen" },
+    "range": {
+      "1h": "1 uur",
+      "1hShort": "1 u",
+      "24h": "24 uur",
+      "24hShort": "24 u",
+      "7d": "7 dagen",
+      "7dShort": "7 dagen"
+    },
     "loadError": "Verloop kon niet worden geladen.",
     "noData": "Geen meetwaarden in de laatste {{range}}.",
     "kpiWater": "Waterverbruik ({{range}})",
@@ -164,7 +180,11 @@
         "summary": "0 % = donker"
       }
     },
-    "groupLabel": { "min5": "per 5 minuten", "hour": "per uur", "day": "per dag" },
+    "groupLabel": {
+      "min5": "per 5 minuten",
+      "hour": "per uur",
+      "day": "per dag"
+    },
     "table": {
       "time": "Tijd",
       "valueUnit": "Waarde ({{unit}})",
@@ -187,7 +207,12 @@
     "title": "Demobediening",
     "description": "Speelt situaties na zonder de plant in gevaar te brengen: het apparaat reageert echt (pomp, lichtbalk, zoemer), de veiligheidsgrenzen van de pomp blijven gelden.",
     "durationLabel": "Duur",
-    "duration": { "60": "1 min", "120": "2 min", "300": "5 min", "600": "10 min" },
+    "duration": {
+      "60": "1 min",
+      "120": "2 min",
+      "300": "5 min",
+      "600": "10 min"
+    },
     "statusRunning": "Actief – nog {{time}}",
     "statusRunningNamed": "Actief: {{scenario}} – nog {{time}}",
     "confirmed": "Apparaat toont de demowaarden",
@@ -196,16 +221,30 @@
     "stop": "Demo stoppen",
     "scenariosTitle": "Situatie naspelen",
     "scenario": {
-      "dry": { "title": "Droge bodem", "effect": "Bodem op 12 % → lichtbalk wordt rood, het apparaat geeft automatisch water" },
-      "heat": { "title": "Hittegolf", "effect": "38 °C en 25 % luchtvochtigheid" },
+      "dry": {
+        "title": "Droge bodem",
+        "effect": "Bodem op 12 % → lichtbalk wordt rood, het apparaat geeft automatisch water"
+      },
+      "heat": {
+        "title": "Hittegolf",
+        "effect": "38 °C en 25 % luchtvochtigheid"
+      },
       "tankLow": {
         "title": "Tank bijna leeg",
         "effect": "Tank op 4 % → zoemer piept, automatisch water geven stopt",
         "hint": "Druk daarna op „Tank bijgevuld” – het apparaat onthoudt het niveau."
       },
-      "sensorFail": { "title": "Sensorstoring", "effect": "Temperatuur- en vochtigheidssensor reageren niet meer" },
-      "night": { "title": "Nacht", "effect": "Licht op 2 % – alsof het donker is" },
-      "custom": { "title": "Eigen waarden" }
+      "sensorFail": {
+        "title": "Sensorstoring",
+        "effect": "Temperatuur- en vochtigheidssensor reageren niet meer"
+      },
+      "night": {
+        "title": "Nacht",
+        "effect": "Licht op 2 % – alsof het donker is"
+      },
+      "custom": {
+        "title": "Eigen waarden"
+      }
     },
     "activeSuffix": " (actief)",
     "customValuesTitle": "Eigen waarden instellen",
@@ -219,7 +258,7 @@
     "forceErrorsLegend": "Sensorstoring naspelen",
     "sendCustom": "Eigen waarden versturen",
     "deviceControlTitle": "Apparaat bedienen",
-    "water": "Water geven (5 s)",
+    "water": "Water geven ({{s}} s)",
     "waterCommandLabel": "Nu water geven",
     "refill": "Tank bijgevuld",
     "identify": "Apparaat zoeken",
@@ -240,5 +279,38 @@
     "light_read_failed": "Lichtsensor kon niet worden gelezen",
     "dht_read_failed": "Temperatuur-/vochtigheidssensor (DHT11) kon niet worden gelezen",
     "tank_empty": "Watertank leeg – automatisch water geven gestopt"
+  },
+  "api": {
+    "unreachable": "Server niet bereikbaar.",
+    "httpError": "Fout {{status}}"
+  },
+  "water": {
+    "title": "Water geven",
+    "needsWaterTitle": "Je plant heeft water nodig",
+    "soilDry": "De aarde is droog ({{pct}} %). Je kunt nu meteen water geven.",
+    "soilOk": "De aarde is goed vochtig ({{pct}} %). Water geven is nu niet nodig.",
+    "soilWet": "De aarde is al erg nat ({{pct}} %). Geef alleen water als je het zeker weet.",
+    "soilUnknown": "De bodemvochtigheid is op dit moment onbekend. Je kunt toch water geven.",
+    "amountHint": "Eén druk = één korte waterstoot ({{s}} s, ca. {{ml}} ml).",
+    "amountHintNoMl": "Eén druk = één korte waterstoot ({{s}} s).",
+    "autoHint": "Onder {{pct}} % geeft het apparaat ook automatisch water.",
+    "button": "Nu water geven",
+    "buttonAgain": "Nog een keer",
+    "buttonSending": "Wordt verstuurd …",
+    "buttonBusy": "Bezig met water geven …",
+    "blockedNoData": "Wachten op de eerste meetwaarden van de plantenbak.",
+    "blockedOffline": "De plantenbak is offline. Water geven werkt weer zodra hij verbonden is.",
+    "blockedTankEmpty": "Het waterreservoir is leeg. Vul het bij en druk daarna op „Tank bijgevuld”.",
+    "sending": "Opdracht wordt naar de server gestuurd …",
+    "queued": "Opdracht is onderweg. De plantenbak haalt hem op bij zijn volgende melding (elke ~{{s}} s).",
+    "queuedLong": "De plantenbak heeft zich nog niet gemeld. De opdracht wacht en wordt uitgevoerd zodra hij zich meldt.",
+    "delivered": "De plantenbak heeft de opdracht ontvangen en geeft water. Wachten op bevestiging …",
+    "done": "Water gegeven! Kijk over een paar minuten of de aarde vochtiger is geworden.",
+    "doneAmount": "Water gegeven: {{s}} s, ca. {{ml}} ml. Kijk over een paar minuten of de aarde vochtiger is geworden.",
+    "notRun": "De plantenbak heeft geen water gegeven. Mogelijke redenen: reservoir volgens schatting leeg, daglimiet bereikt of net water gegeven (korte pauze). Probeer het zo nog eens.",
+    "error": "Opdracht kon niet worden verstuurd: {{msg}}",
+    "refillButton": "Tank bijgevuld",
+    "refillSent": "Gemeld. De plantenbak neemt het volle reservoir over bij zijn volgende melding (elke ~{{s}} s).",
+    "refillError": "Kon niet worden verstuurd. Probeer het nog eens."
   }
 }

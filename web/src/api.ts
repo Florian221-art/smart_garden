@@ -1,5 +1,6 @@
 // Kleine Helfer fuer Aufrufe, die etwas veraendern (Demo, Befehle).
 // Fehlertexte von FastAPI (422) werden lesbar gemacht.
+import i18n from './i18n'
 
 async function readError(res: Response): Promise<string> {
   try {
@@ -10,7 +11,7 @@ async function readError(res: Response): Promise<string> {
   } catch {
     /* kein JSON */
   }
-  return `Fehler ${res.status}`
+  return i18n.t('api.httpError', { status: res.status })
 }
 
 export async function sendJson<T>(url: string, method: 'PUT' | 'POST' | 'DELETE', body?: unknown): Promise<T> {
@@ -22,7 +23,7 @@ export async function sendJson<T>(url: string, method: 'PUT' | 'POST' | 'DELETE'
       body: body === undefined ? undefined : JSON.stringify(body),
     })
   } catch {
-    throw new Error('Server nicht erreichbar.')
+    throw new Error(i18n.t('api.unreachable'))
   }
   if (!res.ok) throw new Error(await readError(res))
   return res.json() as Promise<T>
