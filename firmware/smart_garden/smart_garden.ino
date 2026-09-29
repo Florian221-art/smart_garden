@@ -1,3 +1,9 @@
+// ############################################################################
+//  FIRMWARE-VERSION 0.3.4  (Stand 29.09.2026)
+//  Muss mit FW_VERSION in garden_config.h übereinstimmen und steht beim Start
+//  im seriellen Monitor. So siehst du sofort, ob du die aktuelle Datei hast.
+// ############################################################################
+
 // ============================================================================
 //  EINSTELLUNGEN – HIER ANPASSEN
 //  Achtung: Das GitHub-Repo ist öffentlich. Echtes WLAN-Passwort und API-Key
