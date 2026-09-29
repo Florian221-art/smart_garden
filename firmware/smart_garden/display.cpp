@@ -41,10 +41,15 @@ static bool within(bool &on, uint32_t start, uint32_t durationMs) {
   return on;
 }
 
+static uint32_t lastSendMs = 0;
+
+// Neu senden bei Änderung und zusätzlich jede Sekunde: Falls ein Rahmen durch
+// eine Störung falsch ankam, stimmt die Anzeige spätestens 1 s später wieder.
 static void showBits(uint32_t bits) {
-  if (bits != lastBits) {  // MY9221 nur bei Änderung neu beschreiben
+  if (bits != lastBits || millis() - lastSendMs >= 1000) {
     ledbarShow(bits, CFG_LEDBAR_REVERSE);
     lastBits = bits;
+    lastSendMs = millis();
   }
 }
 
@@ -110,10 +115,11 @@ static uint32_t soilBits(bool blinkSlow) {
   int pos = constrain((int)ceilf(soilPct / 10.0f), 1, 10);  // 0-10 % -> 1, ..., 90-100 % -> 10
   uint32_t bits;
   if (CFG_LEDBAR_MODE == 2) {
-    // Trockenheitsbalken: n = Trockenheit in Zehnteln, gefüllt vom grünen Ende her
-    int n = constrain((int)ceilf((100.0f - soilPct) / 10.0f), 1, 10);
+    // Trockenheitsbalken, vom grünen Ende her gefüllt (Florians Tabelle):
+    //   100 % -> 1 grüne, 90 % -> 2, ... 40 % -> 7, 30 % -> 8 grüne,
+    //   20 % -> 8 grüne + orange, unter 10 % -> alle inkl. rot
+    int n = constrain((int)floorf((100.0f - soilPct) / 10.0f) + 1, 1, 10);
     bits = (ALL_SEGMENTS << (10 - n)) & ALL_SEGMENTS;  // Segmente (11-n) bis 10
-    if (soilPct < 10 && !blinkSlow) bits &= ~0x001UL;  // ganz trocken: Rot blinkt
   } else {
     if (CFG_LEDBAR_MODE == 1) {
       bits = (1UL << pos) - 1;                   // Füllbalken: Segmente 1..pos

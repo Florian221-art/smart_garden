@@ -62,7 +62,7 @@ Stehen noch die Platzhalter drin, meldet die Firmware beim Start `WARNUNG: ... P
 3. Auf **Hochladen** klicken.
 4. *Werkzeuge → Serieller Monitor* öffnen, **115200 Baud**, Zeilenende **„Neue Zeile“**.
 
-Beim Start steht im Monitor `Firmware 0.3.0`. Die LED-Bar füllt sich einmal von Grün über Orange bis Rot, und der Summer piept kurz. Leuchtet dabei zuerst Rot, oben `CFG_LEDBAR_REVERSE = true` setzen (zum Ausprobieren ohne Hochladen: `ledflip`).
+Beim Start steht im Monitor `Firmware 0.3.1`. Die LED-Bar füllt sich einmal von Grün über Orange bis Rot, und der Summer piept kurz. Leuchtet dabei zuerst Rot, oben `CFG_LEDBAR_REVERSE = true` setzen (zum Ausprobieren ohne Hochladen: `ledflip`).
 
 **Wenn der Upload klemmt** (`Connecting…` hängt oder `Wrong boot mode detected`):
 
@@ -118,10 +118,16 @@ Den Demo-Modus kann man auch im Dashboard per Knopf auslösen. Demo-Werte meldet
 
   | Bodenfeuchte | LEDs |
   |---|---|
-  | 90–100 % | 1 grüne |
-  | 50 % | 5 grüne |
-  | 10–20 % | alle 8 grünen + orange |
-  | unter 10 % | alle, rot blinkt |
+  | 100 % | 1 grüne |
+  | 90 % | 2 grüne |
+  | 80 % | 3 grüne |
+  | 70 % | 4 grüne |
+  | 60 % | 5 grüne |
+  | 50 % | 6 grüne |
+  | 40 % | 7 grüne |
+  | 30 % | 8 grüne |
+  | 11–20 % | 8 grüne + orange |
+  | 10 % und weniger | alle 10 (8 grüne + orange + rot) |
 
   Sonderanzeigen: Bei einem Sensorfehler leuchten Segment 1 und 10 abwechselnd. Bei leerem Tank blinkt Segment 1 schnell. Der Dashboard-Befehl „identify“ lässt 5 s lang ein Lauflicht laufen.
 - **Onboard-LED**: an = WLAN ok, langsam blinkend = verbindet, schnell blinkend = Senden fehlgeschlagen.
@@ -146,7 +152,7 @@ Den Demo-Modus kann man auch im Dashboard per Knopf auslösen. Demo-Werte meldet
 ### Alarm und Server
 
 - **Summer**: piept nur, wenn ein Problem **neu** auftritt, danach höchstens alle 10 min. Probleme sind leerer Tank, Sensorfehler (erst nach 60 s) und wirkungsloses Gießen. Der Grund steht im Monitor als `[ALARM] …`.
-- **Server**: Die Firmware sendet alle `interval_s` Sekunden (Standard 15) an `POST /api/v1/readings` und übernimmt `config`, `commands` und `demo` aus der Antwort.
+- **Server**: Die Firmware sendet alle `interval_s` Sekunden (Standard 10) an `POST /api/v1/readings` und übernimmt `config`, `commands` und `demo` aus der Antwort.
 
 ## 7. Aufbau des Codes
 
