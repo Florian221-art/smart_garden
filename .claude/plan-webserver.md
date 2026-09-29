@@ -289,3 +289,11 @@ _(von Claude-Web gepflegt)_
 ### Blocker
 
 - Kein Zugriff auf echte Pi-Hardware in dieser Umgebung -> Hotspot nur mit Stubs getestet, Nico prueft auf dem Pi.
+
+## Phase 2 – Teil 5: Sprachauswahl (DE / EN / NL)
+
+- Umschalter DE / EN / NL im Header (neben Hell/Dunkel); Wahl wird im Browser gemerkt (`localStorage` `sg.lang`), sonst Browsersprache, Fallback Deutsch.
+- Umsetzung mit `i18next` + `react-i18next` + `i18next-browser-languagedetector`; alle Texte in `web/src/i18n/locales/{de,en,nl}.json` (195 Schlüssel, in allen drei Sprachen identisch), fest eingebaut – funktioniert offline im Hotspot.
+- Zahlen/Datum passend zur Sprache über `web/src/format.ts` (de-DE, en-GB, nl-NL; überall 24-h-Uhrzeit).
+- `<html lang>` wechselt mit, damit Screenreader richtig vorlesen.
+- Neue Texte: immer in allen drei JSON-Dateien ergänzen, nie fest in Komponenten schreiben.

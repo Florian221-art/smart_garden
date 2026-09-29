@@ -1,0 +1,244 @@
+{
+  "app": { "name": "Smart Garden", "pot": "Kübel 1" },
+  "header": {
+    "demoButton": "Demo",
+    "demoAriaLabel": "Demo-Steuerung",
+    "themeLabel": "Farbschema",
+    "theme": { "light": "Hell", "system": "Wie das Gerät", "dark": "Dunkel" },
+    "languageLabel": "Sprache"
+  },
+  "demoBar": {
+    "running": "Demo läuft",
+    "remaining": "noch {{time}}",
+    "simulated": "simuliert: {{text}}",
+    "stop": "Beenden"
+  },
+  "connection": {
+    "notFound": "Der Pflanzkübel hat noch keine Messwerte geschickt. Sobald er eingeschaltet und im WLAN ist, erscheinen sie hier.",
+    "serverError": "Der Server meldet einen Fehler ({{status}}). Bitte später erneut versuchen.",
+    "networkError": "Der Server ist nicht erreichbar. Bist du im WLAN „SmartGarden“?"
+  },
+  "values": { "sectionTitle": "Aktuelle Werte" },
+  "tiles": {
+    "soilMoisture": "Bodenfeuchte",
+    "waterTank": "Wassertank",
+    "temperature": "Temperatur",
+    "humidity": "Luftfeuchte",
+    "light": "Licht",
+    "watering": "Bewässerung",
+    "tankHint": "ca. {{ml}} ml (geschätzt)",
+    "pumpRunningSince": "Seit letzter Meldung {{s}} s gegossen",
+    "wateringRunningValue": "Läuft",
+    "wateringOffValue": "Aus",
+    "wateringStatusOn": "Gießt gerade",
+    "wateringStatusOff": "Bereit"
+  },
+  "status": {
+    "soil": {
+      "sensorMissing": "Sensor liefert keinen Wert",
+      "veryDry": "Sehr trocken",
+      "dry": "Trocken – wird bald gegossen",
+      "wet": "Sehr nass",
+      "ok": "Gut feucht"
+    },
+    "tank": {
+      "empty": "Leer – bitte auffüllen",
+      "low": "Fast leer – bald auffüllen",
+      "ok": "Genug Wasser"
+    },
+    "temp": {
+      "sensorMissing": "Sensor liefert keinen Wert",
+      "hot": "Sehr heiß",
+      "cold": "Sehr kalt",
+      "ok": "Angenehm"
+    },
+    "humidity": {
+      "sensorMissing": "Sensor liefert keinen Wert",
+      "dry": "Trockene Luft",
+      "humid": "Feuchte Luft",
+      "ok": "Normal"
+    },
+    "light": {
+      "sensorMissing": "Sensor liefert keinen Wert",
+      "dark": "Dunkel",
+      "dim": "Dämmrig",
+      "bright": "Hell"
+    },
+    "signal": {
+      "veryGood": "Sehr gut",
+      "good": "Gut",
+      "weak": "Schwach",
+      "veryWeak": "Sehr schwach"
+    }
+  },
+  "time": {
+    "justNow": "gerade eben",
+    "secondsAgo": "vor {{s}} s",
+    "minutesAgo": "vor {{m}} min",
+    "hoursAgo": "vor {{h}} h",
+    "daysAgo": "vor {{d}} Tagen"
+  },
+  "duration": {
+    "seconds": "{{s}} s",
+    "minutes": "{{m}} min",
+    "hoursMinutes": "{{h}} h {{m}} min",
+    "daysHours": "{{d}} Tage {{h}} h"
+  },
+  "hero": {
+    "waitingFirst": "Warte auf die ersten Messwerte",
+    "offlineTitle": "Keine Verbindung zum Pflanzkübel",
+    "offlineIssue": "Das Gerät hat sich länger nicht gemeldet. Ist es eingeschaltet und im WLAN?",
+    "allGoodTitle": "Deiner Pflanze geht es gut",
+    "allGoodDesc": "Erde, Wasser und Temperatur sind im grünen Bereich.",
+    "needsHelpTitle": "Deine Pflanze braucht Hilfe",
+    "checkTitle": "Bitte kurz nachsehen",
+    "pumpRunning": "Wird gerade gegossen",
+    "online": "Online",
+    "offline": "Offline",
+    "issueSoil": "Erde: {{text}}",
+    "issueTank": "Wassertank: {{text}}",
+    "issueTemp": "Temperatur: {{text}}"
+  },
+  "device": {
+    "title": "Gerät",
+    "lastMessage": "Letzte Meldung",
+    "wifiSignal": "WLAN-Signal",
+    "runningSince": "Läuft seit",
+    "deviceName": "Gerätename",
+    "firmware": "Firmware",
+    "messageNo": "Meldung Nr. {{n}}",
+    "rawValues": "Sensor-Rohwerte",
+    "rawSoil": "Boden {{v}}",
+    "rawLight": "Licht {{v}}",
+    "none": "–",
+    "offlinePrefix": "Offline – {{time}}"
+  },
+  "history": {
+    "title": "Verlauf",
+    "rangeAriaLabel": "Zeitraum",
+    "range": { "1h": "1 Stunde", "1hShort": "1 Std.", "24h": "24 Stunden", "24hShort": "24 Std.", "7d": "7 Tage", "7dShort": "7 Tage" },
+    "loadError": "Verlauf konnte nicht geladen werden.",
+    "noData": "Keine Messwerte in den letzten {{range}}.",
+    "kpiWater": "Wasserverbrauch ({{range}})",
+    "kpiWaterHint": "geschätzt aus der Pumpenlaufzeit",
+    "kpiAutoWatered": "Automatisch gegossen",
+    "kpiAutoWateredOn": "Automatisches Gießen ist an",
+    "kpiAutoWateredOff": "Automatisches Gießen ist aus",
+    "kpiAvgMoisture": "Ø Bodenfeuchte",
+    "kpiAvgMoistureHint": "gegossen wird unter {{pct}} %",
+    "charts": {
+      "soil": {
+        "title": "Bodenfeuchte",
+        "aria": "Bodenfeuchte der letzten {{range}} in Prozent, {{n}} automatische Bewässerungen, Gießschwelle {{pct}} Prozent.",
+        "legendMoisture": "Bodenfeuchte",
+        "legendWatered": "Automatisch gegossen",
+        "legendThreshold": "Gießschwelle {{pct}} %",
+        "legendTarget": "Ziel {{pct}} %"
+      },
+      "tank": {
+        "title": "Wassertank (Schätzung)",
+        "aria": "Geschätzter Tankfüllstand der letzten {{range}}, Warnschwelle {{pct}} Prozent.",
+        "current": "aktuell {{pct}} %",
+        "legendWarn": "Warnung unter {{pct}} %"
+      },
+      "waterUsage": {
+        "title": "Wasserverbrauch {{group}}",
+        "aria": "Gepumpte Wassermenge {{group}}, insgesamt {{ml}} Milliliter.",
+        "totalSummary": "{{ml}} ml gesamt",
+        "tableHeadPeriod": "Zeitraum",
+        "tableHeadWater": "Wasser (ml)",
+        "tableHeadWatered": "Gegossen"
+      },
+      "temp": {
+        "title": "Temperatur",
+        "aria": "Lufttemperatur der letzten {{range}} in Grad Celsius."
+      },
+      "humidity": {
+        "title": "Luftfeuchte",
+        "aria": "Relative Luftfeuchte der letzten {{range}} in Prozent.",
+        "avg": "Ø {{pct}} %"
+      },
+      "light": {
+        "title": "Licht",
+        "aria": "Helligkeit der letzten {{range}} in Prozent, zeigt den Tag-Nacht-Verlauf.",
+        "summary": "0 % = dunkel"
+      }
+    },
+    "groupLabel": { "min5": "pro 5 Minuten", "hour": "pro Stunde", "day": "pro Tag" },
+    "table": {
+      "time": "Zeit",
+      "valueUnit": "Wert ({{unit}})",
+      "note": "Hinweis",
+      "demo": "DEMO",
+      "watered": "gegossen {{n}}×"
+    },
+    "footnote": "Werte sind Mittelwerte je {{min}} min. Lücken in einer Linie = Sensor ausgefallen. Aktualisiert alle 30 s.",
+    "demoRange": "Demo-Zeitraum"
+  },
+  "chart": {
+    "showTable": "Als Tabelle anzeigen",
+    "tooltip": {
+      "autoWatered": "Automatisch gegossen ({{n}}×, {{ml}} ml)",
+      "demoValues": "Demo-Werte",
+      "waterBarAutoWatered": "{{n}}× automatisch gegossen"
+    }
+  },
+  "demo": {
+    "title": "Demo-Steuerung",
+    "description": "Spielt Situationen vor, ohne die Pflanze zu gefährden: Das Gerät reagiert wie echt (Pumpe, Licht-Leiste, Summer), die Sicherheitsgrenzen der Pumpe gelten weiter.",
+    "durationLabel": "Dauer",
+    "duration": { "60": "1 min", "120": "2 min", "300": "5 min", "600": "10 min" },
+    "statusRunning": "Läuft – noch {{time}}",
+    "statusRunningNamed": "Läuft: {{scenario}} – noch {{time}}",
+    "confirmed": "Gerät zeigt die Demo-Werte",
+    "waiting": "Wartet auf die nächste Meldung des Geräts (alle ~15 s)",
+    "inactive": "Keine Demo aktiv – alle Werte sind echt gemessen.",
+    "stop": "Demo beenden",
+    "scenariosTitle": "Situation vorspielen",
+    "scenario": {
+      "dry": { "title": "Trockene Erde", "effect": "Erde auf 12 % → Licht-Leiste rot, das Gerät gießt automatisch" },
+      "heat": { "title": "Hitzewelle", "effect": "38 °C und 25 % Luftfeuchte" },
+      "tankLow": {
+        "title": "Tank fast leer",
+        "effect": "Tank auf 4 % → Summer piept, automatisches Gießen stoppt",
+        "hint": "Danach „Tank aufgefüllt“ drücken – das Gerät merkt sich den Füllstand."
+      },
+      "sensorFail": { "title": "Sensorausfall", "effect": "Temperatur- und Luftfeuchtesensor liefern nichts" },
+      "night": { "title": "Nacht", "effect": "Licht auf 2 % – wie bei Dunkelheit" },
+      "custom": { "title": "Eigene Werte" }
+    },
+    "activeSuffix": " (aktiv)",
+    "customValuesTitle": "Eigene Werte einstellen",
+    "fields": {
+      "soilMoisture": "Bodenfeuchte",
+      "light": "Licht",
+      "temperature": "Temperatur",
+      "humidity": "Luftfeuchte",
+      "waterTank": "Wassertank"
+    },
+    "forceErrorsLegend": "Sensorausfall vorspielen",
+    "sendCustom": "Eigene Werte senden",
+    "deviceControlTitle": "Gerät steuern",
+    "water": "Gießen (5 s)",
+    "waterCommandLabel": "Jetzt gießen",
+    "refill": "Tank aufgefüllt",
+    "identify": "Gerät finden",
+    "buzz": "Piepen",
+    "pending": {
+      "watering": "Gießen {{s}} s",
+      "refilled": "Tank aufgefüllt",
+      "identify": "Gerät finden",
+      "buzz": "Piepen",
+      "prefix": "Wartet auf das Gerät: {{list}}"
+    },
+    "startMessage": "„{{label}}“ gestartet – das Gerät übernimmt es mit seiner nächsten Meldung.",
+    "stopMessage": "Demo beendet – ab der nächsten Meldung wieder echte Werte.",
+    "commandMessage": "„{{label}}“ wird mit der nächsten Meldung an das Gerät geschickt."
+  },
+  "errorsCode": {
+    "soil_out_of_range": "Bodensensor außerhalb des Messbereichs",
+    "light_read_failed": "Lichtsensor konnte nicht gelesen werden",
+    "dht_read_failed": "Temperatur-/Luftfeuchtesensor (DHT11) konnte nicht gelesen werden",
+    "tank_empty": "Wassertank leer – automatische Bewässerung gestoppt"
+  }
+}

@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import { ChevronDown, Table2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Card } from './ui'
 
 export interface LegendItem {
@@ -34,6 +35,7 @@ function Swatch({ kind, color }: { kind: LegendItem['kind']; color: string }) {
 }
 
 export default function ChartCard({ title, icon: Icon, summary, ariaLabel, legend, children, table }: ChartCardProps) {
+  const { t } = useTranslation()
   return (
     <Card as="section" className="min-w-0 p-4 sm:p-5">
       <div className="mb-3 flex flex-wrap items-start justify-between gap-x-4 gap-y-1">
@@ -60,7 +62,7 @@ export default function ChartCard({ title, icon: Icon, summary, ariaLabel, legen
         <details className="group mt-2 text-xs text-fg-2">
           <summary className="inline-flex min-h-11 cursor-pointer select-none list-none items-center gap-1.5 rounded-lg font-medium text-muted hover:text-fg [&::-webkit-details-marker]:hidden">
             <Table2 aria-hidden="true" className="size-4" />
-            Als Tabelle anzeigen
+            {t('chart.showTable')}
             <ChevronDown aria-hidden="true" className="size-4 transition-transform group-open:rotate-180" />
           </summary>
           <div className="mt-1 max-h-60 overflow-auto rounded-lg border border-line">

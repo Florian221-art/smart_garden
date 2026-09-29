@@ -1,0 +1,244 @@
+{
+  "app": { "name": "Smart Garden", "pot": "Planter 1" },
+  "header": {
+    "demoButton": "Demo",
+    "demoAriaLabel": "Demo controls",
+    "themeLabel": "Color scheme",
+    "theme": { "light": "Light", "system": "Match device", "dark": "Dark" },
+    "languageLabel": "Language"
+  },
+  "demoBar": {
+    "running": "Demo running",
+    "remaining": "{{time}} left",
+    "simulated": "simulating: {{text}}",
+    "stop": "Stop"
+  },
+  "connection": {
+    "notFound": "The planter hasn't sent any readings yet. As soon as it's switched on and connected to the Wi-Fi, they'll show up here.",
+    "serverError": "The server reported an error ({{status}}). Please try again later.",
+    "networkError": "Can't reach the server. Are you connected to the “SmartGarden” Wi-Fi?"
+  },
+  "values": { "sectionTitle": "Current readings" },
+  "tiles": {
+    "soilMoisture": "Soil moisture",
+    "waterTank": "Water tank",
+    "temperature": "Temperature",
+    "humidity": "Air humidity",
+    "light": "Light",
+    "watering": "Watering",
+    "tankHint": "approx. {{ml}} ml (estimated)",
+    "pumpRunningSince": "Watered for {{s}} s since the last message",
+    "wateringRunningValue": "Running",
+    "wateringOffValue": "Off",
+    "wateringStatusOn": "Watering now",
+    "wateringStatusOff": "Ready"
+  },
+  "status": {
+    "soil": {
+      "sensorMissing": "Sensor isn't reporting a value",
+      "veryDry": "Very dry",
+      "dry": "Dry – will be watered soon",
+      "wet": "Very wet",
+      "ok": "Nicely moist"
+    },
+    "tank": {
+      "empty": "Empty – please refill",
+      "low": "Almost empty – refill soon",
+      "ok": "Plenty of water"
+    },
+    "temp": {
+      "sensorMissing": "Sensor isn't reporting a value",
+      "hot": "Very hot",
+      "cold": "Very cold",
+      "ok": "Comfortable"
+    },
+    "humidity": {
+      "sensorMissing": "Sensor isn't reporting a value",
+      "dry": "Dry air",
+      "humid": "Humid air",
+      "ok": "Normal"
+    },
+    "light": {
+      "sensorMissing": "Sensor isn't reporting a value",
+      "dark": "Dark",
+      "dim": "Dim",
+      "bright": "Bright"
+    },
+    "signal": {
+      "veryGood": "Very good",
+      "good": "Good",
+      "weak": "Weak",
+      "veryWeak": "Very weak"
+    }
+  },
+  "time": {
+    "justNow": "just now",
+    "secondsAgo": "{{s}} s ago",
+    "minutesAgo": "{{m}} min ago",
+    "hoursAgo": "{{h}} h ago",
+    "daysAgo": "{{d}} days ago"
+  },
+  "duration": {
+    "seconds": "{{s}} s",
+    "minutes": "{{m}} min",
+    "hoursMinutes": "{{h}} h {{m}} min",
+    "daysHours": "{{d}} days {{h}} h"
+  },
+  "hero": {
+    "waitingFirst": "Waiting for the first readings",
+    "offlineTitle": "No connection to the planter",
+    "offlineIssue": "The device hasn't reported in for a while. Is it switched on and connected to the Wi-Fi?",
+    "allGoodTitle": "Your plant is doing well",
+    "allGoodDesc": "Soil, water and temperature are all in a good range.",
+    "needsHelpTitle": "Your plant needs help",
+    "checkTitle": "Please take a quick look",
+    "pumpRunning": "Watering right now",
+    "online": "Online",
+    "offline": "Offline",
+    "issueSoil": "Soil: {{text}}",
+    "issueTank": "Water tank: {{text}}",
+    "issueTemp": "Temperature: {{text}}"
+  },
+  "device": {
+    "title": "Device",
+    "lastMessage": "Last message",
+    "wifiSignal": "Wi-Fi signal",
+    "runningSince": "Running for",
+    "deviceName": "Device name",
+    "firmware": "Firmware",
+    "messageNo": "Message no. {{n}}",
+    "rawValues": "Raw sensor values",
+    "rawSoil": "Soil {{v}}",
+    "rawLight": "Light {{v}}",
+    "none": "–",
+    "offlinePrefix": "Offline – {{time}}"
+  },
+  "history": {
+    "title": "History",
+    "rangeAriaLabel": "Time range",
+    "range": { "1h": "1 hour", "1hShort": "1 hr", "24h": "24 hours", "24hShort": "24 hr", "7d": "7 days", "7dShort": "7 days" },
+    "loadError": "Couldn't load the history.",
+    "noData": "No readings in the last {{range}}.",
+    "kpiWater": "Water used ({{range}})",
+    "kpiWaterHint": "estimated from pump run time",
+    "kpiAutoWatered": "Watered automatically",
+    "kpiAutoWateredOn": "Automatic watering is on",
+    "kpiAutoWateredOff": "Automatic watering is off",
+    "kpiAvgMoisture": "Avg. soil moisture",
+    "kpiAvgMoistureHint": "watering starts below {{pct}} %",
+    "charts": {
+      "soil": {
+        "title": "Soil moisture",
+        "aria": "Soil moisture over the last {{range}} in percent, {{n}} automatic waterings, watering threshold {{pct}} percent.",
+        "legendMoisture": "Soil moisture",
+        "legendWatered": "Watered automatically",
+        "legendThreshold": "Watering threshold {{pct}} %",
+        "legendTarget": "Target {{pct}} %"
+      },
+      "tank": {
+        "title": "Water tank (estimated)",
+        "aria": "Estimated tank level over the last {{range}}, warning threshold {{pct}} percent.",
+        "current": "currently {{pct}} %",
+        "legendWarn": "Warning below {{pct}} %"
+      },
+      "waterUsage": {
+        "title": "Water used {{group}}",
+        "aria": "Water pumped {{group}}, {{ml}} milliliters in total.",
+        "totalSummary": "{{ml}} ml total",
+        "tableHeadPeriod": "Period",
+        "tableHeadWater": "Water (ml)",
+        "tableHeadWatered": "Watered"
+      },
+      "temp": {
+        "title": "Temperature",
+        "aria": "Air temperature over the last {{range}} in degrees Celsius."
+      },
+      "humidity": {
+        "title": "Air humidity",
+        "aria": "Relative air humidity over the last {{range}} in percent.",
+        "avg": "Avg. {{pct}} %"
+      },
+      "light": {
+        "title": "Light",
+        "aria": "Brightness over the last {{range}} in percent, showing the day-night cycle.",
+        "summary": "0 % = dark"
+      }
+    },
+    "groupLabel": { "min5": "per 5 minutes", "hour": "per hour", "day": "per day" },
+    "table": {
+      "time": "Time",
+      "valueUnit": "Value ({{unit}})",
+      "note": "Note",
+      "demo": "DEMO",
+      "watered": "watered {{n}}×"
+    },
+    "footnote": "Values are averages per {{min}} min. Gaps in a line mean the sensor failed. Updates every 30 s.",
+    "demoRange": "Demo period"
+  },
+  "chart": {
+    "showTable": "Show as table",
+    "tooltip": {
+      "autoWatered": "Watered automatically ({{n}}×, {{ml}} ml)",
+      "demoValues": "Demo values",
+      "waterBarAutoWatered": "{{n}}× watered automatically"
+    }
+  },
+  "demo": {
+    "title": "Demo controls",
+    "description": "Plays out situations without putting the plant at risk: the device reacts for real (pump, light bar, buzzer), and the pump's safety limits still apply.",
+    "durationLabel": "Duration",
+    "duration": { "60": "1 min", "120": "2 min", "300": "5 min", "600": "10 min" },
+    "statusRunning": "Running – {{time}} left",
+    "statusRunningNamed": "Running: {{scenario}} – {{time}} left",
+    "confirmed": "Device is showing the demo values",
+    "waiting": "Waiting for the device's next message (every ~15 s)",
+    "inactive": "No demo running – all values are real measurements.",
+    "stop": "Stop demo",
+    "scenariosTitle": "Play out a situation",
+    "scenario": {
+      "dry": { "title": "Dry soil", "effect": "Soil at 12 % → light bar turns red, the device waters automatically" },
+      "heat": { "title": "Heat wave", "effect": "38 °C and 25 % air humidity" },
+      "tankLow": {
+        "title": "Tank almost empty",
+        "effect": "Tank at 4 % → buzzer beeps, automatic watering stops",
+        "hint": "Then press “Tank refilled” – the device remembers the fill level."
+      },
+      "sensorFail": { "title": "Sensor failure", "effect": "Temperature and humidity sensor stop responding" },
+      "night": { "title": "Night", "effect": "Light at 2 % – as if it were dark" },
+      "custom": { "title": "Custom values" }
+    },
+    "activeSuffix": " (active)",
+    "customValuesTitle": "Set custom values",
+    "fields": {
+      "soilMoisture": "Soil moisture",
+      "light": "Light",
+      "temperature": "Temperature",
+      "humidity": "Air humidity",
+      "waterTank": "Water tank"
+    },
+    "forceErrorsLegend": "Simulate sensor failure",
+    "sendCustom": "Send custom values",
+    "deviceControlTitle": "Control the device",
+    "water": "Water (5 s)",
+    "waterCommandLabel": "Water now",
+    "refill": "Tank refilled",
+    "identify": "Find device",
+    "buzz": "Beep",
+    "pending": {
+      "watering": "Watering {{s}} s",
+      "refilled": "Tank refilled",
+      "identify": "Find device",
+      "buzz": "Beep",
+      "prefix": "Waiting for the device: {{list}}"
+    },
+    "startMessage": "“{{label}}” started – the device will pick it up with its next message.",
+    "stopMessage": "Demo stopped – real values will return with the next message.",
+    "commandMessage": "“{{label}}” will be sent to the device with its next message."
+  },
+  "errorsCode": {
+    "soil_out_of_range": "Soil sensor out of range",
+    "light_read_failed": "Couldn't read the light sensor",
+    "dht_read_failed": "Couldn't read the temperature/humidity sensor (DHT11)",
+    "tank_empty": "Water tank empty – automatic watering stopped"
+  }
+}

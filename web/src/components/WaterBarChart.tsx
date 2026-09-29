@@ -1,4 +1,5 @@
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { useTranslation } from 'react-i18next'
 
 export interface WaterBar {
   key: number
@@ -11,6 +12,7 @@ export interface WaterBar {
 const AXIS_TICK = { fill: 'var(--viz-axis)', fontSize: 11 }
 
 export default function WaterBarChart({ data }: { data: WaterBar[] }) {
+  const { t } = useTranslation()
   return (
     <ResponsiveContainer width="100%" height="100%">
       <BarChart data={data} margin={{ top: 8, right: 12, bottom: 0, left: -12 }} barCategoryGap={2}>
@@ -34,7 +36,7 @@ export default function WaterBarChart({ data }: { data: WaterBar[] }) {
                 <div className="text-muted">{b.longLabel}</div>
                 <div className="text-sm font-semibold text-fg">{Math.round(b.water_ml)} ml</div>
                 {b.waterings > 0 && (
-                  <div className="text-fg-2">{b.waterings}× automatisch gegossen</div>
+                  <div className="text-fg-2">{t('chart.tooltip.waterBarAutoWatered', { n: b.waterings })}</div>
                 )}
               </div>
             )

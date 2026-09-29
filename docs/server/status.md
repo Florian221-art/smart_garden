@@ -222,3 +222,11 @@ Das Dashboard soll von allen verstanden werden, nicht nur vom Team:
   (argon2 ist schon eingebunden), i18n (NL/DE/EN), KI-Stub
 - API-Key + WLAN-Passwort: erzeugt `deploy_to_pi.sh` – Florian bekommt die
   `secrets.h` bzw. die Werte direkt (nicht über GitHub)
+
+## Phase 2 – Teil 5: Sprachauswahl (DE / EN / NL)
+
+- Umschalter DE / EN / NL im Header (neben Hell/Dunkel); Wahl wird im Browser gemerkt (`localStorage` `sg.lang`), sonst Browsersprache, Fallback Deutsch.
+- Umsetzung mit `i18next` + `react-i18next` + `i18next-browser-languagedetector`; alle Texte in `web/src/i18n/locales/{de,en,nl}.json` (195 Schlüssel, in allen drei Sprachen identisch), fest eingebaut – funktioniert offline im Hotspot.
+- Zahlen/Datum passend zur Sprache über `web/src/format.ts` (de-DE, en-GB, nl-NL; überall 24-h-Uhrzeit).
+- `<html lang>` wechselt mit, damit Screenreader richtig vorlesen.
+- Neue Texte: immer in allen drei JSON-Dateien ergänzen, nie fest in Komponenten schreiben.

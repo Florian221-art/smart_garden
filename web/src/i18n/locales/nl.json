@@ -1,0 +1,244 @@
+{
+  "app": { "name": "Smart Garden", "pot": "Bak 1" },
+  "header": {
+    "demoButton": "Demo",
+    "demoAriaLabel": "Demobediening",
+    "themeLabel": "Kleurenschema",
+    "theme": { "light": "Licht", "system": "Zoals apparaat", "dark": "Donker" },
+    "languageLabel": "Taal"
+  },
+  "demoBar": {
+    "running": "Demo actief",
+    "remaining": "nog {{time}}",
+    "simulated": "gesimuleerd: {{text}}",
+    "stop": "Stoppen"
+  },
+  "connection": {
+    "notFound": "De plantenbak heeft nog geen meetwaarden gestuurd. Zodra hij aanstaat en met de wifi verbonden is, verschijnen ze hier.",
+    "serverError": "De server meldt een fout ({{status}}). Probeer het later opnieuw.",
+    "networkError": "De server is niet bereikbaar. Ben je verbonden met de wifi „SmartGarden”?"
+  },
+  "values": { "sectionTitle": "Actuele waarden" },
+  "tiles": {
+    "soilMoisture": "Bodemvocht",
+    "waterTank": "Watertank",
+    "temperature": "Temperatuur",
+    "humidity": "Luchtvochtigheid",
+    "light": "Licht",
+    "watering": "Bewatering",
+    "tankHint": "ca. {{ml}} ml (geschat)",
+    "pumpRunningSince": "Sinds het laatste bericht {{s}} s water gegeven",
+    "wateringRunningValue": "Loopt",
+    "wateringOffValue": "Uit",
+    "wateringStatusOn": "Geeft nu water",
+    "wateringStatusOff": "Klaar"
+  },
+  "status": {
+    "soil": {
+      "sensorMissing": "Sensor geeft geen waarde door",
+      "veryDry": "Erg droog",
+      "dry": "Droog – wordt binnenkort water gegeven",
+      "wet": "Erg nat",
+      "ok": "Lekker vochtig"
+    },
+    "tank": {
+      "empty": "Leeg – graag bijvullen",
+      "low": "Bijna leeg – binnenkort bijvullen",
+      "ok": "Genoeg water"
+    },
+    "temp": {
+      "sensorMissing": "Sensor geeft geen waarde door",
+      "hot": "Erg warm",
+      "cold": "Erg koud",
+      "ok": "Aangenaam"
+    },
+    "humidity": {
+      "sensorMissing": "Sensor geeft geen waarde door",
+      "dry": "Droge lucht",
+      "humid": "Vochtige lucht",
+      "ok": "Normaal"
+    },
+    "light": {
+      "sensorMissing": "Sensor geeft geen waarde door",
+      "dark": "Donker",
+      "dim": "Schemerig",
+      "bright": "Licht"
+    },
+    "signal": {
+      "veryGood": "Erg goed",
+      "good": "Goed",
+      "weak": "Zwak",
+      "veryWeak": "Erg zwak"
+    }
+  },
+  "time": {
+    "justNow": "zojuist",
+    "secondsAgo": "{{s}} s geleden",
+    "minutesAgo": "{{m}} min geleden",
+    "hoursAgo": "{{h}} u geleden",
+    "daysAgo": "{{d}} dagen geleden"
+  },
+  "duration": {
+    "seconds": "{{s}} s",
+    "minutes": "{{m}} min",
+    "hoursMinutes": "{{h}} u {{m}} min",
+    "daysHours": "{{d}} dagen {{h}} u"
+  },
+  "hero": {
+    "waitingFirst": "Wachten op de eerste meetwaarden",
+    "offlineTitle": "Geen verbinding met de plantenbak",
+    "offlineIssue": "Het apparaat heeft al een tijd niets gemeld. Staat het aan en is het met de wifi verbonden?",
+    "allGoodTitle": "Het gaat goed met je plant",
+    "allGoodDesc": "Bodem, water en temperatuur zitten allemaal in de goede zone.",
+    "needsHelpTitle": "Je plant heeft hulp nodig",
+    "checkTitle": "Kijk even kort na",
+    "pumpRunning": "Geeft nu water",
+    "online": "Online",
+    "offline": "Offline",
+    "issueSoil": "Bodem: {{text}}",
+    "issueTank": "Watertank: {{text}}",
+    "issueTemp": "Temperatuur: {{text}}"
+  },
+  "device": {
+    "title": "Apparaat",
+    "lastMessage": "Laatste bericht",
+    "wifiSignal": "Wifi-signaal",
+    "runningSince": "Actief sinds",
+    "deviceName": "Apparaatnaam",
+    "firmware": "Firmware",
+    "messageNo": "Bericht nr. {{n}}",
+    "rawValues": "Ruwe sensorwaarden",
+    "rawSoil": "Bodem {{v}}",
+    "rawLight": "Licht {{v}}",
+    "none": "–",
+    "offlinePrefix": "Offline – {{time}}"
+  },
+  "history": {
+    "title": "Verloop",
+    "rangeAriaLabel": "Periode",
+    "range": { "1h": "1 uur", "1hShort": "1 u", "24h": "24 uur", "24hShort": "24 u", "7d": "7 dagen", "7dShort": "7 dagen" },
+    "loadError": "Verloop kon niet worden geladen.",
+    "noData": "Geen meetwaarden in de laatste {{range}}.",
+    "kpiWater": "Waterverbruik ({{range}})",
+    "kpiWaterHint": "geschat op basis van de pomplooptijd",
+    "kpiAutoWatered": "Automatisch water gegeven",
+    "kpiAutoWateredOn": "Automatisch water geven staat aan",
+    "kpiAutoWateredOff": "Automatisch water geven staat uit",
+    "kpiAvgMoisture": "Gem. bodemvocht",
+    "kpiAvgMoistureHint": "er wordt water gegeven onder {{pct}} %",
+    "charts": {
+      "soil": {
+        "title": "Bodemvocht",
+        "aria": "Bodemvocht van de laatste {{range}} in procent, {{n}} keer automatisch water gegeven, drempel {{pct}} procent.",
+        "legendMoisture": "Bodemvocht",
+        "legendWatered": "Automatisch water gegeven",
+        "legendThreshold": "Drempel {{pct}} %",
+        "legendTarget": "Doel {{pct}} %"
+      },
+      "tank": {
+        "title": "Watertank (schatting)",
+        "aria": "Geschatte tankstand van de laatste {{range}}, waarschuwingsdrempel {{pct}} procent.",
+        "current": "nu {{pct}} %",
+        "legendWarn": "Waarschuwing onder {{pct}} %"
+      },
+      "waterUsage": {
+        "title": "Waterverbruik {{group}}",
+        "aria": "Verpompte hoeveelheid water {{group}}, in totaal {{ml}} milliliter.",
+        "totalSummary": "{{ml}} ml totaal",
+        "tableHeadPeriod": "Periode",
+        "tableHeadWater": "Water (ml)",
+        "tableHeadWatered": "Water gegeven"
+      },
+      "temp": {
+        "title": "Temperatuur",
+        "aria": "Luchttemperatuur van de laatste {{range}} in graden Celsius."
+      },
+      "humidity": {
+        "title": "Luchtvochtigheid",
+        "aria": "Relatieve luchtvochtigheid van de laatste {{range}} in procent.",
+        "avg": "Gem. {{pct}} %"
+      },
+      "light": {
+        "title": "Licht",
+        "aria": "Helderheid van de laatste {{range}} in procent, toont het dag-nachtverloop.",
+        "summary": "0 % = donker"
+      }
+    },
+    "groupLabel": { "min5": "per 5 minuten", "hour": "per uur", "day": "per dag" },
+    "table": {
+      "time": "Tijd",
+      "valueUnit": "Waarde ({{unit}})",
+      "note": "Opmerking",
+      "demo": "DEMO",
+      "watered": "water gegeven {{n}}×"
+    },
+    "footnote": "Waarden zijn gemiddelden per {{min}} min. Onderbrekingen in een lijn = sensor uitgevallen. Wordt elke 30 s bijgewerkt.",
+    "demoRange": "Demoperiode"
+  },
+  "chart": {
+    "showTable": "Als tabel weergeven",
+    "tooltip": {
+      "autoWatered": "Automatisch water gegeven ({{n}}×, {{ml}} ml)",
+      "demoValues": "Demowaarden",
+      "waterBarAutoWatered": "{{n}}× automatisch water gegeven"
+    }
+  },
+  "demo": {
+    "title": "Demobediening",
+    "description": "Speelt situaties na zonder de plant in gevaar te brengen: het apparaat reageert echt (pomp, lichtbalk, zoemer), de veiligheidsgrenzen van de pomp blijven gelden.",
+    "durationLabel": "Duur",
+    "duration": { "60": "1 min", "120": "2 min", "300": "5 min", "600": "10 min" },
+    "statusRunning": "Actief – nog {{time}}",
+    "statusRunningNamed": "Actief: {{scenario}} – nog {{time}}",
+    "confirmed": "Apparaat toont de demowaarden",
+    "waiting": "Wacht op het volgende bericht van het apparaat (elke ~15 s)",
+    "inactive": "Geen demo actief – alle waarden zijn echt gemeten.",
+    "stop": "Demo stoppen",
+    "scenariosTitle": "Situatie naspelen",
+    "scenario": {
+      "dry": { "title": "Droge bodem", "effect": "Bodem op 12 % → lichtbalk wordt rood, het apparaat geeft automatisch water" },
+      "heat": { "title": "Hittegolf", "effect": "38 °C en 25 % luchtvochtigheid" },
+      "tankLow": {
+        "title": "Tank bijna leeg",
+        "effect": "Tank op 4 % → zoemer piept, automatisch water geven stopt",
+        "hint": "Druk daarna op „Tank bijgevuld” – het apparaat onthoudt het niveau."
+      },
+      "sensorFail": { "title": "Sensorstoring", "effect": "Temperatuur- en vochtigheidssensor reageren niet meer" },
+      "night": { "title": "Nacht", "effect": "Licht op 2 % – alsof het donker is" },
+      "custom": { "title": "Eigen waarden" }
+    },
+    "activeSuffix": " (actief)",
+    "customValuesTitle": "Eigen waarden instellen",
+    "fields": {
+      "soilMoisture": "Bodemvocht",
+      "light": "Licht",
+      "temperature": "Temperatuur",
+      "humidity": "Luchtvochtigheid",
+      "waterTank": "Watertank"
+    },
+    "forceErrorsLegend": "Sensorstoring naspelen",
+    "sendCustom": "Eigen waarden versturen",
+    "deviceControlTitle": "Apparaat bedienen",
+    "water": "Water geven (5 s)",
+    "waterCommandLabel": "Nu water geven",
+    "refill": "Tank bijgevuld",
+    "identify": "Apparaat zoeken",
+    "buzz": "Piepen",
+    "pending": {
+      "watering": "Water geven {{s}} s",
+      "refilled": "Tank bijgevuld",
+      "identify": "Apparaat zoeken",
+      "buzz": "Piepen",
+      "prefix": "Wacht op het apparaat: {{list}}"
+    },
+    "startMessage": "„{{label}}” gestart – het apparaat neemt dit over bij het volgende bericht.",
+    "stopMessage": "Demo gestopt – vanaf het volgende bericht weer echte waarden.",
+    "commandMessage": "„{{label}}” wordt met het volgende bericht naar het apparaat gestuurd."
+  },
+  "errorsCode": {
+    "soil_out_of_range": "Bodemsensor buiten meetbereik",
+    "light_read_failed": "Lichtsensor kon niet worden gelezen",
+    "dht_read_failed": "Temperatuur-/vochtigheidssensor (DHT11) kon niet worden gelezen",
+    "tank_empty": "Watertank leeg – automatisch water geven gestopt"
+  }
+}

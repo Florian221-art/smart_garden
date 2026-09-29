@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { sendJson } from './api'
 import { describeError } from './errorMessages'
 import type { DemoState, LatestReading, OverrideField, PendingCommands } from './types'
-import { describeDemo, FIELDS } from './demoText'
+import { describeDemo, fieldLabel, FIELDS } from './demoText'
 import { fmtCountdown } from './useDemo'
 import type { LucideIcon } from 'lucide-react'
 import {
@@ -22,66 +23,61 @@ import {
   X,
 } from 'lucide-react'
 import { Button, Card, Segmented } from './components/ui'
+import { decimalSeparator } from './format'
 
 interface Scenario {
   id: string
-  title: string
+  titleKey: string
   icon: LucideIcon
-  effect: string
+  effectKey: string
   overrides?: Partial<Record<OverrideField, number>>
   force_errors?: string[]
-  hint?: string
+  hintKey?: string
 }
 
-// Szenarien aus plan-webserver.md Abschnitt 5
+// Szenarien aus plan-webserver.md Abschnitt 5 (Texte kommen aus i18n: demo.scenario.*)
 const SCENARIOS: Scenario[] = [
   {
     id: 'trockene_erde',
     icon: DropletOff,
-    title: 'Trockene Erde',
-    effect: 'Erde auf 12 % → Licht-Leiste rot, das Gerät gießt automatisch',
+    titleKey: 'demo.scenario.dry.title',
+    effectKey: 'demo.scenario.dry.effect',
     overrides: { soil_moisture_pct: 12 },
   },
   {
     id: 'hitzewelle',
     icon: Flame,
-    title: 'Hitzewelle',
-    effect: '38 °C und 25 % Luftfeuchte',
+    titleKey: 'demo.scenario.heat.title',
+    effectKey: 'demo.scenario.heat.effect',
     overrides: { air_temp_c: 38, air_humidity_pct: 25 },
   },
   {
     id: 'tank_leer',
     icon: GlassWater,
-    title: 'Tank fast leer',
-    effect: 'Tank auf 4 % → Summer piept, automatisches Gießen stoppt',
+    titleKey: 'demo.scenario.tankLow.title',
+    effectKey: 'demo.scenario.tankLow.effect',
     overrides: { water_level_pct: 4 },
-    hint: 'Danach „Tank aufgefüllt“ drücken – das Gerät merkt sich den Füllstand.',
+    hintKey: 'demo.scenario.tankLow.hint',
   },
   {
     id: 'sensorausfall',
     icon: Unplug,
-    title: 'Sensorausfall',
-    effect: 'Temperatur- und Luftfeuchtesensor liefern nichts',
+    titleKey: 'demo.scenario.sensorFail.title',
+    effectKey: 'demo.scenario.sensorFail.effect',
     force_errors: ['dht_read_failed'],
   },
   {
     id: 'nacht',
     icon: Moon,
-    title: 'Nacht',
-    effect: 'Licht auf 2 % – wie bei Dunkelheit',
+    titleKey: 'demo.scenario.night.title',
+    effectKey: 'demo.scenario.night.effect',
     overrides: { light_pct: 2 },
   },
 ]
 
 const ERRORS = ['dht_read_failed', 'soil_out_of_range', 'light_read_failed']
 
-const DURATIONS = [
-  { s: 60, label: '1 min' },
-  { s: 120, label: '2 min' },
-  { s: 300, label: '5 min' },
-  { s: 600, label: '10 min' },
-]
-
+const DURATIONS = [60, 120, 300, 600]
 
 interface Props {
   deviceId: string
@@ -92,6 +88,7 @@ interface Props {
 }
 
 export default function DemoPanel({ deviceId, demo, remaining, onChange, reading }: Props) {
+  const { t, i18n } = useTranslation()
   const base = `/api/v1/devices/${deviceId}`
   const [duration, setDuration] = useState(120)
   const [busy, setBusy] = useState(false)
@@ -141,24 +138,24 @@ export default function DemoPanel({ deviceId, demo, remaining, onChange, reading
     run(async () => {
       const d = await sendJson<DemoState>(`${base}/demo`, 'PUT', { ...body, duration_s: duration })
       onChange(d)
-    }, `„${label}“ gestartet – das Gerät übernimmt es mit seiner nächsten Meldung.`)
+    }, t('demo.startMessage', { label }))
 
   const stopDemo = () =>
     run(async () => {
       const d = await sendJson<DemoState>(`${base}/demo`, 'DELETE')
       onChange(d)
-    }, 'Demo beendet – ab der nächsten Meldung wieder echte Werte.')
+    }, t('demo.stopMessage'))
 
   const command = (body: Record<string, unknown>, label: string) =>
     run(async () => {
       setPending(await sendJson<PendingCommands>(`${base}/commands`, 'POST', body))
-    }, `„${label}“ wird mit der nächsten Meldung an das Gerät geschickt.`)
+    }, t('demo.commandMessage', { label }))
 
   const sendCustom = () => {
     const overrides = Object.fromEntries(
       FIELDS.filter((f) => custom[f.key].on).map((f) => [f.key, custom[f.key].value]),
     ) as Partial<Record<OverrideField, number>>
-    return startDemo({ overrides, force_errors: customErrors, scenario: 'eigene_werte' }, 'Eigene Werte')
+    return startDemo({ overrides, force_errors: customErrors, scenario: 'eigene_werte' }, t('demo.scenario.custom.title'))
   }
   const customEmpty = !FIELDS.some((f) => custom[f.key].on) && customErrors.length === 0
 
@@ -171,13 +168,14 @@ export default function DemoPanel({ deviceId, demo, remaining, onChange, reading
     (reading.demo_overrides.length > 0 || demo.force_errors.some((e) => reading.errors.includes(e)))
 
   const activeScenario = SCENARIOS.find((s) => s.id === demo?.scenario)
+  const sep = decimalSeparator(i18n.language)
   const pendingList = pending
     ? [
-        pending.pump_run_s > 0 && `Gießen ${pending.pump_run_s} s`,
-        pending.tank_refilled && 'Tank aufgefüllt',
-        pending.identify && 'Gerät finden',
-        pending.buzzer && 'Piepen',
-      ].filter(Boolean)
+        pending.pump_run_s > 0 && t('demo.pending.watering', { s: pending.pump_run_s }),
+        pending.tank_refilled && t('demo.pending.refilled'),
+        pending.identify && t('demo.pending.identify'),
+        pending.buzzer && t('demo.pending.buzz'),
+      ].filter((v): v is string => typeof v === 'string')
     : []
 
   return (
@@ -189,19 +187,16 @@ export default function DemoPanel({ deviceId, demo, remaining, onChange, reading
           </span>
           <div className="min-w-0">
             <h2 id="demo-titel" className="text-base font-semibold text-fg">
-              Demo-Steuerung
+              {t('demo.title')}
             </h2>
-            <p className="mt-0.5 max-w-2xl text-sm text-fg-2">
-              Spielt Situationen vor, ohne die Pflanze zu gefährden: Das Gerät reagiert wie echt (Pumpe, Licht-Leiste,
-              Summer), die Sicherheitsgrenzen der Pumpe gelten weiter.
-            </p>
+            <p className="mt-0.5 max-w-2xl text-sm text-fg-2">{t('demo.description')}</p>
           </div>
         </div>
         <div className="flex items-center gap-2 text-sm text-fg-2">
-          <span id="dauer-label">Dauer</span>
+          <span id="dauer-label">{t('demo.durationLabel')}</span>
           <Segmented
-            label="Dauer"
-            options={DURATIONS.map((d) => ({ value: d.s, label: d.label }))}
+            label={t('demo.durationLabel')}
+            options={DURATIONS.map((s) => ({ value: s, label: t(`demo.duration.${s}`) }))}
             value={duration}
             onChange={setDuration}
           />
@@ -219,18 +214,19 @@ export default function DemoPanel({ deviceId, demo, remaining, onChange, reading
         {demo ? (
           <div className="min-w-0">
             <div className="font-semibold tabular-nums">
-              Läuft{activeScenario ? `: ${activeScenario.title}` : ''} – noch {fmtCountdown(remaining)}
+              {activeScenario
+                ? t('demo.statusRunningNamed', { scenario: t(activeScenario.titleKey), time: fmtCountdown(remaining) })
+                : t('demo.statusRunning', { time: fmtCountdown(remaining) })}
             </div>
-            <div className="opacity-80">{describeDemo(demo)}</div>
+            <div className="opacity-80">{describeDemo(t, i18n.language, demo)}</div>
             <div className="mt-1 flex items-center gap-1.5 text-xs opacity-80">
               {confirmed ? (
                 <>
-                  <CircleCheck aria-hidden="true" className="size-3.5" /> Gerät zeigt die Demo-Werte
+                  <CircleCheck aria-hidden="true" className="size-3.5" /> {t('demo.confirmed')}
                 </>
               ) : (
                 <>
-                  <Hourglass aria-hidden="true" className="size-3.5" /> Wartet auf die nächste Meldung des Geräts (alle
-                  ~15 s)
+                  <Hourglass aria-hidden="true" className="size-3.5" /> {t('demo.waiting')}
                 </>
               )}
             </div>
@@ -238,7 +234,7 @@ export default function DemoPanel({ deviceId, demo, remaining, onChange, reading
         ) : (
           <div className="flex items-center gap-2">
             <CircleCheck aria-hidden="true" className="size-4 text-accent" />
-            Keine Demo aktiv – alle Werte sind echt gemessen.
+            {t('demo.inactive')}
           </div>
         )}
         {demo && (
@@ -249,24 +245,25 @@ export default function DemoPanel({ deviceId, demo, remaining, onChange, reading
             className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-current/40 bg-surface/40 px-3.5 font-medium hover:bg-surface disabled:opacity-50"
           >
             <X aria-hidden="true" className="size-4" />
-            Demo beenden
+            {t('demo.stop')}
           </button>
         )}
       </div>
 
       {/* Szenarien */}
-      <h3 className="mb-2 text-sm font-semibold text-fg">Situation vorspielen</h3>
+      <h3 className="mb-2 text-sm font-semibold text-fg">{t('demo.scenariosTitle')}</h3>
       <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2 lg:grid-cols-5">
         {SCENARIOS.map((s) => {
           const isActive = demo?.scenario === s.id
           const Icon = s.icon
+          const title = t(s.titleKey)
           return (
             <button
               key={s.id}
               type="button"
               disabled={busy}
               aria-pressed={isActive}
-              onClick={() => startDemo({ overrides: s.overrides ?? {}, force_errors: s.force_errors ?? [], scenario: s.id }, s.title)}
+              onClick={() => startDemo({ overrides: s.overrides ?? {}, force_errors: s.force_errors ?? [], scenario: s.id }, title)}
               className={`flex items-start gap-3 rounded-xl border p-3 text-left transition-colors disabled:opacity-50 lg:flex-col lg:gap-2 ${
                 isActive ? 'border-accent bg-accent-soft' : 'border-line bg-surface hover:border-control hover:bg-surface-2'
               }`}
@@ -280,11 +277,11 @@ export default function DemoPanel({ deviceId, demo, remaining, onChange, reading
               </span>
               <span className="min-w-0">
                 <span className={`block text-sm font-semibold ${isActive ? 'text-accent-ink' : 'text-fg'}`}>
-                  {s.title}
-                  {isActive && <span className="sr-only"> (aktiv)</span>}
+                  {title}
+                  {isActive && <span className="sr-only">{t('demo.activeSuffix')}</span>}
                 </span>
-                <span className="mt-0.5 block text-xs text-fg-2 [overflow-wrap:anywhere]">{s.effect}</span>
-                {s.hint && <span className="mt-1 block text-xs text-muted [overflow-wrap:anywhere]">{s.hint}</span>}
+                <span className="mt-0.5 block text-xs text-fg-2 [overflow-wrap:anywhere]">{t(s.effectKey)}</span>
+                {s.hintKey && <span className="mt-1 block text-xs text-muted [overflow-wrap:anywhere]">{t(s.hintKey)}</span>}
               </span>
             </button>
           )
@@ -295,13 +292,14 @@ export default function DemoPanel({ deviceId, demo, remaining, onChange, reading
       <details className="group mt-5 rounded-xl border border-line">
         <summary className="flex min-h-12 cursor-pointer list-none items-center gap-2 px-4 text-sm font-semibold text-fg [&::-webkit-details-marker]:hidden">
           <SlidersHorizontal aria-hidden="true" className="size-4 text-muted" />
-          Eigene Werte einstellen
+          {t('demo.customValuesTitle')}
         </summary>
         <div className="border-t border-line p-4">
           <div className="grid grid-cols-1 gap-x-8 gap-y-2 md:grid-cols-2">
             {FIELDS.map((f) => {
               const c = custom[f.key]
               const id = `demo-${f.key}`
+              const label = fieldLabel(t, f.key)
               return (
                 <div key={f.key} className="flex items-center gap-3 text-sm">
                   <label className="flex min-h-11 w-36 shrink-0 items-center gap-2 text-fg">
@@ -311,12 +309,12 @@ export default function DemoPanel({ deviceId, demo, remaining, onChange, reading
                       onChange={(e) => setCustom({ ...custom, [f.key]: { ...c, on: e.target.checked } })}
                       className="size-4 accent-[var(--accent)]"
                     />
-                    {f.label}
+                    {label}
                   </label>
                   <input
                     id={id}
                     type="range"
-                    aria-label={`${f.label} in ${f.unit}`}
+                    aria-label={`${label} in ${f.unit}`}
                     min={f.min}
                     max={f.max}
                     step={f.step}
@@ -326,14 +324,14 @@ export default function DemoPanel({ deviceId, demo, remaining, onChange, reading
                     className="w-full accent-[var(--accent)] disabled:opacity-40"
                   />
                   <output htmlFor={id} className="w-16 shrink-0 text-right tabular-nums text-fg">
-                    {String(c.value).replace('.', ',')} {f.unit}
+                    {String(c.value).replace('.', sep)} {f.unit}
                   </output>
                 </div>
               )
             })}
           </div>
           <fieldset className="mt-4 text-sm">
-            <legend className="mb-1 font-medium text-fg">Sensorausfall vorspielen</legend>
+            <legend className="mb-1 font-medium text-fg">{t('demo.forceErrorsLegend')}</legend>
             <div className="flex flex-wrap gap-x-6">
               {ERRORS.map((e) => (
                 <label key={e} className="flex min-h-11 items-center gap-2 text-fg-2">
@@ -345,37 +343,37 @@ export default function DemoPanel({ deviceId, demo, remaining, onChange, reading
                       setCustomErrors(ev.target.checked ? [...customErrors, e] : customErrors.filter((x) => x !== e))
                     }
                   />
-                  {describeError(e)}
+                  {describeError(t, e)}
                 </label>
               ))}
             </div>
           </fieldset>
           <Button variant="primary" onClick={sendCustom} disabled={busy || customEmpty} className="mt-3">
-            Eigene Werte senden
+            {t('demo.sendCustom')}
           </Button>
         </div>
       </details>
 
       {/* Geraetebefehle */}
-      <h3 className="mb-2 mt-5 text-sm font-semibold text-fg">Gerät steuern</h3>
+      <h3 className="mb-2 mt-5 text-sm font-semibold text-fg">{t('demo.deviceControlTitle')}</h3>
       <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
-        <Button icon={ShowerHead} disabled={busy} onClick={() => command({ pump_run_s: 5 }, 'Jetzt gießen')}>
-          {'Gießen (5\u00a0s)'}
+        <Button icon={ShowerHead} disabled={busy} onClick={() => command({ pump_run_s: 5 }, t('demo.waterCommandLabel'))}>
+          {t('demo.water')}
         </Button>
-        <Button icon={RefreshCw} disabled={busy} onClick={() => command({ tank_refilled: true }, 'Tank aufgefüllt')}>
-          Tank aufgefüllt
+        <Button icon={RefreshCw} disabled={busy} onClick={() => command({ tank_refilled: true }, t('demo.refill'))}>
+          {t('demo.refill')}
         </Button>
-        <Button icon={Lightbulb} disabled={busy} onClick={() => command({ identify: true }, 'Gerät finden')}>
-          Gerät finden
+        <Button icon={Lightbulb} disabled={busy} onClick={() => command({ identify: true }, t('demo.identify'))}>
+          {t('demo.identify')}
         </Button>
-        <Button icon={BellRing} disabled={busy} onClick={() => command({ buzzer: true }, 'Piepen')}>
-          Piepen
+        <Button icon={BellRing} disabled={busy} onClick={() => command({ buzzer: true }, t('demo.buzz'))}>
+          {t('demo.buzz')}
         </Button>
       </div>
       {pendingList.length > 0 && (
         <p className="mt-2 flex items-center gap-1.5 text-xs text-muted">
           <Hourglass aria-hidden="true" className="size-3.5" />
-          Wartet auf das Gerät: {pendingList.join(', ')}
+          {t('demo.pending.prefix', { list: pendingList.join(', ') })}
         </p>
       )}
 
