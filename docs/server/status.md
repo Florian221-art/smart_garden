@@ -177,74 +177,71 @@ can trigger the demo. Every change is logged in the server terminal.
 Backend: `GET/PUT/DELETE /api/v1/devices/{id}/demo`,
 `GET/POST /api/v1/devices/{id}/commands`.
 
-## Dashboard on a phone
+## Dashboard auf dem Handy
 
-- **At home / during development:** run `npm run dev:mobil` instead of
-  `npm run dev` (in the `web` folder). Vite then prints a line
-  `Network: http://192.168.x.y:5173` – open this address on the phone (the
-  phone must be on the same Wi-Fi as the Mac). The first time, macOS may ask
-  whether "node" may accept incoming connections → allow it. The backend
-  stays on the Mac (`127.0.0.1:8000`); Vite forwards `/api` to it.
-- **On the Pi (hackathon):** `npm run build` creates `web/dist/`; FastAPI then
-  serves it itself under `/`. Connect the phone to the "SmartGarden" Wi-Fi
-  and open `http://10.42.0.1:8000`.
-- **As an app:** on iPhone "Teilen → Zum Home-Bildschirm" (Share → Add to
-  Home Screen), on Android "App installieren" (Install app) – with its own
-  icon (a seedling with a water drop), it starts without the browser bar.
-- Phone layout: tiles in two columns, touch targets ≥ 44 px, spacing around
-  the notch and home indicator, demo controls in two columns, chart tooltips
-  on tap. Checked as iPhone 13 (light/dark): no horizontal scrolling, no
-  console errors.
+- **Zu Hause / in der Entwicklung:** `npm run dev:mobil` statt `npm run dev`
+  (im Ordner `web`). Vite zeigt dann eine Zeile `Network: http://192.168.x.y:5173` –
+  diese Adresse auf dem Handy öffnen (Handy im selben WLAN wie der Mac). Beim
+  ersten Mal fragt macOS evtl., ob „node“ eingehende Verbindungen annehmen darf →
+  erlauben. Das Backend bleibt auf dem Mac (`127.0.0.1:8000`), Vite leitet `/api` weiter.
+- **Auf dem Pi (Hackathon):** `npm run build` erzeugt `web/dist/`; FastAPI liefert das
+  dann selbst unter `/` aus. Handy ins WLAN „SmartGarden“, `http://10.42.0.1:8000`.
+- **Als App:** iPhone „Teilen → Zum Home-Bildschirm“, Android „App installieren“ –
+  eigenes Icon (Keimling mit Wassertropfen), startet ohne Browserleiste.
+- Handy-Layout: Kacheln zweispaltig, Tipp-Flächen ≥ 44 px, Abstand zu Notch und
+  Home-Leiste, Demo-Steuerung zweispaltig, Diagramme per Antippen (Tooltip).
+  Geprüft als iPhone 13 (hell/dunkel): kein seitliches Scrollen, keine Konsolenfehler.
 
-**Caution:** with `dev:mobil`, **everyone on the same Wi-Fi** can see the
-dashboard – including the demo controls, as long as there is no login. That
-is fine at home; on other networks (school, hackathon) use the normal
-`npm run dev` instead.
+**Achtung:** Mit `dev:mobil` sieht **jeder im selben WLAN** das Dashboard – inklusive
+Demo-Steuerung, solange es noch keinen Login gibt. Zu Hause ok, in fremden WLANs
+(Schule, Hackathon) besser den normalen `npm run dev` nutzen.
 
-## Deployment to the Raspberry Pi
+## Deployment auf den Raspberry Pi
 
-One command from the laptop: `./deploy/deploy_to_pi.sh <benutzer>@<pi-adresse>`
-(i.e. `<user>@<pi-address>`; details in `deploy/README.md`). The script builds
-the dashboard, copies everything to the Pi and sets up the server there
-(systemd service on port 8000 that serves both the API and the dashboard),
-the device and its API key, and the "SmartGarden" Wi-Fi hotspot.
+Ein Befehl vom Laptop aus: `./deploy/deploy_to_pi.sh <benutzer>@<pi-adresse>`
+(Details in `deploy/README.md`). Das Skript baut das Dashboard, kopiert alles
+auf den Pi und richtet dort Server (systemd-Dienst, Port 8000, liefert API und
+Dashboard), Gerät + API-Key und den WLAN-Hotspot „SmartGarden“ ein.
 
-- The hotspot is tuned for the ESP32: 2.4 GHz only (channel 6), pure WPA2,
-  PMF disabled – the ESP32 often fails to connect to WPA3/5 GHz networks.
-- Credentials (Wi-Fi password, API key) are **generated on the Pi** and stored
-  only there (`/opt/smart-garden/zugangsdaten.txt`, readable by root only). The
-  script shows them at the end and places a ready-to-use
-  `firmware/smart_garden/secrets.h` on the laptop (ignored by Git). This way
-  none of it ends up in the public repository.
-- Repeatable: the database, API key and password are preserved.
-- Tested in a Linux environment with Python 3.11 (as on Raspberry Pi OS
-  Bookworm); Wi-Fi and systemd were only simulated there – the real hotspot
-  still has to be verified on the Pi.
+- Der Hotspot ist auf den ESP32 abgestimmt: nur 2,4 GHz (Kanal 6), reines WPA2,
+  PMF aus – mit WPA3/5 GHz verbindet sich der ESP32 oft nicht.
+- Zugangsdaten (WLAN-Passwort, API-Key) werden **auf dem Pi erzeugt** und nur dort
+  gespeichert (`/opt/smart-garden/zugangsdaten.txt`, nur root). Das Skript zeigt sie
+  am Ende an und legt eine fertige `firmware/smart_garden/secrets.h` auf dem Laptop ab
+  (von Git ignoriert). So landet nichts davon im öffentlichen Repo.
+- Wiederholbar: Datenbank, Key und Passwort bleiben erhalten.
+- Getestet in einer Linux-Umgebung mit Python 3.11 (wie Raspberry Pi OS Bookworm);
+  WLAN/systemd waren dort nur simuliert – der echte Hotspot muss auf dem Pi geprüft werden.
 
-## New design (monochrome, light/dark)
+## Neues Design (einfarbig, hell/dunkel)
 
-The dashboard is meant to be understood by everyone, not just the team:
+Das Dashboard soll von allen verstanden werden, nicht nur vom Team:
 
-- **A status card at the top written in full sentences**: "Deiner Pflanze
-  geht es gut" ("your plant is doing well") or a concrete action ("Wassertank:
-  Fast leer – bald auffüllen" – "water tank: almost empty – refill soon"),
-  plus online/offline and when the planter last reported.
-- **Tiles with an interpretation** instead of bare numbers ("Gut feucht" –
-  nicely moist, "Genug Wasser" – enough water, "Angenehm" – comfortable), and
-  bars for soil moisture and tank level. Technical details (Wi-Fi signal,
-  firmware, raw values) are listed further down under "Gerät" (device).
-- **Monochrome**: one shade of green as the accent colour, otherwise grey
-  tones. States are always shown as icon + text, never by colour alone.
-- **Light / dark / follow the device** ("Hell" / "Dunkel" / "Wie das Gerät")
-  via the switch at the top right; the browser remembers the choice.
-- **Icons** from `lucide-react` (bundled with the build – no internet access
-  needed).
-- The **demo controls** only become visible after clicking "Demo".
+- **Oben eine Statuskarte in ganzen Sätzen**: „Deiner Pflanze geht es gut“ oder
+  konkret, was zu tun ist („Wassertank: Fast leer – bald auffüllen“), dazu
+  Online/Offline und wann sich der Kübel zuletzt gemeldet hat.
+- **Kacheln mit Einordnung** statt nur Zahlen („Gut feucht“, „Genug Wasser“,
+  „Angenehm“), Balken für Bodenfeuchte und Tank. Technische Angaben (WLAN-Signal,
+  Firmware, Rohwerte) stehen unten unter „Gerät“.
+- **Einfarbig**: ein Grünton als Akzent, sonst Grautöne. Zustände immer als
+  Symbol + Text, nie nur über Farbe.
+- **Hell / Dunkel / wie das Gerät** über den Umschalter oben rechts; die Wahl
+  merkt sich der Browser.
+- **Icons** aus `lucide-react` (werden mitgebaut – kein Internet nötig).
+- Die **Demo-Steuerung** ist erst nach Klick auf „Demo“ sichtbar.
 
-## Known gaps / next steps
+## Bekannte Lücken / Als Nächstes
 
-- Verify deployment and hotspot on a real Pi
-- Rest of Phase 2: warnings/alerts, login + roles (argon2 is already
-  included), i18n (NL/DE/EN), AI stub
-- API key and Wi-Fi password are generated by `deploy_to_pi.sh` – Florian
-  receives the `secrets.h` or the values directly (not via GitHub)
+- Deployment + Hotspot auf echtem Pi verifizieren
+- Phase 2 (Rest): Warnungen/Alerts, Login+Rollen
+  (argon2 ist schon eingebunden), i18n (NL/DE/EN), KI-Stub
+- API-Key + WLAN-Passwort: erzeugt `deploy_to_pi.sh` – Florian bekommt die
+  `secrets.h` bzw. die Werte direkt (nicht über GitHub)
+
+## Phase 2 – Teil 5: Sprachauswahl (DE / EN / NL)
+
+- Umschalter DE / EN / NL im Header (neben Hell/Dunkel); Wahl wird im Browser gemerkt (`localStorage` `sg.lang`), sonst Browsersprache, Fallback Deutsch.
+- Umsetzung mit `i18next` + `react-i18next` + `i18next-browser-languagedetector`; alle Texte in `web/src/i18n/locales/{de,en,nl}.json` (195 Schlüssel, in allen drei Sprachen identisch), fest eingebaut – funktioniert offline im Hotspot.
+- Zahlen/Datum passend zur Sprache über `web/src/format.ts` (de-DE, en-GB, nl-NL; überall 24-h-Uhrzeit).
+- `<html lang>` wechselt mit, damit Screenreader richtig vorlesen.
+- Neue Texte: immer in allen drei JSON-Dateien ergänzen, nie fest in Komponenten schreiben.

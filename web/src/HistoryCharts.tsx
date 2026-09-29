@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { HistoryResponse } from './types'
 import ChartCard from './components/ChartCard'
 import { Card, Segmented, SectionTitle } from './components/ui'
@@ -15,18 +16,16 @@ import {
 import type { LucideIcon } from 'lucide-react'
 import TimeSeriesChart, { type ChartPoint, type NumericKey } from './components/TimeSeriesChart'
 import WaterBarChart, { type WaterBar } from './components/WaterBarChart'
+import { fmtInt, fmtNumber } from './format'
 
 type RangeKey = '1h' | '24h' | '7d'
-const RANGES: { key: RangeKey; short: string; label: string; ms: number; group: 'min5' | 'hour' | 'day'; groupLabel: string }[] = [
-  { key: '1h', short: '1 Std.', label: '1 Stunde', ms: 3600_000, group: 'min5', groupLabel: 'pro 5 Minuten' },
-  { key: '24h', short: '24 Std.', label: '24 Stunden', ms: 24 * 3600_000, group: 'hour', groupLabel: 'pro Stunde' },
-  { key: '7d', short: '7 Tage', label: '7 Tage', ms: 7 * 24 * 3600_000, group: 'day', groupLabel: 'pro Tag' },
+type GroupKey = 'min5' | 'hour' | 'day'
+const RANGES: { key: RangeKey; ms: number; group: GroupKey }[] = [
+  { key: '1h', ms: 3600_000, group: 'min5' },
+  { key: '24h', ms: 24 * 3600_000, group: 'hour' },
+  { key: '7d', ms: 7 * 24 * 3600_000, group: 'day' },
 ]
 const REFRESH_MS = 30_000
-
-function fmt(v: number | null | undefined, digits = 1): string {
-  return v === null || v === undefined ? '–' : v.toFixed(digits).replace('.', ',')
-}
 
 /** Zusammenhaengende Demo-Buckets zu Zeitspannen [start, ende] zusammenfassen */
 function demoRanges(points: ChartPoint[], bucketMs: number): [number, number][] {
@@ -41,7 +40,7 @@ function demoRanges(points: ChartPoint[], bucketMs: number): [number, number][] 
 }
 
 /** Wassermengen fuer Balken zusammenfassen: lueckenlos, auch Abschnitte ohne Giessen (= 0 ml) */
-function waterBars(points: ChartPoint[], from: number, to: number, group: 'min5' | 'hour' | 'day'): WaterBar[] {
+function waterBars(points: ChartPoint[], from: number, to: number, group: GroupKey, lang: string): WaterBar[] {
   const floor = (ts: number) => {
     const d = new Date(ts)
     if (group === 'day') d.setHours(0, 0, 0, 0)
@@ -56,6 +55,7 @@ function waterBars(points: ChartPoint[], from: number, to: number, group: 'min5'
     else d.setMinutes(d.getMinutes() + 5)
     return d.getTime()
   }
+  const locale = lang === 'en' ? 'en-GB' : lang === 'nl' ? 'nl-NL' : 'de-DE'
   const bars = new Map<number, WaterBar>()
   for (let t = floor(from); t <= to; t = step(t)) {
     const d = new Date(t)
@@ -63,12 +63,12 @@ function waterBars(points: ChartPoint[], from: number, to: number, group: 'min5'
       key: t,
       label:
         group === 'day'
-          ? d.toLocaleDateString('de-DE', { weekday: 'short' })
-          : d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }),
+          ? d.toLocaleDateString(locale, { weekday: 'short' })
+          : d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }),
       longLabel:
         group === 'day'
-          ? d.toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: '2-digit' })
-          : `${d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}–${new Date(step(t)).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`,
+          ? d.toLocaleDateString(locale, { weekday: 'long', day: '2-digit', month: '2-digit' })
+          : `${d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}–${new Date(step(t)).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}`,
       water_ml: 0,
       waterings: 0,
     })
@@ -109,9 +109,13 @@ function Kpi({ icon: Icon, label, value, hint }: { icon: LucideIcon; label: stri
 }
 
 export default function HistoryCharts({ deviceId }: { deviceId: string }) {
+  const { t, i18n } = useTranslation()
+  const lang = i18n.language
+  const locale = lang === 'en' ? 'en-GB' : lang === 'nl' ? 'nl-NL' : 'de-DE'
+  const fmt = (v: number | null | undefined, digits = 1) => (v === null || v === undefined ? '–' : fmtNumber(lang, v, digits))
   const [range, setRange] = useState<RangeKey>('24h')
   const [data, setData] = useState<HistoryResponse | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -124,10 +128,10 @@ export default function HistoryCharts({ deviceId }: { deviceId: string }) {
         const json: HistoryResponse = await res.json()
         if (!cancelled) {
           setData(json)
-          setError(null)
+          setError(false)
         }
       } catch {
-        if (!cancelled) setError('Verlauf konnte nicht geladen werden.')
+        if (!cancelled) setError(true)
       }
     }
     load()
@@ -138,6 +142,9 @@ export default function HistoryCharts({ deviceId }: { deviceId: string }) {
     }
   }, [deviceId, range])
 
+  const rangeLabel = t(`history.range.${range}`)
+  const groupLabel = t(`history.groupLabel.${RANGES.find((r) => r.key === range)!.group}`)
+
   const view = useMemo(() => {
     if (!data) return null
     const bucketMs = data.bucket_s * 1000
@@ -145,15 +152,18 @@ export default function HistoryCharts({ deviceId }: { deviceId: string }) {
     const xDomain: [number, number] = [new Date(data.from).getTime(), new Date(data.to).getTime()]
     const multiDay = xDomain[1] - xDomain[0] > 36 * 3600_000
     const tickFormat = (ts: number) =>
-      new Date(ts).toLocaleString('de-DE', multiDay ? { weekday: 'short', day: '2-digit' } : { hour: '2-digit', minute: '2-digit' })
-    const rowTime = (ts: number) =>
-      new Date(ts).toLocaleString('de-DE', { weekday: 'short', hour: '2-digit', minute: '2-digit' })
+      new Date(ts).toLocaleString(locale, multiDay ? { weekday: 'short', day: '2-digit' } : { hour: '2-digit', minute: '2-digit' })
+    const rowTime = (ts: number) => new Date(ts).toLocaleString(locale, { weekday: 'short', hour: '2-digit', minute: '2-digit' })
     const tableFor = (key: NumericKey, unit: string, digits = 1) => ({
-      head: ['Zeit', `Wert (${unit})`, 'Hinweis'],
+      head: [t('history.table.time'), t('history.table.valueUnit', { unit }), t('history.table.note')],
       rows: points.map((p) => [
         rowTime(p.ts),
         fmt(p[key], digits),
-        [p.demo ? 'DEMO' : '', p.auto_water_count ? `gegossen ${p.auto_water_count}×` : '', ...p.errors]
+        [
+          p.demo ? t('history.table.demo') : '',
+          p.auto_water_count ? t('history.table.watered', { n: p.auto_water_count }) : '',
+          ...p.errors.map((e) => (e ? e : '')),
+        ]
           .filter(Boolean)
           .join(', '),
       ]),
@@ -162,8 +172,7 @@ export default function HistoryCharts({ deviceId }: { deviceId: string }) {
     const waterings = points.reduce((a, p) => a + p.auto_water_count, 0)
     const rangeCfg = RANGES.find((r) => r.key === range)!
     return {
-      bars: waterBars(points, xDomain[0], xDomain[1], rangeCfg.group),
-      barsLabel: rangeCfg.groupLabel,
+      bars: waterBars(points, xDomain[0], xDomain[1], rangeCfg.group, lang),
       bucketMs,
       points,
       xDomain,
@@ -172,15 +181,14 @@ export default function HistoryCharts({ deviceId }: { deviceId: string }) {
       demo: demoRanges(points, bucketMs),
       // Demo-Zeitraeume stehen in der Legende statt als Text im Diagramm (wird am Rand sonst abgeschnitten)
       demoLegend: points.some((p) => p.demo)
-        ? [{ label: 'Demo-Zeitraum', kind: 'area' as const, color: 'var(--viz-demo)' }]
+        ? [{ label: t('history.demoRange'), kind: 'area' as const, color: 'var(--viz-demo)' }]
         : [],
       totalWater,
       waterings,
       cfg: data.config,
     }
-  }, [data, range])
-
-  const rangeLabel = RANGES.find((r) => r.key === range)!.label
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, range, lang])
 
   return (
     <section aria-labelledby="verlauf-titel" className="viz-root">
@@ -189,24 +197,24 @@ export default function HistoryCharts({ deviceId }: { deviceId: string }) {
         icon={ChartLine}
         right={
           <Segmented
-            label="Zeitraum"
-            options={RANGES.map((r) => ({ value: r.key, label: r.short, title: r.label }))}
+            label={t('history.rangeAriaLabel')}
+            options={RANGES.map((r) => ({ value: r.key, label: t(`history.range.${r.key}Short`), title: t(`history.range.${r.key}`) }))}
             value={range}
             onChange={setRange}
           />
         }
       >
-        Verlauf
+        {t('history.title')}
       </SectionTitle>
 
       {error && (
         <p role="alert" className="mb-4 rounded-xl border border-line bg-surface px-4 py-3 text-sm text-fg-2">
-          {error}
+          {t('history.loadError')}
         </p>
       )}
 
       {view && view.points.length === 0 && (
-        <Card className="p-6 text-center text-sm text-fg-2">Keine Messwerte in den letzten {rangeLabel}.</Card>
+        <Card className="p-6 text-center text-sm text-fg-2">{t('history.noData', { range: rangeLabel })}</Card>
       )}
 
       {view && view.points.length > 0 && (
@@ -214,38 +222,38 @@ export default function HistoryCharts({ deviceId }: { deviceId: string }) {
           <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
             <Kpi
               icon={GlassWater}
-              label={`Wasserverbrauch (${rangeLabel})`}
+              label={t('history.kpiWater', { range: rangeLabel })}
               value={`${fmt(view.totalWater, 0)} ml`}
-              hint="geschätzt aus der Pumpenlaufzeit"
+              hint={t('history.kpiWaterHint')}
             />
             <Kpi
               icon={ShowerHead}
-              label="Automatisch gegossen"
+              label={t('history.kpiAutoWatered')}
               value={`${view.waterings}×`}
-              hint={view.cfg.auto_water ? 'Automatisches Gießen ist an' : 'Automatisches Gießen ist aus'}
+              hint={view.cfg.auto_water ? t('history.kpiAutoWateredOn') : t('history.kpiAutoWateredOff')}
             />
             <Kpi
               icon={Gauge}
-              label="Ø Bodenfeuchte"
+              label={t('history.kpiAvgMoisture')}
               value={`${fmt(avg(view.points, 'soil_moisture_pct'))} %`}
-              hint={`gegossen wird unter ${view.cfg.moisture_min_pct} %`}
+              hint={t('history.kpiAvgMoistureHint', { pct: view.cfg.moisture_min_pct })}
             />
           </div>
 
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <ChartCard
-              title="Bodenfeuchte"
+              title={t('history.charts.soil.title')}
               icon={Droplets}
               summary={(() => {
                 const mm = minMax(view.points, 'soil_moisture_pct')
                 return mm ? `${fmt(mm[0])}–${fmt(mm[1])} %` : undefined
               })()}
-              ariaLabel={`Bodenfeuchte der letzten ${rangeLabel} in Prozent, ${view.waterings} automatische Bewässerungen, Gießschwelle ${view.cfg.moisture_min_pct} Prozent.`}
+              ariaLabel={t('history.charts.soil.aria', { range: rangeLabel, n: view.waterings, pct: view.cfg.moisture_min_pct })}
               legend={[
-                { label: 'Bodenfeuchte', kind: 'line', color: 'var(--viz-series)' },
-                { label: 'Automatisch gegossen', kind: 'dot', color: 'var(--viz-mark)' },
-                { label: `Gießschwelle ${view.cfg.moisture_min_pct} %`, kind: 'dash', color: 'var(--viz-ref)' },
-                { label: `Ziel ${view.cfg.moisture_target_pct} %`, kind: 'dots', color: 'var(--viz-ref)' },
+                { label: t('history.charts.soil.legendMoisture'), kind: 'line', color: 'var(--viz-series)' },
+                { label: t('history.charts.soil.legendWatered'), kind: 'dot', color: 'var(--viz-mark)' },
+                { label: t('history.charts.soil.legendThreshold', { pct: view.cfg.moisture_min_pct }), kind: 'dash', color: 'var(--viz-ref)' },
+                { label: t('history.charts.soil.legendTarget', { pct: view.cfg.moisture_target_pct }), kind: 'dots', color: 'var(--viz-ref)' },
                 ...view.demoLegend,
               ]}
               table={view.tableFor('soil_moisture_pct', '%')}
@@ -261,18 +269,21 @@ export default function HistoryCharts({ deviceId }: { deviceId: string }) {
                 demoRanges={view.demo}
                 markWatering
                 refLines={[
-                  { y: view.cfg.moisture_min_pct, label: `Gießschwelle ${view.cfg.moisture_min_pct} %`, color: 'var(--viz-ref)' },
-                  { y: view.cfg.moisture_target_pct, label: `Ziel ${view.cfg.moisture_target_pct} %`, color: 'var(--viz-ref)', dash: '1 4' },
+                  { y: view.cfg.moisture_min_pct, label: t('history.charts.soil.legendThreshold', { pct: view.cfg.moisture_min_pct }), color: 'var(--viz-ref)' },
+                  { y: view.cfg.moisture_target_pct, label: t('history.charts.soil.legendTarget', { pct: view.cfg.moisture_target_pct }), color: 'var(--viz-ref)', dash: '1 4' },
                 ]}
               />
             </ChartCard>
 
             <ChartCard
-              title="Wassertank (Schätzung)"
+              title={t('history.charts.tank.title')}
               icon={GlassWater}
-              summary={`aktuell ${fmt(view.points[view.points.length - 1].water_level_pct, 0)} %`}
-              ariaLabel={`Geschätzter Tankfüllstand der letzten ${rangeLabel}, Warnschwelle ${view.cfg.tank_low_pct} Prozent.`}
-              legend={[{ label: `Warnung unter ${view.cfg.tank_low_pct} %`, kind: 'dash', color: 'var(--viz-ref)' }, ...view.demoLegend]}
+              summary={t('history.charts.tank.current', { pct: fmt(view.points[view.points.length - 1].water_level_pct, 0) })}
+              ariaLabel={t('history.charts.tank.aria', { range: rangeLabel, pct: view.cfg.tank_low_pct })}
+              legend={[
+                { label: t('history.charts.tank.legendWarn', { pct: view.cfg.tank_low_pct }), kind: 'dash', color: 'var(--viz-ref)' },
+                ...view.demoLegend,
+              ]}
               table={view.tableFor('water_level_pct', '%', 0)}
             >
               <TimeSeriesChart
@@ -285,17 +296,17 @@ export default function HistoryCharts({ deviceId }: { deviceId: string }) {
                 yDomain={[0, 100]}
                 tickFormat={view.tickFormat}
                 demoRanges={view.demo}
-                refLines={[{ y: view.cfg.tank_low_pct, label: `Warnung unter ${view.cfg.tank_low_pct} %`, color: 'var(--viz-ref)' }]}
+                refLines={[{ y: view.cfg.tank_low_pct, label: t('history.charts.tank.legendWarn', { pct: view.cfg.tank_low_pct }), color: 'var(--viz-ref)' }]}
               />
             </ChartCard>
 
             <ChartCard
-              title={`Wasserverbrauch ${view.barsLabel}`}
+              title={t('history.charts.waterUsage.title', { group: groupLabel })}
               icon={ShowerHead}
-              summary={`${fmt(view.totalWater, 0)} ml gesamt`}
-              ariaLabel={`Gepumpte Wassermenge ${view.barsLabel}, insgesamt ${Math.round(view.totalWater)} Milliliter.`}
+              summary={t('history.charts.waterUsage.totalSummary', { ml: fmt(view.totalWater, 0) })}
+              ariaLabel={t('history.charts.waterUsage.aria', { group: groupLabel, ml: fmtInt(lang, view.totalWater) })}
               table={{
-                head: ['Zeitraum', 'Wasser (ml)', 'Gegossen'],
+                head: [t('history.charts.waterUsage.tableHeadPeriod'), t('history.charts.waterUsage.tableHeadWater'), t('history.charts.waterUsage.tableHeadWatered')],
                 rows: view.bars.filter((b) => b.water_ml > 0).map((b) => [b.longLabel, fmt(b.water_ml, 0), `${b.waterings}×`]),
               }}
             >
@@ -303,13 +314,13 @@ export default function HistoryCharts({ deviceId }: { deviceId: string }) {
             </ChartCard>
 
             <ChartCard
-              title="Temperatur"
+              title={t('history.charts.temp.title')}
               icon={Thermometer}
               summary={(() => {
                 const mm = minMax(view.points, 'air_temp_c')
                 return mm ? `${fmt(mm[0])}–${fmt(mm[1])} °C` : undefined
               })()}
-              ariaLabel={`Lufttemperatur der letzten ${rangeLabel} in Grad Celsius.`}
+              ariaLabel={t('history.charts.temp.aria', { range: rangeLabel })}
               legend={view.demoLegend}
               table={view.tableFor('air_temp_c', '°C')}
             >
@@ -326,10 +337,10 @@ export default function HistoryCharts({ deviceId }: { deviceId: string }) {
             </ChartCard>
 
             <ChartCard
-              title="Luftfeuchte"
+              title={t('history.charts.humidity.title')}
               icon={CloudDrizzle}
-              summary={`Ø ${fmt(avg(view.points, 'air_humidity_pct'), 0)} %`}
-              ariaLabel={`Relative Luftfeuchte der letzten ${rangeLabel} in Prozent.`}
+              summary={t('history.charts.humidity.avg', { pct: fmt(avg(view.points, 'air_humidity_pct'), 0) })}
+              ariaLabel={t('history.charts.humidity.aria', { range: rangeLabel })}
               legend={view.demoLegend}
               table={view.tableFor('air_humidity_pct', '%', 0)}
             >
@@ -347,10 +358,10 @@ export default function HistoryCharts({ deviceId }: { deviceId: string }) {
             </ChartCard>
 
             <ChartCard
-              title="Licht"
+              title={t('history.charts.light.title')}
               icon={Sun}
-              summary="0 % = dunkel"
-              ariaLabel={`Helligkeit der letzten ${rangeLabel} in Prozent, zeigt den Tag-Nacht-Verlauf.`}
+              summary={t('history.charts.light.summary')}
+              ariaLabel={t('history.charts.light.aria', { range: rangeLabel })}
               legend={view.demoLegend}
               table={view.tableFor('light_pct', '%', 0)}
             >
@@ -367,10 +378,7 @@ export default function HistoryCharts({ deviceId }: { deviceId: string }) {
               />
             </ChartCard>
           </div>
-          <p className="mt-3 text-xs text-muted">
-            Werte sind Mittelwerte je {Math.round(view.bucketMs / 60000) || 1} min. Lücken in einer Linie = Sensor
-            ausgefallen. Aktualisiert alle 30 s.
-          </p>
+          <p className="mt-3 text-xs text-muted">{t('history.footnote', { min: Math.round(view.bucketMs / 60000) || 1 })}</p>
         </>
       )}
     </section>

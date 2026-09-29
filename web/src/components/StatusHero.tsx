@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { CircleAlert, CircleCheck, Hourglass, ShowerHead, TriangleAlert, WifiOff } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { Overall } from '../status'
@@ -21,6 +22,7 @@ interface Props {
 
 /** Grosse Karte oben: auf einen Blick, ob alles in Ordnung ist - in ganzen Saetzen */
 export default function StatusHero({ overall, since, offline, pumpRunning, error }: Props) {
+  const { t } = useTranslation()
   const Icon = offline ? WifiOff : heroIcon[overall.tone]
   return (
     <Card as="section" aria-labelledby="status-titel" className="p-5 sm:p-6">
@@ -34,7 +36,7 @@ export default function StatusHero({ overall, since, offline, pumpRunning, error
               {overall.title}
             </h2>
             {overall.issues.length === 0 && overall.tone === 'ok' && (
-              <p className="mt-1 text-sm text-fg-2">Erde, Wasser und Temperatur sind im grünen Bereich.</p>
+              <p className="mt-1 text-sm text-fg-2">{t('hero.allGoodDesc')}</p>
             )}
             {overall.issues.length > 0 && (
               <ul className="mt-2 flex flex-col gap-1.5">
@@ -48,7 +50,7 @@ export default function StatusHero({ overall, since, offline, pumpRunning, error
             {pumpRunning && !offline && (
               <p className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-accent">
                 <ShowerHead aria-hidden="true" className="size-4" />
-                Wird gerade gegossen
+                {t('hero.pumpRunning')}
               </p>
             )}
           </div>
@@ -56,12 +58,9 @@ export default function StatusHero({ overall, since, offline, pumpRunning, error
 
         {since !== null && (
           <div className="flex shrink-0 items-center gap-2 self-start rounded-full bg-surface-2 px-3 py-1.5 text-sm text-fg-2">
-            <span
-              aria-hidden="true"
-              className={`size-2 rounded-full ${offline ? 'bg-danger' : 'bg-accent'}`}
-            />
+            <span aria-hidden="true" className={`size-2 rounded-full ${offline ? 'bg-danger' : 'bg-accent'}`} />
             <span>
-              {offline ? 'Offline' : 'Online'} · {relativeTime(since)}
+              {offline ? t('hero.offline') : t('hero.online')} · {relativeTime(t, since)}
             </span>
           </div>
         )}

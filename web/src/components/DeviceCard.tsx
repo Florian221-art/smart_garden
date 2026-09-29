@@ -1,7 +1,9 @@
 import type { LucideIcon } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Signal, SignalHigh, SignalLow, SignalMedium } from 'lucide-react'
 import type { LatestReading } from '../types'
 import { fmtDuration, relativeTime, signalLabel } from '../status'
+import { fmtDateTime } from '../format'
 import { Card, SectionTitle } from './ui'
 
 const SIGNAL_ICON = [SignalLow, SignalMedium, SignalHigh, Signal]
@@ -30,27 +32,28 @@ export default function DeviceCard({
   since: number
   offline: boolean
 }) {
-  const sig = signalLabel(reading.rssi_dbm)
+  const { t, i18n } = useTranslation()
+  const sig = signalLabel(t, reading.rssi_dbm)
   const SigIcon = SIGNAL_ICON[sig.bars]
   const raw = [
-    reading.soil_moisture_raw != null && `Boden ${reading.soil_moisture_raw}`,
-    reading.light_raw != null && `Licht ${reading.light_raw}`,
+    reading.soil_moisture_raw != null && t('device.rawSoil', { v: reading.soil_moisture_raw }),
+    reading.light_raw != null && t('device.rawLight', { v: reading.light_raw }),
   ].filter(Boolean)
   return (
     <section aria-labelledby="geraet-titel">
       <SectionTitle id="geraet-titel" icon={icon}>
-        Gerät
+        {t('device.title')}
       </SectionTitle>
       <Card className="px-5 py-2">
         <dl className="grid grid-cols-1 divide-y divide-line md:grid-cols-2 md:gap-x-10 md:divide-y-0">
           <div className="divide-y divide-line">
             <Row
-              label="Letzte Meldung"
-              value={offline ? `Offline – ${relativeTime(since)}` : relativeTime(since)}
-              sub={new Date(reading.received_at).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'medium' })}
+              label={t('device.lastMessage')}
+              value={offline ? t('device.offlinePrefix', { time: relativeTime(t, since) }) : relativeTime(t, since)}
+              sub={fmtDateTime(i18n.language, reading.received_at, { dateStyle: 'short', timeStyle: 'medium' })}
             />
             <Row
-              label="WLAN-Signal"
+              label={t('device.wifiSignal')}
               value={
                 <span className="inline-flex items-center gap-1.5">
                   <SigIcon aria-hidden="true" className="size-4 text-muted" />
@@ -59,12 +62,12 @@ export default function DeviceCard({
               }
               sub={`${reading.rssi_dbm} dBm`}
             />
-            <Row label="Läuft seit" value={fmtDuration(reading.uptime_s)} />
+            <Row label={t('device.runningSince')} value={fmtDuration(t, reading.uptime_s)} />
           </div>
           <div className="divide-y divide-line">
-            <Row label="Gerätename" value={reading.device_id} />
-            <Row label="Firmware" value={reading.fw_version} sub={`Meldung Nr. ${reading.seq}`} />
-            <Row label="Sensor-Rohwerte" value={raw.length ? raw.join(' · ') : '–'} />
+            <Row label={t('device.deviceName')} value={reading.device_id} />
+            <Row label={t('device.firmware')} value={reading.fw_version} sub={t('device.messageNo', { n: reading.seq })} />
+            <Row label={t('device.rawValues')} value={raw.length ? raw.join(' · ') : t('device.none')} />
           </div>
         </dl>
       </Card>

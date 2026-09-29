@@ -11,9 +11,12 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
+import { useTranslation } from 'react-i18next'
 import type { HistoryPoint } from '../types'
 import { describeError } from '../errorMessages'
 import { CircleAlert, FlaskConical, ShowerHead } from 'lucide-react'
+
+const INTL_LOCALE: Record<string, string> = { de: 'de-DE', en: 'en-GB', nl: 'nl-NL' }
 
 export type ChartPoint = HistoryPoint & { ts: number }
 
@@ -66,6 +69,8 @@ export default function TimeSeriesChart({
   markWatering = false,
   tickFormat,
 }: Props) {
+  const { t, i18n } = useTranslation()
+  const locale = INTL_LOCALE[i18n.language] ?? INTL_LOCALE.de
   const common = {
     data,
     margin: { top: 8, right: 12, bottom: 0, left: -12 },
@@ -102,7 +107,7 @@ export default function TimeSeriesChart({
       content={({ active, payload }) => {
         if (!active || !payload || payload.length === 0) return null
         const p = payload[0].payload as ChartPoint
-        const time = new Date(p.ts).toLocaleString('de-DE', {
+        const time = new Date(p.ts).toLocaleString(locale, {
           weekday: 'short',
           hour: '2-digit',
           minute: '2-digit',
@@ -116,19 +121,19 @@ export default function TimeSeriesChart({
             {p.auto_water_count > 0 && (
               <div className="flex items-center gap-1 text-fg-2">
                 <ShowerHead aria-hidden="true" className="size-3.5" />
-                Automatisch gegossen ({p.auto_water_count}×, {fmtNum(p.water_ml, 0)} ml)
+                {t('chart.tooltip.autoWatered', { n: p.auto_water_count, ml: fmtNum(p.water_ml, 0) })}
               </div>
             )}
             {p.demo && (
               <div className="flex items-center gap-1 font-medium text-fg-2">
                 <FlaskConical aria-hidden="true" className="size-3.5" />
-                Demo-Werte
+                {t('chart.tooltip.demoValues')}
               </div>
             )}
             {p.errors.map((e) => (
               <div key={e} className="flex items-center gap-1 text-danger">
                 <CircleAlert aria-hidden="true" className="size-3.5 shrink-0" />
-                {describeError(e)}
+                {describeError(t, e)}
               </div>
             ))}
           </div>

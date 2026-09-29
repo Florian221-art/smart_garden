@@ -1,5 +1,7 @@
 // Uebersetzt Messwerte in verstaendliche Aussagen ("Erde ist trocken") fuer das Dashboard.
 // Grenzwerte passend zur Default-Config aus api-contract.md (Giessschwelle 30 %, Tank-Warnung 20 %).
+// Alle Texte kommen aus i18n (t) statt fest verdrahtet zu sein - siehe src/i18n/locales/*.json.
+import type { TFunction } from 'i18next'
 import type { LatestReading } from './types'
 import type { Tone } from './components/ui'
 import { describeError } from './errorMessages'
@@ -18,46 +20,46 @@ const SOIL_WET = 80
 const TANK_LOW = 20
 const TANK_EMPTY = 5
 
-export function soilStatus(pct: number | null): Assessment {
-  if (pct === null) return { tone: 'danger', text: 'Sensor liefert keinen Wert' }
-  if (pct < SOIL_VERY_DRY) return { tone: 'danger', text: 'Sehr trocken' }
-  if (pct < SOIL_DRY) return { tone: 'warn', text: 'Trocken – wird bald gegossen' }
-  if (pct > SOIL_WET) return { tone: 'warn', text: 'Sehr nass' }
-  return { tone: 'ok', text: 'Gut feucht' }
+export function soilStatus(t: TFunction, pct: number | null): Assessment {
+  if (pct === null) return { tone: 'danger', text: t('status.soil.sensorMissing') }
+  if (pct < SOIL_VERY_DRY) return { tone: 'danger', text: t('status.soil.veryDry') }
+  if (pct < SOIL_DRY) return { tone: 'warn', text: t('status.soil.dry') }
+  if (pct > SOIL_WET) return { tone: 'warn', text: t('status.soil.wet') }
+  return { tone: 'ok', text: t('status.soil.ok') }
 }
 
-export function tankStatus(pct: number): Assessment {
-  if (pct <= TANK_EMPTY) return { tone: 'danger', text: 'Leer – bitte auffüllen' }
-  if (pct < TANK_LOW) return { tone: 'warn', text: 'Fast leer – bald auffüllen' }
-  return { tone: 'ok', text: 'Genug Wasser' }
+export function tankStatus(t: TFunction, pct: number): Assessment {
+  if (pct <= TANK_EMPTY) return { tone: 'danger', text: t('status.tank.empty') }
+  if (pct < TANK_LOW) return { tone: 'warn', text: t('status.tank.low') }
+  return { tone: 'ok', text: t('status.tank.ok') }
 }
 
-export function tempStatus(c: number | null): Assessment {
-  if (c === null) return { tone: 'danger', text: 'Sensor liefert keinen Wert' }
-  if (c >= 35) return { tone: 'warn', text: 'Sehr heiß' }
-  if (c <= 5) return { tone: 'warn', text: 'Sehr kalt' }
-  return { tone: 'ok', text: 'Angenehm' }
+export function tempStatus(t: TFunction, c: number | null): Assessment {
+  if (c === null) return { tone: 'danger', text: t('status.temp.sensorMissing') }
+  if (c >= 35) return { tone: 'warn', text: t('status.temp.hot') }
+  if (c <= 5) return { tone: 'warn', text: t('status.temp.cold') }
+  return { tone: 'ok', text: t('status.temp.ok') }
 }
 
-export function humidityStatus(pct: number | null): Assessment {
-  if (pct === null) return { tone: 'danger', text: 'Sensor liefert keinen Wert' }
-  if (pct < 30) return { tone: 'neutral', text: 'Trockene Luft' }
-  if (pct > 80) return { tone: 'neutral', text: 'Feuchte Luft' }
-  return { tone: 'ok', text: 'Normal' }
+export function humidityStatus(t: TFunction, pct: number | null): Assessment {
+  if (pct === null) return { tone: 'danger', text: t('status.humidity.sensorMissing') }
+  if (pct < 30) return { tone: 'neutral', text: t('status.humidity.dry') }
+  if (pct > 80) return { tone: 'neutral', text: t('status.humidity.humid') }
+  return { tone: 'ok', text: t('status.humidity.ok') }
 }
 
-export function lightStatus(pct: number | null): Assessment {
-  if (pct === null) return { tone: 'danger', text: 'Sensor liefert keinen Wert' }
-  if (pct < 10) return { tone: 'neutral', text: 'Dunkel' }
-  if (pct < 40) return { tone: 'neutral', text: 'Dämmrig' }
-  return { tone: 'ok', text: 'Hell' }
+export function lightStatus(t: TFunction, pct: number | null): Assessment {
+  if (pct === null) return { tone: 'danger', text: t('status.light.sensorMissing') }
+  if (pct < 10) return { tone: 'neutral', text: t('status.light.dark') }
+  if (pct < 40) return { tone: 'neutral', text: t('status.light.dim') }
+  return { tone: 'ok', text: t('status.light.bright') }
 }
 
-export function signalLabel(rssi: number): { text: string; bars: 0 | 1 | 2 | 3 } {
-  if (rssi >= -60) return { text: 'Sehr gut', bars: 3 }
-  if (rssi >= -70) return { text: 'Gut', bars: 2 }
-  if (rssi >= -80) return { text: 'Schwach', bars: 1 }
-  return { text: 'Sehr schwach', bars: 0 }
+export function signalLabel(t: TFunction, rssi: number): { text: string; bars: 0 | 1 | 2 | 3 } {
+  if (rssi >= -60) return { text: t('status.signal.veryGood'), bars: 3 }
+  if (rssi >= -70) return { text: t('status.signal.good'), bars: 2 }
+  if (rssi >= -80) return { text: t('status.signal.weak'), bars: 1 }
+  return { text: t('status.signal.veryWeak'), bars: 0 }
 }
 
 export function secondsSince(iso: string, now: number): number {
@@ -65,19 +67,19 @@ export function secondsSince(iso: string, now: number): number {
 }
 
 /** "gerade eben", "vor 12 s", "vor 3 min", "vor 2 h" */
-export function relativeTime(seconds: number): string {
-  if (seconds < 5) return 'gerade eben'
-  if (seconds < 60) return `vor ${seconds} s`
-  if (seconds < 3600) return `vor ${Math.floor(seconds / 60)} min`
-  if (seconds < 86400) return `vor ${Math.floor(seconds / 3600)} h`
-  return `vor ${Math.floor(seconds / 86400)} Tagen`
+export function relativeTime(t: TFunction, seconds: number): string {
+  if (seconds < 5) return t('time.justNow')
+  if (seconds < 60) return t('time.secondsAgo', { s: seconds })
+  if (seconds < 3600) return t('time.minutesAgo', { m: Math.floor(seconds / 60) })
+  if (seconds < 86400) return t('time.hoursAgo', { h: Math.floor(seconds / 3600) })
+  return t('time.daysAgo', { d: Math.floor(seconds / 86400) })
 }
 
-export function fmtDuration(s: number): string {
-  if (s < 60) return `${s} s`
-  if (s < 3600) return `${Math.floor(s / 60)} min`
-  if (s < 86400) return `${Math.floor(s / 3600)} h ${Math.floor((s % 3600) / 60)} min`
-  return `${Math.floor(s / 86400)} Tage ${Math.floor((s % 86400) / 3600)} h`
+export function fmtDuration(t: TFunction, s: number): string {
+  if (s < 60) return t('duration.seconds', { s })
+  if (s < 3600) return t('duration.minutes', { m: Math.floor(s / 60) })
+  if (s < 86400) return t('duration.hoursMinutes', { h: Math.floor(s / 3600), m: Math.floor((s % 3600) / 60) })
+  return t('duration.daysHours', { d: Math.floor(s / 86400), h: Math.floor((s % 86400) / 3600) })
 }
 
 export interface Overall {
@@ -88,30 +90,32 @@ export interface Overall {
 }
 
 /** Gesamtzustand fuer die grosse Statuskarte oben */
-export function overallStatus(r: LatestReading | null, offline: boolean): Overall {
-  if (!r) return { tone: 'neutral', title: 'Warte auf die ersten Messwerte', issues: [] }
+export function overallStatus(t: TFunction, r: LatestReading | null, offline: boolean): Overall {
+  if (!r) return { tone: 'neutral', title: t('hero.waitingFirst'), issues: [] }
   if (offline)
     return {
       tone: 'danger',
-      title: 'Keine Verbindung zum Pflanzkübel',
-      issues: [{ tone: 'danger', text: 'Das Gerät hat sich länger nicht gemeldet. Ist es eingeschaltet und im WLAN?' }],
+      title: t('hero.offlineTitle'),
+      issues: [{ tone: 'danger', text: t('hero.offlineIssue') }],
     }
   const issues: Assessment[] = []
-  const soil = soilStatus(r.soil_moisture_pct)
-  if (r.soil_moisture_pct !== null && soil.tone !== 'ok') issues.push({ tone: soil.tone, text: `Erde: ${soil.text}` })
-  const tank = tankStatus(r.water_level_pct)
-  if (tank.tone !== 'ok') issues.push({ tone: tank.tone, text: `Wassertank: ${tank.text}` })
-  const temp = tempStatus(r.air_temp_c)
-  if (r.air_temp_c !== null && temp.tone !== 'ok') issues.push({ tone: temp.tone, text: `Temperatur: ${temp.text}` })
+  const soil = soilStatus(t, r.soil_moisture_pct)
+  if (r.soil_moisture_pct !== null && soil.tone !== 'ok')
+    issues.push({ tone: soil.tone, text: t('hero.issueSoil', { text: soil.text }) })
+  const tank = tankStatus(t, r.water_level_pct)
+  if (tank.tone !== 'ok') issues.push({ tone: tank.tone, text: t('hero.issueTank', { text: tank.text }) })
+  const temp = tempStatus(t, r.air_temp_c)
+  if (r.air_temp_c !== null && temp.tone !== 'ok')
+    issues.push({ tone: temp.tone, text: t('hero.issueTemp', { text: temp.text }) })
   for (const e of r.errors) {
     if (e === 'tank_empty') continue // steht schon beim Tank
-    issues.push({ tone: 'danger', text: describeError(e) })
+    issues.push({ tone: 'danger', text: describeError(t, e) })
   }
-  if (issues.length === 0) return { tone: 'ok', title: 'Deiner Pflanze geht es gut', issues }
+  if (issues.length === 0) return { tone: 'ok', title: t('hero.allGoodTitle'), issues }
   const worst: Tone = issues.some((i) => i.tone === 'danger') ? 'danger' : 'warn'
   return {
     tone: worst,
-    title: worst === 'danger' ? 'Deine Pflanze braucht Hilfe' : 'Bitte kurz nachsehen',
+    title: worst === 'danger' ? t('hero.needsHelpTitle') : t('hero.checkTitle'),
     issues,
   }
 }
