@@ -69,6 +69,7 @@ Erledigt:
 - [x] Kalibrierung Boden (trocken 3248 / nass 1102)
 - [x] Code-Review 29.09. (ESP selbst, Server/Web per Subagent read-only) → Befunde Server als Issue `an-web`
 - [x] Root-README
+- [x] Gesamte Doku auf Englisch (Jury-Vorgabe, PR #33): Root-, Firmware-, tools-, hardware-, server-, web-, deploy-Doku; neue `server/README.md`. Code, Kommentare und serielle Meldungen bleiben deutsch (Florians Entscheidung). **Neue Doku ab jetzt auf Englisch schreiben.**
 
 Als Nächstes:
 
@@ -78,9 +79,11 @@ Als Nächstes:
 - [ ] Test gegen Nicos Server (WLAN-Passwort + API-Key in `secrets.h`)
 - [ ] HTTPS: Caddy-Root-Zertifikat als `SERVER_CA_CERT`
 - [ ] [CONTRACT]-Vorschlag: Fehlercode `watering_ineffective`, Demo-Tank als reine Anzeige im Vertrag beschreiben (noch kein PR; braucht Zustimmung beider)
-- [ ] Nico (Issue): Server-Standard `max_pump_s_per_run` 0,5 und Dashboard-Knopf „Jetzt gießen“ `pump_run_s` 0,5 – sonst überschreibt der Server die 0,5 s mit 5 s
+- [ ] Nico: Issue #34 (Finder-Duplikate, .env, 422-Format)
+- [ ] Nico (Issue #32): Server-Standard `max_pump_s_per_run` 0,5 und Dashboard-Knopf „Jetzt gießen“ `pump_run_s` 0,5 – sonst überschreibt der Server die 0,5 s mit 5 s
 - [ ] Fotos/Schaltplan, Präsentationsbeitrag ESP
 
 Blocker:
 
-- WLAN-Passwort des Pi-Hotspots + API-Key (kommt von Nico)
+- WLAN: ESP meldet abwechselnd „Anmeldung abgelehnt“ und „nicht gefunden“ → Passwort in `/opt/smart-garden/zugangsdaten.txt` auf dem Pi prüfen (wird bei Neuinstallation neu erzeugt), ESP näher an den Pi
+- DHT11 meldet FEHLER (Kabel an D4 prüfen)
