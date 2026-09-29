@@ -76,7 +76,7 @@ The ESP32 then retries every 15 s, but only once the previous attempt has finish
 3. Click **Upload**.
 4. Open *Tools → Serial Monitor*, set **115200 baud** and line ending **"New Line"**.
 
-At startup the monitor shows the firmware version (currently `Firmware 0.3.8`). It must match `FIRMWARE-VERSION` at the very top of `smart_garden.ino` (and `FW_VERSION` in `garden_config.h`). The LED bar fills once from green through orange to red, and the buzzer beeps briefly. If red lights up first, set `CFG_LEDBAR_REVERSE = true` at the top (to try it without re-uploading: `ledflip`).
+At startup the monitor shows the firmware version (currently `Firmware 0.3.9`). It must match `FIRMWARE-VERSION` at the very top of `smart_garden.ino` (and `FW_VERSION` in `garden_config.h`). The LED bar fills once from green through orange to red, and the buzzer beeps briefly. If red lights up first, set `CFG_LEDBAR_REVERSE = true` at the top (to try it without re-uploading: `ledflip`).
 
 **If the upload gets stuck** (`Connecting…` hangs or `Wrong boot mode detected`):
 
@@ -153,7 +153,7 @@ Demo mode can also be triggered with a button in the dashboard. The firmware rep
 
 - After power-on, automatic watering first waits for `pump_cooldown_s` (default 5 min). This protects against a pump burst on every boot if the ESP32 keeps restarting. Demo and manual commands are possible after 10 s.
 - If moisture falls below `moisture_min_pct` (default 30 %), a watering session starts. The pump runs in bursts of `max_pump_s_per_run` each (default **0.5 s**, also used for demo and the dashboard button "Jetzt gießen" (water now)), with a pause of `pump_cooldown_s` (300 s) in between so the water can soak in. This continues until `moisture_target_pct` (55 %) is reached.
-- The server can change `max_pump_s_per_run` via `config` (0.5–15 s). Its setting takes precedence as soon as the ESP32 is connected.
+- The server can change `max_pump_s_per_run` via `config`, but the firmware clamps it to **0.3–1 s** (a small splash). Demo watering (`demo soil 12`) always runs exactly **0.5 s**. Only the serial `pump` command can run longer (up to 15 s, e.g. for measuring the flow rate).
 - **Tank estimate** without a sensor: remaining amount = capacity − run time × flow rate. It is stored in flash and survives restarts. After refilling, enter `refill`, hold the BOOT button for 3 s, or press "Tank aufgefüllt" (tank refilled) in the dashboard.
 
 ### Safety

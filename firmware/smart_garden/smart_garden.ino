@@ -1,5 +1,5 @@
 // ############################################################################
-//  FIRMWARE-VERSION 0.3.8  (Stand 29.09.2026)
+//  FIRMWARE-VERSION 0.3.9  (Stand 29.09.2026)
 //  Muss mit FW_VERSION in garden_config.h übereinstimmen und steht beim Start
 //  im seriellen Monitor. So siehst du sofort, ob du die aktuelle Datei hast.
 // ############################################################################
@@ -150,7 +150,7 @@ static void measureAndAct() {
   // Nicht, wenn Auto-Gießen abgeschaltet oder wegen Wirkungslosigkeit gesperrt ist.
   if (demoTakeSoilKick() && settings.auto_water && !wateringBlocked && current.soil_ok &&
       current.soil_pct < settings.moisture_min_pct && !pumpRunning()) {
-    if (pumpStart(settings.max_pump_s_per_run, "Demo", false)) {
+    if (pumpStart(DEMO_PUMP_S, "Demo", false)) {
       autoWateredSinceLast = true;
       return;
     }
