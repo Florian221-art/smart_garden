@@ -147,11 +147,7 @@ static void updateBar() {
       showBits((ALL_SEGMENTS << (10 - n)) & ALL_SEGMENTS);
       return;
     }
-    if (step < 12) {  // kurz voll stehen lassen
-      showBits(ALL_SEGMENTS);
-      return;
-    }
-    ledTestRunning = false;
+    ledTestRunning = false;  // danach direkt die echte Anzeige (nicht alle LEDs stehen lassen)
   }
   if (within(testOn, testStart, 10000)) {
     showBits(testBits);
