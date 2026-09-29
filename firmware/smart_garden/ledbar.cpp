@@ -29,12 +29,16 @@ static void send16(uint16_t bits) {
   }
 }
 
-// Latch-Sequenz laut MY9221-Datenblatt (wie in der offiziellen Seeed-Bibliothek):
-// Takt bleibt stehen, Daten LOW, >220 µs warten, dann 4 Impulse auf der
-// Datenleitung -> die gesendeten Werte werden übernommen.
-// Wichtig: KEINE zusätzlichen Taktflanken, sonst verrutschen die Daten im Register.
+// Latch-Sequenz genau wie in der aktuellen Seeed-Bibliothek "Grove_LED_Bar"
+// (mit der sie auf diesem Board nachweislich funktioniert hat): Daten LOW,
+// zwei Taktimpulse, >220 µs warten, 4 Impulse auf der Datenleitung, dann ein
+// letzter Taktimpuls -> der MY9221 übernimmt die gesendeten Werte.
 static void latch() {
   digitalWrite(pinDat, LOW);
+  digitalWrite(pinClk, HIGH);
+  digitalWrite(pinClk, LOW);
+  digitalWrite(pinClk, HIGH);
+  digitalWrite(pinClk, LOW);
   delayMicroseconds(240);
   for (int i = 0; i < 4; i++) {
     digitalWrite(pinDat, HIGH);
@@ -42,7 +46,9 @@ static void latch() {
     digitalWrite(pinDat, LOW);
     delayMicroseconds(1);
   }
-  delayMicroseconds(240);  // Pause vor dem nächsten Rahmen
+  delayMicroseconds(1);
+  digitalWrite(pinClk, HIGH);
+  digitalWrite(pinClk, LOW);
 }
 
 void ledbarBegin(uint8_t pinClock, uint8_t pinData) {
