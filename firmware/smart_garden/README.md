@@ -53,7 +53,17 @@ Das Repo ist **öffentlich**. Ein echtes Passwort oben im Sketch kann aus Verseh
 
 Wenn du doch direkt im Sketch arbeitest: vor jedem `git pull` erst `git stash` ausführen, danach `git stash pop`. Vor einem Commit mit `git diff` prüfen, dass kein Passwort drinsteht.
 
-Stehen noch die Platzhalter drin, meldet die Firmware beim Start `WARNUNG: ... Platzhalter`. Sensoren, LED-Bar, Pumpe und Demo-Befehle funktionieren trotzdem, nur das Senden nicht.
+Stehen noch die Platzhalter drin, meldet die Firmware beim Start `WARNUNG: ... Platzhalter`. Ist das WLAN-Passwort der Platzhalter, bleibt das WLAN ganz aus (`[WLAN] AUS: ...`). Sensoren, LED-Bar, Pumpe und Demo-Befehle funktionieren trotzdem, nur das Senden nicht.
+
+Klappt die Verbindung nicht, nennt der serielle Monitor den Grund einmal im Klartext:
+
+| Meldung | Bedeutung |
+|---|---|
+| `"SmartGarden" nicht gefunden` | Pi-Hotspot aus oder zu weit weg |
+| `gefunden, aber Anmeldung abgelehnt` | WLAN-Passwort falsch |
+| `Verbindung abgerissen` | Signal zu schwach |
+
+Der ESP versucht es danach alle 15 s erneut, aber erst, wenn der vorige Versuch beendet ist.
 
 ## 3. Hochladen
 
@@ -62,7 +72,7 @@ Stehen noch die Platzhalter drin, meldet die Firmware beim Start `WARNUNG: ... P
 3. Auf **Hochladen** klicken.
 4. *Werkzeuge → Serieller Monitor* öffnen, **115200 Baud**, Zeilenende **„Neue Zeile“**.
 
-Beim Start steht im Monitor `Firmware 0.3.1`. Die LED-Bar füllt sich einmal von Grün über Orange bis Rot, und der Summer piept kurz. Leuchtet dabei zuerst Rot, oben `CFG_LEDBAR_REVERSE = true` setzen (zum Ausprobieren ohne Hochladen: `ledflip`).
+Beim Start steht im Monitor die Firmware-Version (aktuell `Firmware 0.3.7`). Sie muss mit `FIRMWARE-VERSION` ganz oben in `smart_garden.ino` übereinstimmen. Die LED-Bar füllt sich einmal von Grün über Orange bis Rot, und der Summer piept kurz. Leuchtet dabei zuerst Rot, oben `CFG_LEDBAR_REVERSE = true` setzen (zum Ausprobieren ohne Hochladen: `ledflip`).
 
 **Wenn der Upload klemmt** (`Connecting…` hängt oder `Wrong boot mode detected`):
 
@@ -103,6 +113,7 @@ Beim Bodensensor muss der Rohwert „trocken“ mindestens **300** über „nass
 | `ledtest` / `ledflip` | LED-Bar testen / Richtung umdrehen (bis Neustart) |
 | `ledseg 3` | genau 3 Segmente (ab Segment 1 = rot) 10 s lang anzeigen |
 | `ledswap` | Takt- und Datenpin tauschen (bis Neustart), falls die Bar nicht reagiert |
+| `leddiag` | LED-Bar: 8 Übertragungsvarianten nacheinander (je 4 s), zur Fehlersuche |
 | `beep` | Summer testen (piept auch, wenn stumm geschaltet) |
 | `mute` | Summer an/aus (bis Neustart) |
 | `send` | sofort an den Server senden |

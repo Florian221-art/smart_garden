@@ -1,5 +1,5 @@
 // ############################################################################
-//  FIRMWARE-VERSION 0.3.6  (Stand 29.09.2026)
+//  FIRMWARE-VERSION 0.3.7  (Stand 29.09.2026)
 //  Muss mit FW_VERSION in garden_config.h übereinstimmen und steht beim Start
 //  im seriellen Monitor. So siehst du sofort, ob du die aktuelle Datei hast.
 // ############################################################################
