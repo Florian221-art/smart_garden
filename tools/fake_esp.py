@@ -31,7 +31,7 @@ import time
 import urllib.error
 import urllib.request
 
-FW_VERSION = "sim-0.1.0"
+FW_VERSION = "sim-0.3.0"
 
 DEFAULT_CONFIG = {
     "interval_s": 15,
@@ -49,6 +49,8 @@ DEFAULT_CONFIG = {
 
 ALLOWED_OVERRIDES = {"soil_moisture_pct", "light_pct", "air_temp_c", "air_humidity_pct", "water_level_pct"}
 MAX_DEMO_S = 600
+HARD_MIN_COOLDOWN_S = 10  # Mindestpause zwischen zwei Pumpenläufen (gilt für alle Starts, wie Firmware)
+TANK_EMPTY_PCT = 5.0
 # Wie viel Prozent Bodenfeuchte ein Milliliter Wasser bringt (grob für einen kleinen Kübel)
 MOISTURE_PCT_PER_ML = 0.15
 
@@ -108,15 +110,34 @@ class FakeEsp:
     def _true_humidity(self, temp: float) -> float:
         return clamp(75 - (temp - 15) * 1.8 + self.rng.gauss(0, 1.5), 15, 95)
 
+    # ------------------------------------------------------------------ Tank
+    def real_tank_pct(self) -> float:
+        cap = self.config["tank_capacity_ml"] or 1
+        return clamp(self.tank_ml / cap * 100, 0, 100)
+
+    def reported_tank_pct(self) -> float:
+        """Gemeldeter Füllstand: im Demo-Modus der Demo-Wert (wird nicht gespeichert)."""
+        if self.demo_active() and "water_level_pct" in self.demo_overrides:
+            return clamp(float(self.demo_overrides["water_level_pct"]), 0, 100)
+        return self.real_tank_pct()
+
+    def tank_is_empty(self) -> bool:
+        """Trockenlaufschutz wie Firmware: min(echt, Demo) – Demo macht nie 'voller'."""
+        return min(self.real_tank_pct(), self.reported_tank_pct()) <= TANK_EMPTY_PCT
+
     # ------------------------------------------------------------------ Pumpe
     def run_pump(self, seconds: float, reason: str) -> None:
         cfg = self.config
-        seconds = min(seconds, cfg["max_pump_s_per_run"])
-        seconds = min(seconds, max(0.0, cfg["max_pump_s_per_day"] - self.pump_today_s))
-        tank_pct = self.tank_ml / cfg["tank_capacity_ml"] * 100 if cfg["tank_capacity_ml"] else 0
-        if tank_pct <= 5:
+        if not seconds > 0:
+            return
+        if self.tank_is_empty():
             log(f"PUMPE blockiert ({reason}): Tank leer (Trockenlaufschutz)")
             return
+        if self.sim_time_s - self.last_pump_sim_s < HARD_MIN_COOLDOWN_S:
+            log(f"PUMPE blockiert ({reason}): Mindestpause {HARD_MIN_COOLDOWN_S} s")
+            return
+        seconds = min(seconds, cfg["max_pump_s_per_run"], 15.0)
+        seconds = min(seconds, max(0.0, min(cfg["max_pump_s_per_day"], 300.0) - self.pump_today_s))
         if seconds <= 0:
             log(f"PUMPE blockiert ({reason}): Tageslimit erreicht")
             return
@@ -156,8 +177,6 @@ class FakeEsp:
             log(f"DEMO an: overrides={overrides} errors={errors} ({ttl:.0f} s)")
         self.demo_overrides, self.demo_errors = overrides, errors
         self.demo_until = time.monotonic() + ttl
-        if "water_level_pct" in overrides:
-            self.tank_ml = self.config["tank_capacity_ml"] * clamp(float(overrides["water_level_pct"]), 0, 100) / 100
 
     # ------------------------------------------------------------------ Messung
     def build_reading(self) -> dict:
@@ -199,8 +218,8 @@ class FakeEsp:
         self.auto_water(values["soil_moisture_pct"])
 
         cap = self.config["tank_capacity_ml"] or 1
-        level = round(clamp(self.tank_ml / cap * 100, 0, 100), 1)
-        if level <= 5:
+        level = round(self.reported_tank_pct(), 1)
+        if self.tank_is_empty():
             errors.append("tank_empty")
 
         soil_raw = None if values["soil_moisture_pct"] is None else int(3300 - self.soil * 20)
@@ -218,7 +237,7 @@ class FakeEsp:
             "light_raw": light_raw,
             "air_temp_c": values["air_temp_c"],
             "air_humidity_pct": values["air_humidity_pct"],
-            "tank_remaining_ml": round(self.tank_ml, 1),
+            "tank_remaining_ml": round(cap * level / 100 if self.demo_active() else self.tank_ml, 1),
             "water_level_pct": level,
             "pump_on_s_since_last": round(self.pump_on_since_last, 1),
             "pump_running": False,
