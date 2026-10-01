@@ -1,7 +1,9 @@
 # Smart Garden – an intelligent planter
 
-Hackathon project (Euregio hackathon, 48 hours, September 2026) by **Florian Schoenen** and **Nico Steins**.
+Hackathon project (**Energy & Mobility EuRegio Hackathon 2026**, 48 hours, September 2026) by **Florian Schoenen** and **Nico Steins**.
 The original challenge description is in [`docs/Intelligenter Gemüsegarten Pflanzkübel DE.pdf`](docs/Intelligenter%20Gemüsegarten%20Pflanzkübel%20DE.pdf) (German).
+
+**Want to see it running? No hardware needed:** clone the repo and run `bash deploy/demo.sh` – see [Try it in two minutes](#try-it-in-two-minutes-no-hardware-needed).
 
 ## Overview
 
@@ -25,6 +27,48 @@ The planter keeps working without the Pi: measuring, the LED bar, the buzzer and
 - **Dashboard (React):** a status card in full sentences, tiles with a plain-language rating instead of bare numbers, history charts (1 h / 24 h / 7 days) for moisture, tank, water use, temperature, humidity and light, light/dark theme, a mobile layout, and it can be installed as a home-screen app.
 - **Demo mode for presentations:** sensor values can be overridden and sensor failures forced, either from the dashboard or from the ESP32's serial console. The override happens on the ESP32, so the real hardware reacts (pump, LED bar, buzzer). Demo data is flagged and is not used for AI training.
 - **Security by design:** per-device API keys (stored as argon2 hashes), a dedicated WPA2 hotspot, hard pump limits compiled into the firmware, a watchdog, and no secrets in the repository (see [Security highlights](#security-highlights)).
+
+## Try it in two minutes (no hardware needed)
+
+The demo runs the complete software stack on your own computer. A simulated planter (`tools/fake_esp.py`) behaves like the real ESP32 firmware: soil dries out over a simulated day/night cycle, the pump waters it in short bursts, and the water tank empties. The real server and the real dashboard show it live.
+
+**Requirements:** Python 3.10+, Node.js 20+ with npm, macOS or Linux (on Windows use WSL). The first run downloads dependencies and takes about a minute.
+
+```bash
+git clone https://github.com/Florian221-art/smart_garden.git
+cd smart_garden
+bash deploy/demo.sh
+```
+
+The script builds the dashboard, creates a throw-away demo database with 48 hours of simulated history, starts the server and the simulated planter, and opens **http://localhost:8000** in your browser. Stop it with `Ctrl+C`. Nothing is installed outside the repository folder and no real database is touched (demo data lives in the git-ignored `.demo/` folder).
+
+**What to try in the dashboard**
+
+1. Watch the status card and the tiles update – the simulated planter reports every 2 s in time-lapse (60 simulated seconds per real second).
+2. Open the history charts (1 h / 24 h / 7 days) to see the 48 hours of pre-generated data: day/night curves, drying soil and automatic watering events.
+3. Click **Demo** and trigger a scenario such as dry soil, heat wave, almost empty tank or sensor failure. The simulated device reacts exactly like the real hardware would: it starts the pump, and the dashboard explains the problem in plain sentences. The dashboard UI itself is German.
+4. Browse the interactive API documentation at http://localhost:8000/docs.
+
+**Options** (environment variables): `PORT=8010` to use another port, `DEMO_SPEED=120` for a faster time-lapse, `NO_OPEN=1` to not open the browser.
+
+<details>
+<summary>Manual steps instead of the script</summary>
+
+```bash
+# Terminal 1 – backend (from the repository root)
+cd server
+python3 -m venv .venv && ./.venv/bin/pip install -r requirements.txt
+./.venv/bin/python -m app.dev_seed esp32-kuebel-01 --hours 48   # test data, prints the API key once
+./.venv/bin/uvicorn app.main:app --reload                        # http://127.0.0.1:8000
+
+# Terminal 2 – dashboard with hot reload
+cd web && npm install && npm run dev                             # http://localhost:5173
+
+# Terminal 3 – simulated planter
+python3 tools/fake_esp.py --url http://127.0.0.1:8000 --key <api-key> --interval 2 --speed 60
+```
+
+</details>
 
 ## Architecture
 
@@ -76,7 +120,7 @@ All modules run on 3.3 V; the 12 V pump circuit is switched only through the rel
 | `server/` | FastAPI backend, SQLite database | Nico | [`docs/server/`](docs/server/status.md) |
 | `web/` | Dashboard (React, Vite, Tailwind) | Nico | [`docs/server/`](docs/server/status.md) |
 | `ai/` | AI module (Python) – planned, not yet in the repository | Nico | [`.claude/plan-webserver.md`](.claude/plan-webserver.md) |
-| `deploy/` | Raspberry Pi setup: hotspot, systemd service, deploy script | Nico | [README](deploy/README.md) |
+| `deploy/` | `demo.sh` (one-command demo on your computer), Raspberry Pi setup: hotspot, systemd service, deploy script | Nico | [README](deploy/README.md) |
 | `.claude/` | Plans, rules and the API contract for the two Claude Code instances used during development | both | [Rules](.claude/CLAUDE.md) |
 
 ## Quick start
@@ -86,7 +130,7 @@ All modules run on 3.3 V; the 12 V pump circuit is switched only through the rel
 3. **Upload the firmware** following [`firmware/smart_garden/README.md`](firmware/smart_garden/README.md). The Wi-Fi password and API key belong in `secrets.h`, never in the repository.
 4. **Calibrate:** enter `cal soil dry` and `cal soil wet` in the serial monitor, then measure the pump flow rate.
 5. **Open the dashboard:** join the "SmartGarden" Wi-Fi and open `http://10.42.0.1:8000`.
-6. **Test without hardware:** `python tools/fake_esp.py --url http://10.42.0.1:8000 --key <api-key>`
+6. **Test without hardware:** run `bash deploy/demo.sh` on your computer (see [Try it in two minutes](#try-it-in-two-minutes-no-hardware-needed)), or point the simulator at the Pi: `python tools/fake_esp.py --url http://10.42.0.1:8000 --key <api-key>`
 
 ## How the solution covers the challenge
 

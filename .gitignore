@@ -29,3 +29,6 @@ Thumbs.db
 
 # Arduino-Build
 build/
+
+# Demo (deploy/demo.sh)
+.demo/
