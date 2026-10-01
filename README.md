@@ -74,13 +74,13 @@ python3 tools/fake_esp.py --url http://127.0.0.1:8000 --key <api-key> --interval
 
 ```
  Planter                                 Raspberry Pi 5 (own Wi-Fi "SmartGarden", 10.42.0.1)
- ┌─────────────────────────────┐         ┌───────────────────────────────────────────────────┐
+ ┌─────────────────────────────┐         ┌───────────────────────────────────────────────┐
  │ ESP32                       │  Wi-Fi  │ FastAPI server ── SQLite                        │
  │  ├ Soil moisture (capacit.) │ ──────► │   POST /api/v1/readings  (X-API-Key)            │
  │  ├ Light (LDR)              │ ◄────── │   Response: config · commands · demo            │
  │  ├ Temp./humidity (DHT11)   │         │ AI module (Python) – planned                    │
  │  ├ LED bar (moisture)       │         │ Dashboard (React + Tailwind) ◄── phone/laptop   │
- │  ├ Buzzer (alarm)           │         └───────────────────────────────────────────────────┘
+ │  ├ Buzzer (alarm)           │         └───────────────────────────────────────────────┘
  │  └ Relay → 12 V pump        │
  └─────────────────────────────┘
 ```
